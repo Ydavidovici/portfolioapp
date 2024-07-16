@@ -1,3 +1,4 @@
+// pages/index.tsx
 import Head from 'next/head';
 import Header from '../components/header';
 import AboutSection from '../components/aboutSection';
