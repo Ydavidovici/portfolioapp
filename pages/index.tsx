@@ -1,10 +1,11 @@
 // pages/index.tsx
 import Head from 'next/head';
-import Header from '../components/header';
-import AboutSection from '../components/aboutSection';
-import SkillsSection from '../components/skillsSection';
-import ProjectsSection from '../components/projectSection';
-import ContactSection from '../components/contactSection';
+import Header from '../components/Header';
+import AboutSection from '../components/AboutSection';
+import SkillsSection from '../components/SkillsSection';
+import ProjectsSection from '../components/ProjectSection';
+import ContactSection from '../components/ContactSection';
+import ServicesSection from '../components/ServicesSection';
 
 const Home: React.FC = () => {
     return (
@@ -17,6 +18,7 @@ const Home: React.FC = () => {
             <main className="container mx-auto px-4 py-8">
                 <AboutSection />
                 <SkillsSection />
+                <ServicesSection />
                 <ProjectsSection />
                 <ContactSection />
             </main>
