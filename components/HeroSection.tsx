@@ -1,18 +1,15 @@
+import React from 'react';
+import Button from './Button';
+
 const HeroSection: React.FC = () => {
   return (
-    <section id="hero" className="hero bg-gray-800 text-white py-16">
+    <section id="hero" className="py-16 bg-jet text-white">
       <div className="container mx-auto text-center">
         <h1 className="text-4xl font-bold mb-4">Davidovici Software</h1>
         <p className="text-lg mb-8">
-          Professional consulting services specializing in web development,
-          e-commerce solutions, API development, and more.
+          Professional consulting services specializing in web development, e-commerce solutions, API development, and more.
         </p>
-        <a
-          href="#contact"
-          className="btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
-        >
-          Get in Touch
-        </a>
+        <Button href="#contact" text="Get in Touch" />
       </div>
     </section>
   );

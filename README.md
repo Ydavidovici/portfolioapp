@@ -32,11 +32,15 @@ Make sure you have the following installed on your machine:
    git clone https://github.com/yourusername/davidovici-software.git
    cd davidovici-software
    ```
+
 2. **Install dependencies:**
+
 ```bash
 npm install
 ```
+
 or
+
 ```bash
 yarn install
 ```
@@ -44,18 +48,23 @@ yarn install
 ### Running the Development Server
 
 To run the development server, use the following command:
+
 ```bash
 npm run dev
 ```
+
 or
+
 ```bash
 yarn dev
 ```
+
 Open your browser and navigate to http://localhost:3000 to see the website in action.
 
 ## Services Offered
 
 Davidovici Software offers a wide range of professional services, including:
+
 1. Web Development
    - Building responsive and interactive websites using the latest web technologies.
 2. E-commerce Solutions
@@ -78,7 +87,9 @@ Davidovici Software offers a wide range of professional services, including:
     - Implementing and managing CI/CD pipelines, cloud infrastructure, and automation.
 
 ## Contributing
+
 We welcome contributions to improve the Davidovici Software website. If you have suggestions, bug reports, or want to contribute code, please open an issue or submit a pull request.
 
 ## License
+
 This project is licensed under the MIT License. See the LICENSE file for details.
