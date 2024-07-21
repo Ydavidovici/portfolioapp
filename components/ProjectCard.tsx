@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 interface ProjectProps {
   id: string;
@@ -9,7 +8,6 @@ interface ProjectProps {
   technologies: string[];
   githubLink: string;
   liveLink: string;
-  image: string;
 }
 
 const ProjectCard: React.FC<ProjectProps> = ({
@@ -19,17 +17,9 @@ const ProjectCard: React.FC<ProjectProps> = ({
   technologies,
   githubLink,
   liveLink,
-  image,
 }) => {
   return (
     <div className="custom-border">
-      <Image
-        src={image}
-        alt={`${name} screenshot`}
-        className="mb-4"
-        width={500}
-        height={300}
-      />
       <h3 className="text-2xl font-bold mb-2">{name}</h3>
       <p className="mb-2">{description}</p>
       <ul className="mb-2">

@@ -4,6 +4,20 @@ import ProjectCard from './ProjectCard';
 const projects = [
   {
     id: '1',
+    name: 'Project Zechus Avos',
+    description:
+      'A website for a prominent Hasidic rabbi to list available chapters of books for sponsorships and dedications.',
+    features: [
+      'Stripe webhooks',
+      'RESTful Node.js APIs',
+      'Data validation and formatting',
+    ],
+    technologies: ['Node.js', 'Stripe', 'Express.js'],
+    githubLink: 'https://github.com/Ydavidovici/Project-Zechus-Avos',
+    liveLink: 'https://projectzechusavos.org',
+  },
+  {
+    id: '2',
     name: 'Zeev-Jewelry E-commerce Store',
     description:
       'A luxury jewelry e-commerce store using MVC architecture with Next.js and Laravel.',
@@ -16,23 +30,7 @@ const projects = [
     ],
     technologies: ['Next.js', 'Laravel', 'MySQL'],
     githubLink: 'https://github.com/Ydavidovici/Zeev-Jewelry',
-    liveLink: 'https://example.com/zeev-jewelry', // Replace with actual URL
-    image: '/path/to/image1.png',
-  },
-  {
-    id: '2',
-    name: 'Project Zechus Avos',
-    description:
-      'A website for a prominent Hasidic rabbi to list available chapters of books for sponsorships and dedications.',
-    features: [
-      'Stripe webhooks',
-      'RESTful Node.js APIs',
-      'Data validation and formatting',
-    ],
-    technologies: ['Node.js', 'Stripe', 'Express.js'],
-    githubLink: 'https://github.com/Ydavidovici/Project-Zechus-Avos',
-    liveLink: 'https://example.com/zechus-avos', // Replace with actual URL
-    image: '/path/to/image2.png',
+    liveLink: 'https://zeevjewelry.com',
   },
   {
     id: '3',
@@ -46,8 +44,7 @@ const projects = [
     ],
     technologies: ['Node.js', 'PostgreSQL', 'Heroku'],
     githubLink: 'https://github.com/Ydavidovici/KehilasLevVnefesh-Website',
-    liveLink: 'https://example.com/kehilas-lev-vnefesh', // Replace with actual URL
-    image: '/path/to/image3.png',
+    liveLink: 'https://khallevvnefesh.org',
   },
   {
     id: '4',
@@ -57,8 +54,7 @@ const projects = [
     features: ['Can play against other bots online', 'Potential ELO of 3000'],
     technologies: ['C++', 'Django', 'React', 'PostgreSQL'],
     githubLink: 'https://github.com/Ydavidovici/Chess-Engine',
-    liveLink: 'https://example.com/chess-engine', // Replace with actual URL
-    image: '/path/to/image4.png',
+    liveLink: '',
   },
 ];
 
@@ -78,7 +74,6 @@ const ProjectsSection: React.FC = () => {
               technologies={project.technologies}
               githubLink={project.githubLink}
               liveLink={project.liveLink}
-              image={project.image}
             />
           ))}
         </div>

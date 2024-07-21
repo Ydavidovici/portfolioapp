@@ -14,7 +14,9 @@ const ContactSection: React.FC = () => {
     message: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -70,7 +72,9 @@ const ContactSection: React.FC = () => {
           transition={{ duration: 0.5 }}
         >
           <div className="mb-4">
-            <label htmlFor="name" className="block mb-2">Name</label>
+            <label htmlFor="name" className="block mb-2">
+              Name
+            </label>
             <input
               type="text"
               id="name"
@@ -80,10 +84,14 @@ const ContactSection: React.FC = () => {
               className="w-full border p-2 rounded bg-white text-black"
               required
             />
-            {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-red-500 text-sm">{errors.name}</p>
+            )}
           </div>
           <div className="mb-4">
-            <label htmlFor="email" className="block mb-2">Email</label>
+            <label htmlFor="email" className="block mb-2">
+              Email
+            </label>
             <input
               type="email"
               id="email"
@@ -93,10 +101,14 @@ const ContactSection: React.FC = () => {
               className="w-full border p-2 rounded bg-white text-black"
               required
             />
-            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-500 text-sm">{errors.email}</p>
+            )}
           </div>
           <div className="mb-4">
-            <label htmlFor="message" className="block mb-2">Message</label>
+            <label htmlFor="message" className="block mb-2">
+              Message
+            </label>
             <textarea
               id="message"
               name="message"
@@ -105,7 +117,9 @@ const ContactSection: React.FC = () => {
               className="w-full border p-2 rounded bg-white text-black"
               required
             ></textarea>
-            {errors.message && <p className="text-red-500 text-sm">{errors.message}</p>}
+            {errors.message && (
+              <p className="text-red-500 text-sm">{errors.message}</p>
+            )}
           </div>
           <button
             type="submit"
