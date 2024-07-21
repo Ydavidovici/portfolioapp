@@ -14,22 +14,30 @@ const Header: React.FC = () => {
             </li>
             <li>
               <Link href="#about" legacyBehavior>
-                <a className="text-jet-highlight hover:text-jet-accent">About</a>
+                <a className="text-jet-highlight hover:text-jet-accent">
+                  About
+                </a>
               </Link>
             </li>
             <li>
               <Link href="#services" legacyBehavior>
-                <a className="text-jet-highlight hover:text-jet-accent">Services</a>
+                <a className="text-jet-highlight hover:text-jet-accent">
+                  Services
+                </a>
               </Link>
             </li>
             <li>
               <Link href="#projects" legacyBehavior>
-                <a className="text-jet-highlight hover:text-jet-accent">Projects</a>
+                <a className="text-jet-highlight hover:text-jet-accent">
+                  Projects
+                </a>
               </Link>
             </li>
             <li>
               <Link href="#contact" legacyBehavior>
-                <a className="text-jet-highlight hover:text-jet-accent">Contact</a>
+                <a className="text-jet-highlight hover:text-jet-accent">
+                  Contact
+                </a>
               </Link>
             </li>
           </ul>

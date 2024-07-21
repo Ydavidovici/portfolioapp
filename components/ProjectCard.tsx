@@ -8,6 +8,7 @@ interface ProjectProps {
   features: string[];
   technologies: string[];
   githubLink: string;
+  liveLink: string;
   image: string;
 }
 
@@ -17,10 +18,11 @@ const ProjectCard: React.FC<ProjectProps> = ({
   features,
   technologies,
   githubLink,
+  liveLink,
   image,
 }) => {
   return (
-    <div className="border p-4 rounded">
+    <div className="custom-border">
       <Image
         src={image}
         alt={`${name} screenshot`}
@@ -35,17 +37,27 @@ const ProjectCard: React.FC<ProjectProps> = ({
           <li key={index}>{feature}</li>
         ))}
       </ul>
-      <p>
+      <p className="mb-2">
         <strong>Technologies:</strong> {technologies.join(', ')}
       </p>
-      <a
-        href={githubLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="btn"
-      >
-        View on GitHub
-      </a>
+      <div className="custom-mt-auto custom-flex">
+        <a
+          href={githubLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="custom-btn custom-bg-blue-500 hover:custom-bg-blue-600 transition"
+        >
+          View on GitHub
+        </a>
+        <a
+          href={liveLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="custom-btn custom-bg-green-500 hover:custom-bg-green-600 transition"
+        >
+          View Live
+        </a>
+      </div>
     </div>
   );
 };
