@@ -21,3 +21,56 @@ a:hover {
 .button {
   @apply bg-jet-highlight text-white hover:bg-jet-accent;
 }
+
+.services-section {
+  @apply bg-jet text-white py-16;
+}
+
+.service-card {
+  @apply bg-jet-light p-6 rounded-lg shadow-lg text-center transition-transform transform hover:scale-105 hover:shadow-2xl;
+}
+
+.service-card h3 {
+  @apply text-2xl font-bold mb-2;
+}
+
+.service-card p {
+  @apply mb-4;
+}
+
+.quote-section {
+  @apply bg-jet text-white py-16 text-center;
+}
+
+.quote {
+  @apply text-3xl font-bold mb-4;
+}
+
+.quote-author {
+  @apply text-xl;
+}
+
+
+.contact-section, .get-quote-section {
+  @apply bg-jet-light text-white py-16;
+}
+
+.contact-form, .quote-form {
+  @apply max-w-lg mx-auto bg-jet p-8 rounded-lg shadow-lg;
+}
+
+.contact-form h2, .quote-form h2 {
+  @apply text-3xl font-bold mb-4;
+}
+
+.contact-form label, .quote-form label {
+  @apply block mb-2;
+}
+
+.contact-form input, .contact-form textarea, .quote-form input, .quote-form textarea {
+  @apply w-full p-2 mb-4 border rounded bg-white text-black;
+}
+
+.contact-form button, .quote-form button {
+  @apply bg-jet-highlight text-white py-2 px-4 rounded hover:bg-jet-accent transition;
+}

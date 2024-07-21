@@ -1,13 +1,14 @@
-// components/ContactSection.tsx
+import React from 'react';
+
 const ContactSection: React.FC = () => {
   return (
-    <section id="contact" className="py-16 bg-gray-100">
+    <section id="contact" className="contact-section">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold mb-4 text-center">Contact Us</h2>
         <form
           action="https://formspree.io/f/{your-form-id}"
           method="POST"
-          className="max-w-lg mx-auto"
+          className="contact-form"
         >
           <div className="mb-4">
             <label htmlFor="name" className="block mb-2">
@@ -46,7 +47,7 @@ const ContactSection: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+            className="btn bg-jet-highlight text-white px-4 py-2 rounded hover:bg-jet-accent transition"
           >
             Send
           </button>

@@ -20,10 +20,10 @@ const GetQuoteSection: React.FC = () => {
   };
 
   return (
-    <section id="get-quote" className="py-16 bg-gray-100">
+    <section id="get-quote" className="get-quote-section">
       <div className="container mx-auto">
         <h2 className="text-3xl font-bold mb-4 text-center">Get a Quote</h2>
-        <form onSubmit={handleSubmit} className="max-w-lg mx-auto">
+        <form onSubmit={handleSubmit} className="quote-form">
           <div className="mb-4">
             <label htmlFor="name" className="block mb-2">
               Name
@@ -67,7 +67,7 @@ const GetQuoteSection: React.FC = () => {
           </div>
           <button
             type="submit"
-            className="btn bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
+            className="btn bg-jet-highlight text-white px-4 py-2 rounded hover:bg-jet-accent transition"
           >
             Submit
           </button>
