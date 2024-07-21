@@ -5,7 +5,7 @@ const HeroSection: React.FC = () => {
     <section
       id="hero"
       className="flex items-center justify-center text-white text-center relative"
-      style={{ paddingTop: '6rem' }}
+      style={{ paddingTop: '6rem' }} // Adjust the padding as necessary
     >
       <div>
         <h1 className="text-5xl font-bold">Welcome to Davidovici Software</h1>
