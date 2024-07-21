@@ -130,3 +130,37 @@ a:hover {
 .about-section p {
   @apply text-lg leading-7 text-center;
 }
+
+.parallax {
+  background-image: url('/path/to/your/image.jpg');
+  min-height: 400px;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.service-card {
+  @apply bg-jet-light p-6 rounded-lg shadow-lg text-center transition-transform transform;
+}
+
+.service-card:hover {
+  @apply scale-105 shadow-xl;
+}
+
+.scroll-indicator span {
+  @apply block w-2 h-2 mb-1 rounded-full bg-white;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
