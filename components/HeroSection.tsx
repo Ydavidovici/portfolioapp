@@ -1,11 +1,11 @@
-import React from 'react';
-import ScrollIndicator from './ScrollIndicator';
+// components/HeroSection.tsx
 
 const HeroSection: React.FC = () => {
   return (
     <section
       id="hero"
-      className="parallax flex items-center justify-center text-white text-center relative"
+      className="flex items-center justify-center text-white text-center relative"
+      style={{ paddingTop: '6rem' }}
     >
       <div>
         <h1 className="text-5xl font-bold">Welcome to Davidovici Software</h1>
@@ -13,7 +13,6 @@ const HeroSection: React.FC = () => {
           Your partner in web development and consulting.
         </p>
       </div>
-      <ScrollIndicator />
     </section>
   );
 };

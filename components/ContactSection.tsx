@@ -1,3 +1,5 @@
+// components/ContactSection.tsx
+
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import useInView from '../hooks/useInView';
@@ -46,7 +48,7 @@ const ContactSection: React.FC = () => {
     setErrors(newErrors);
 
     if (valid) {
-      console.log('Form submitted:', formData);
+      window.location.href = `mailto:Yaakov@davidovicisoftware.com?subject=Contact%20Form&body=Name:%20${formData.name}%0AEmail:%20${formData.email}%0AMessage:%20${formData.message}`;
     }
   };
 

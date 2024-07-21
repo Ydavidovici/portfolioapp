@@ -1,3 +1,5 @@
+// components/GetQuoteSection.tsx
+
 import React, { useState } from 'react';
 
 const GetQuoteSection: React.FC = () => {
@@ -15,7 +17,7 @@ const GetQuoteSection: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    window.location.href = `mailto:Yaakov@davidovicisoftware.com?subject=Quote%20Request&body=Name:%20${formData.name}%0AEmail:%20${formData.email}%0AMessage:%20${formData.message}`;
   };
 
   return (
