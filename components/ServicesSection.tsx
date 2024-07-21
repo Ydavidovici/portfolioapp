@@ -1,4 +1,6 @@
 import React from 'react';
+import { motion } from 'framer-motion';
+import useInView from '../hooks/useInView';
 
 const services = [
   {
@@ -35,7 +37,7 @@ const services = [
   },
   {
     title: 'SEO Services',
-    description: 'Increasing your website\'s visibility on search engines, driving more traffic, and boosting sales through comprehensive SEO strategies.',
+    description: "Increasing your website's visibility on search engines, driving more traffic, and boosting sales through comprehensive SEO strategies.",
   },
   {
     title: 'Email Marketing Services',
@@ -52,16 +54,33 @@ const services = [
 ];
 
 const ServicesSection: React.FC = () => {
+  const { isInView, setRef } = useInView(0.1);
+
   return (
     <section id="services" className="services-section">
       <div className="container mx-auto">
-        <h2 className="text-3xl font-bold mb-4 text-center">Our Services</h2>
+        <motion.h2
+          className="text-3xl font-bold mb-4 text-center"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : -50 }}
+          transition={{ duration: 0.5 }}
+          ref={setRef}
+        >
+          Our Services
+        </motion.h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {services.map((service, index) => (
-            <div key={index} className="service-card">
+            <motion.div
+              key={index}
+              className="service-card"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: isInView ? 1 : 0, x: isInView ? 0 : -50 }}
+              transition={{ duration: 0.5, delay: index * 0.2 }}
+              whileHover={{ scale: 1.05 }}
+            >
               <h3>{service.title}</h3>
               <p>{service.description}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

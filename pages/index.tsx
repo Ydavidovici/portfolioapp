@@ -12,7 +12,10 @@ const Home: React.FC = () => {
     <div>
       <Head>
         <title>Davidovici Software</title>
-        <meta name="description" content="Professional consulting services by Davidovici Software. Specializing in web development, e-commerce solutions, API development, and more." />
+        <meta
+          name="description"
+          content="Professional consulting services by Davidovici Software. Specializing in web development, e-commerce solutions, API development, and more."
+        />
       </Head>
       <Header />
       <main className="container mx-auto px-4 py-8">

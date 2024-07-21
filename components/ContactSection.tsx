@@ -1,14 +1,41 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 
 const ContactSection: React.FC = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    message: '',
+  });
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Form submitted:', formData);
+  };
+
   return (
     <section id="contact" className="contact-section">
       <div className="container mx-auto">
-        <h2 className="text-3xl font-bold mb-4 text-center">Contact Us</h2>
-        <form
-          action="https://formspree.io/f/{your-form-id}"
-          method="POST"
+        <motion.h2
+          className="text-3xl font-bold mb-4 text-center"
+          initial={{ opacity: 0, y: -50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          Contact Us
+        </motion.h2>
+        <motion.form
+          onSubmit={handleSubmit}
           className="contact-form"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
         >
           <div className="mb-4">
             <label htmlFor="name" className="block mb-2">
@@ -18,7 +45,9 @@ const ContactSection: React.FC = () => {
               type="text"
               id="name"
               name="name"
-              className="w-full border p-2 rounded"
+              value={formData.name}
+              onChange={handleChange}
+              className="w-full border p-2 rounded bg-white text-black"
               required
             />
           </div>
@@ -30,7 +59,9 @@ const ContactSection: React.FC = () => {
               type="email"
               id="email"
               name="email"
-              className="w-full border p-2 rounded"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full border p-2 rounded bg-white text-black"
               required
             />
           </div>
@@ -41,7 +72,9 @@ const ContactSection: React.FC = () => {
             <textarea
               id="message"
               name="message"
-              className="w-full border p-2 rounded"
+              value={formData.message}
+              onChange={handleChange}
+              className="w-full border p-2 rounded bg-white text-black"
               required
             ></textarea>
           </div>
@@ -51,7 +84,7 @@ const ContactSection: React.FC = () => {
           >
             Send
           </button>
-        </form>
+        </motion.form>
       </div>
     </section>
   );

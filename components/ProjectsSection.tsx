@@ -53,10 +53,7 @@ const projects = [
     name: 'Chess Engine',
     description:
       'A chess engine built with C++, Django, React, and PostgreSQL.',
-    features: [
-      'Can play against other bots online',
-      'Potential ELO of 3000',
-    ],
+    features: ['Can play against other bots online', 'Potential ELO of 3000'],
     technologies: ['C++', 'Django', 'React', 'PostgreSQL'],
     githubLink: 'https://github.com/Ydavidovici/chess-engine',
     liveLink: 'https://example.com/chess-engine', // Replace with actual URL

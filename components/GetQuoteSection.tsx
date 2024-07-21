@@ -15,7 +15,6 @@ const GetQuoteSection: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission (e.g., send data to your backend or a service like Formspree)
     console.log('Form submitted:', formData);
   };
 
@@ -34,7 +33,7 @@ const GetQuoteSection: React.FC = () => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded bg-white text-black"
               required
             />
           </div>
@@ -48,7 +47,7 @@ const GetQuoteSection: React.FC = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded bg-white text-black"
               required
             />
           </div>
@@ -61,7 +60,7 @@ const GetQuoteSection: React.FC = () => {
               name="message"
               value={formData.message}
               onChange={handleChange}
-              className="w-full border p-2 rounded"
+              className="w-full border p-2 rounded bg-white text-black"
               required
             ></textarea>
           </div>

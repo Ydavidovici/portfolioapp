@@ -1,3 +1,6 @@
+import React from 'react';
+import Image from 'next/image';
+
 interface ProjectProps {
   id: string;
   name: string;
@@ -18,7 +21,13 @@ const ProjectCard: React.FC<ProjectProps> = ({
 }) => {
   return (
     <div className="border p-4 rounded">
-      <img src={image} alt={`${name} screenshot`} className="mb-4" />
+      <Image
+        src={image}
+        alt={`${name} screenshot`}
+        className="mb-4"
+        width={500}
+        height={300}
+      />
       <h3 className="text-2xl font-bold mb-2">{name}</h3>
       <p className="mb-2">{description}</p>
       <ul className="mb-2">
