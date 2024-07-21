@@ -114,3 +114,19 @@ a:hover {
 .custom-bg-green-600 {
   @apply bg-green-600;
 }
+
+.about-section {
+  @apply py-16;
+}
+
+.about-section .container {
+  @apply mx-auto px-4;
+}
+
+.about-section h2 {
+  @apply text-3xl font-bold mb-4 text-center;
+}
+
+.about-section p {
+  @apply text-lg leading-7 text-center;
+}
