@@ -1,95 +1,50 @@
-# Davidovici Software
+# React + TypeScript + Vite
 
-Davidovici Software is a professional consulting services website specializing in web development, e-commerce solutions, web scraping, data science, and more. This repository contains the source code for the Davidovici Software consulting business website built with Next.js and TypeScript.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-## Table of Contents
+Currently, two official plugins are available:
 
-- [Getting Started](#getting-started)
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Running the Development Server](#running-the-development-server)
-- [Project Structure](#project-structure)
-- [Services Offered](#services-offered)
-- [Contributing](#contributing)
-- [License](#license)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Getting Started
+## Expanding the ESLint configuration
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
 
-### Prerequisites
+- Configure the top-level `parserOptions` property like this:
 
-Make sure you have the following installed on your machine:
-
-- [Node.js](https://nodejs.org/) (v14 or later recommended)
-- [npm](https://www.npmjs.com/) or [Yarn](https://yarnpkg.com/)
-
-### Installation
-
-1. **Clone the repository:**
-
-   ```bash
-   git clone https://github.com/yourusername/davidovici-software.git
-   cd davidovici-software
-   ```
-
-2. **Install dependencies:**
-
-```bash
-npm install
+```js
+export default tseslint.config({
+  languageOptions: {
+    // other options...
+    parserOptions: {
+      project: ['./tsconfig.node.json', './tsconfig.app.json'],
+      tsconfigRootDir: import.meta.dirname,
+    },
+  },
+})
 ```
 
-or
+- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
+- Optionally add `...tseslint.configs.stylisticTypeChecked`
+- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
 
-```bash
-yarn install
+```js
+// eslint.config.js
+import react from 'eslint-plugin-react'
+
+export default tseslint.config({
+  // Set the react version
+  settings: { react: { version: '18.3' } },
+  plugins: {
+    // Add the react plugin
+    react,
+  },
+  rules: {
+    // other rules...
+    // Enable its recommended rules
+    ...react.configs.recommended.rules,
+    ...react.configs['jsx-runtime'].rules,
+  },
+})
 ```
-
-### Running the Development Server
-
-To run the development server, use the following command:
-
-```bash
-npm run dev
-```
-
-or
-
-```bash
-yarn dev
-```
-
-Open your browser and navigate to http://localhost:3000 to see the website in action.
-
-## Services Offered
-
-Davidovici Software offers a wide range of professional services, including:
-
-1. Web Development
-   - Building responsive and interactive websites using the latest web technologies.
-2. E-commerce Solutions
-   - Creating online stores with secure payment processing and easy-to-manage product listings.
-3. Web Scraping
-   - Extracting data from websites for various use cases, including market research and competitive analysis.
-4. Data Science and Analytics
-   - Leveraging data to provide insights and drive decision-making through advanced analytics and machine learning.
-5. Performance Optimization
-   - Optimizing the performance of your website to ensure fast load times and a smooth user experience.
-6. Custom Software Development
-   - Developing custom software solutions tailored to your business needs.
-7. UI/UX Design
-   - Designing user-friendly interfaces and experiences that delight users and meet business goals.
-8. Mobile App Development
-   - Creating high-quality mobile applications for iOS and Android platforms.
-9. Maintenance and Support
-   - Providing ongoing maintenance and support to ensure your applications run smoothly and securely.
-10. DevOps and Infrastructure Management
-    - Implementing and managing CI/CD pipelines, cloud infrastructure, and automation.
-
-## Contributing
-
-We welcome contributions to improve the Davidovici Software website. If you have suggestions, bug reports, or want to contribute code, please open an issue or submit a pull request.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
