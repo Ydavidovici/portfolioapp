@@ -7,12 +7,13 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Console\Scheduling\Schedule;
 use Tests\TestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class BackupTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_creates_a_backup()
     {
         // Make sure the test uses the S3 disk.
@@ -25,7 +26,7 @@ class BackupTest extends TestCase
         Storage::disk('s3')->assertExists('your-backup-directory/'); // Replace with your actual backup directory name.
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_backup_failures_gracefully()
     {
         // Simulate a failure scenario.
@@ -37,7 +38,7 @@ class BackupTest extends TestCase
             ->assertExitCode(1); // Expect failure with exit code 1
     }
 
-    /** @test */
+    #[Test]
     public function it_has_a_backup_scheduled()
     {
         $schedule = $this->app->make(Schedule::class);

@@ -1,11 +1,11 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Database;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class SeederTest extends TestCase
+class SeedersTest extends TestCase
 {
     use RefreshDatabase;
 

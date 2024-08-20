@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Database;
 
 use App\Models\User;
 use App\Models\Project;
@@ -21,7 +21,7 @@ use App\Models\CalendarEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class FactoryTest extends TestCase
+class FactoriesTest extends TestCase
 {
     use RefreshDatabase;
 
