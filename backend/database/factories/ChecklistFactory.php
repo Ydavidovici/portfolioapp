@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Checklist;
+use App\Models\Task;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ChecklistFactory extends Factory
@@ -12,10 +13,8 @@ class ChecklistFactory extends Factory
     public function definition()
     {
         return [
-            'name' => $this->faker->word,
-            'task_id' => \App\Models\Task::factory(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'name' => $this->faker->sentence,
+            'task_id' => Task::factory(),
         ];
     }
 }

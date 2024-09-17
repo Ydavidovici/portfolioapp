@@ -10,12 +10,12 @@ class CreatePaymentsTable extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('invoice_id')->constrained('invoices');
+            $table->foreignId('invoice_id')
+                ->constrained()
+                ->onDelete('cascade');
             $table->decimal('amount', 10, 2);
-            $table->timestamp('payment_date');
-            $table->string('payment_method');
-            $table->string('quickbooks_payment_id')->nullable();
-            $table->boolean('synced_with_quickbooks')->default(false);
+            $table->date('payment_date');
+            $table->string('payment_method')->nullable();
             $table->timestamps();
         });
     }

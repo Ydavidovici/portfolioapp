@@ -15,11 +15,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Schedule the backup to run daily at 2 AM
-        $schedule->command('backup:run')->dailyAt('02:00');
-
-        // You can add additional scheduled tasks here as needed
+        $schedule->command('db:backup')->dailyAt('02:00');
     }
+
 
     /**
      * Register the commands for the application.

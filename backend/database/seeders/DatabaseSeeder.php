@@ -12,7 +12,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             ProjectSeeder::class,
             BoardSeeder::class,
-            ListSeeder::class,
+            TaskListSeeder::class,
             TaskSeeder::class,
             ChecklistSeeder::class,
             ChecklistItemSeeder::class,

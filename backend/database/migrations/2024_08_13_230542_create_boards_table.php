@@ -4,20 +4,22 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateChecklistsTable extends Migration
+class CreateBoardsTable extends Migration
 {
     public function up()
     {
-        Schema::create('checklists', function (Blueprint $table) {
+        Schema::create('boards', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('task_id')->constrained('tasks');
+            $table->foreignId('project_id')
+                ->constrained()
+                ->onDelete('cascade');
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('checklists');
+        Schema::dropIfExists('boards');
     }
 }

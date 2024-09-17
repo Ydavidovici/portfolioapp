@@ -2,19 +2,19 @@
 
 namespace Database\Factories;
 
+use App\Models\TaskList;
 use App\Models\Board;
-use App\Models\Project;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class BoardFactory extends Factory
+class TaskListFactory extends Factory
 {
-    protected $model = Board::class;
+    protected $model = TaskList::class;
 
     public function definition()
     {
         return [
             'name' => $this->faker->word,
-            'project_id' => Project::factory(),
+            'board_id' => Board::factory(),
         ];
     }
 }

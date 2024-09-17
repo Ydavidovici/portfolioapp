@@ -3,12 +3,12 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\ListModel;
+use App\Models\TaskList;
 
-class ListSeeder extends Seeder
+class TaskListSeeder extends Seeder
 {
     public function run()
     {
-        ListModel::factory()->count(20)->create();
+        TaskList::factory()->count(20)->create();
     }
 }

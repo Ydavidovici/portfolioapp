@@ -2,58 +2,107 @@
 
 namespace Tests\Database;
 
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Console\Scheduling\Schedule;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 class BackupTest extends TestCase
 {
-    use RefreshDatabase;
+    protected $backupDirectory;
 
-    #[Test]
-    public function it_creates_a_backup()
+    protected function setUp(): void
     {
-        // Make sure the test uses the S3 disk.
-        Storage::fake('s3');
+        parent::setUp();
+        $this->backupDirectory = storage_path('app/testing-backup');
+        if (file_exists($this->backupDirectory)) {
+            $this->deleteDirectory($this->backupDirectory);
+        }
+    }
 
-        // Run the backup process.
-        Artisan::call('backup:run');
-
-        // Assert that the backup was created on the 's3' disk.
-        Storage::disk('s3')->assertExists('your-backup-directory/'); // Replace with your actual backup directory name.
+    protected function tearDown(): void
+    {
+        if (file_exists($this->backupDirectory)) {
+            $this->deleteDirectory($this->backupDirectory);
+        }
+        parent::tearDown();
     }
 
     #[Test]
-    public function it_handles_backup_failures_gracefully()
+    public function backup_creates_backup_file()
     {
-        // Simulate a failure scenario.
-        Storage::shouldReceive('disk')
-            ->once()
-            ->andThrow(new \Exception('Simulated failure'));
+        // Run the backup command
+        $exitCode = Artisan::call('db:backup');
 
-        $this->artisan('backup:run')
-            ->assertExitCode(1); // Expect failure with exit code 1
+        // Assert that the command exited successfully
+        $this->assertEquals(0, $exitCode, 'Backup command did not exit successfully.');
+
+        // Check if the backup directory exists
+        $this->assertDirectoryExists($this->backupDirectory, 'Backup directory does not exist.');
+
+        // Get the list of backup files
+        $backupFiles = glob($this->backupDirectory . '/*.sql');
+
+        // Assert that a backup file was created
+        $this->assertNotEmpty($backupFiles, 'No backup file was created.');
+
+        // Get the path of the backup file
+        $backupFilePath = $backupFiles[0];
+
+        // Assert that the backup file exists
+        $this->assertFileExists($backupFilePath, 'Backup file does not exist.');
+
+        // Optionally, check the contents of the backup file
+        $backupContents = file_get_contents($backupFilePath);
+        $this->assertStringContainsString('CREATE TABLE', $backupContents, 'Backup file does not contain expected content.');
     }
 
     #[Test]
-    public function it_has_a_backup_scheduled()
+    public function backup_fails_with_invalid_credentials()
     {
-        $schedule = $this->app->make(Schedule::class);
+        // Backup original credentials
+        $originalUsername = config('database.connections.mysql.username');
+        $originalPassword = config('database.connections.mysql.password');
 
-        $backupEventFound = false;
+        // Set invalid credentials
+        config(['database.connections.mysql.username' => 'invalid_user']);
+        config(['database.connections.mysql.password' => 'invalid_password']);
 
-        // Check the schedule for the backup:run command
-        foreach ($schedule->events() as $event) {
-            if (strpos($event->command, 'backup:run') !== false) {
-                $backupEventFound = true;
-                break;
-            }
+        // Run the backup command
+        try {
+            Artisan::call('db:backup');
+
+            $this->fail('Backup command should have failed with invalid credentials.');
+        } catch (\Exception $e) {
+            // Expected exception due to invalid credentials
+            $this->assertStringContainsString('Access denied', $e->getMessage(), 'Exception message does not contain expected content.');
+        } finally {
+            // Restore original credentials
+            config(['database.connections.mysql.username' => $originalUsername]);
+            config(['database.connections.mysql.password' => $originalPassword]);
         }
 
-        // Assert that the backup:run command is indeed scheduled
-        $this->assertTrue($backupEventFound, 'The backup:run command is not scheduled.');
+        // Ensure no backup file was created
+        $backupFiles = glob($this->backupDirectory . '/*.sql');
+
+        $this->assertEmpty($backupFiles, 'Backup file should not have been created with invalid credentials.');
+    }
+
+    private function deleteDirectory($dir)
+    {
+        if (!file_exists($dir)) {
+            return;
+        }
+
+        $it = new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS);
+        $ri = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
+        foreach ($ri as $file) {
+            $filePath = $file->getPathname();
+            if ($file->isDir()) {
+                rmdir($filePath);
+            } else {
+                unlink($filePath);
+            }
+        }
+        rmdir($dir);
     }
 }

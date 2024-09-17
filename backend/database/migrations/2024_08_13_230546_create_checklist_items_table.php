@@ -12,7 +12,9 @@ class CreateChecklistItemsTable extends Migration
             $table->id();
             $table->string('description');
             $table->boolean('is_completed')->default(false);
-            $table->foreignId('checklist_id')->constrained('checklists');
+            $table->foreignId('checklist_id')
+                ->constrained()
+                ->onDelete('cascade');
             $table->timestamps();
         });
     }

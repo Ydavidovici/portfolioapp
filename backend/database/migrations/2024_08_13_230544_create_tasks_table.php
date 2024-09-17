@@ -12,10 +12,16 @@ class CreateTasksTable extends Migration
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('status', ['to-do', 'in-progress', 'done']);
+            $table->enum('status', ['to-do', 'in-progress', 'done'])
+                ->default('to-do');
             $table->date('due_date')->nullable();
-            $table->foreignId('list_id')->constrained('lists');
-            $table->foreignId('assigned_to')->nullable()->constrained('users');
+            $table->foreignId('task_list_id')
+                ->constrained()
+                ->onDelete('cascade');
+            $table->foreignId('assigned_to')
+                ->nullable()
+                ->constrained('users')
+                ->onDelete('set null');
             $table->timestamps();
         });
     }

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\ChecklistItem;
+use App\Models\Checklist;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ChecklistItemFactory extends Factory
@@ -14,9 +15,7 @@ class ChecklistItemFactory extends Factory
         return [
             'description' => $this->faker->sentence,
             'is_completed' => $this->faker->boolean,
-            'checklist_id' => \App\Models\Checklist::factory(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'checklist_id' => Checklist::factory(),
         ];
     }
 }
