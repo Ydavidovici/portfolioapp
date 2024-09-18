@@ -14,7 +14,6 @@ class Board extends Model
         'project_id',
     ];
 
-    // Relationships
     public function project()
     {
         return $this->belongsTo(Project::class);

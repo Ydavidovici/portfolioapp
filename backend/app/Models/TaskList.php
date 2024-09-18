@@ -14,7 +14,6 @@ class TaskList extends Model
         'board_id',
     ];
 
-    // Relationships
     public function board()
     {
         return $this->belongsTo(Board::class);

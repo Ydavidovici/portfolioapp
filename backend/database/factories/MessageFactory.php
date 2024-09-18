@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Message;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class MessageFactory extends Factory
@@ -12,11 +13,11 @@ class MessageFactory extends Factory
     public function definition()
     {
         return [
-            'content' => $this->faker->text,
-            'sender_id' => \App\Models\User::factory(),
-            'receiver_id' => \App\Models\User::factory(),
-            'created_at' => now(),
-            'updated_at' => now(),
+            'content' => $this->faker->sentence,
+            'sender_id' => User::factory(),
+            'receiver_id' => User::factory(),
+            'file_path' => null,
+            'file_name' => null,
         ];
     }
 }

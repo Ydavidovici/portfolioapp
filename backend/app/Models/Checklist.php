@@ -14,7 +14,6 @@ class Checklist extends Model
         'task_id',
     ];
 
-    // Relationships
     public function task()
     {
         return $this->belongsTo(Task::class);

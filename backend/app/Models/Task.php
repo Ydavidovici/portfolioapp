@@ -18,7 +18,6 @@ class Task extends Model
         'assigned_to',
     ];
 
-    // Relationships
     public function taskList()
     {
         return $this->belongsTo(TaskList::class);

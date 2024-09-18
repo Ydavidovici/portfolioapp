@@ -16,7 +16,6 @@ class Payment extends Model
         'payment_method',
     ];
 
-    // Relationships
     public function invoice()
     {
         return $this->belongsTo(Invoice::class);

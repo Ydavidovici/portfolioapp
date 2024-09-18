@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             NoteSeeder::class,
             ReminderSeeder::class,
             CalendarEntrySeeder::class,
+            RoleSeeder::class,
         ]);
     }
 }

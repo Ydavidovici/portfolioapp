@@ -17,9 +17,6 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // CORS middleware
-            \Fruitcake\Cors\HandleCors::class,
-
             // Throttle requests
             'throttle:api',
 
@@ -48,6 +45,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
         // Custom middleware
-        'active' => \App\Http\Middleware\EnsureUserIsActive::class,
+        'role' => \App\Http\Middleware\CheckRole::class,
     ];
 }
