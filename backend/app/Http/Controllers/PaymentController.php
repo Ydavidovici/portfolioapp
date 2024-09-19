@@ -2,49 +2,37 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PaymentRequest;
 use App\Models\Payment;
-use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 class PaymentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        return Payment::all();
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(PaymentRequest $request)
     {
-        //
+        $payment = Payment::create($request->validated());
+        return response()->json($payment, 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Payment $payment)
     {
-        //
+        return response()->json($payment);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Payment $payment)
+    public function update(PaymentRequest $request, Payment $payment)
     {
-        //
+        $payment->update($request->validated());
+        return response()->json($payment);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Payment $payment)
     {
-        //
+        $payment->delete();
+        return response()->json(null, 204);
     }
 }

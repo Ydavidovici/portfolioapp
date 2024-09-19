@@ -2,64 +2,37 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Requests\RoleRequest;
 use App\Models\Role;
 use Illuminate\Http\Request;
 
 class RoleController extends Controller
 {
-    /**
-     * Display a listing of roles.
-     */
     public function index()
     {
-        $roles = Role::all();
-
-        return response()->json($roles);
+        return Role::all();
     }
 
-    /**
-     * Store a newly created role.
-     */
-    public function store(Request $request)
+    public function store(RoleRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|unique:roles,name',
-        ]);
-
-        $role = Role::create($request->only('name'));
-
+        $role = Role::create($request->validated());
         return response()->json($role, 201);
     }
 
-    /**
-     * Display the specified role.
-     */
     public function show(Role $role)
     {
         return response()->json($role);
     }
 
-    /**
-     * Update the specified role.
-     */
-    public function update(Request $request, Role $role)
+    public function update(RoleRequest $request, Role $role)
     {
-        $request->validate([
-            'name' => 'required|string|unique:roles,name,' . $role->id,
-        ]);
-
-        $role->update($request->only('name'));
-
+        $role->update($request->validated());
         return response()->json($role);
     }
 
-    /**
-     * Remove the specified role.
-     */
     public function destroy(Role $role)
     {
         $role->delete();
-
         return response()->json(null, 204);
     }
 }

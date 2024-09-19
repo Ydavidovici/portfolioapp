@@ -4,11 +4,11 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class TaskRequest extends FormRequest
+class CalendarEntryRequest extends FormRequest
 {
     public function authorize()
     {
-        return true;
+        return true; // Adjust this if you want to add authorization
     }
 
     public function rules()
@@ -16,10 +16,9 @@ class TaskRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|in:to-do,in-progress,done',
-            'due_date' => 'nullable|date',
-            'task_list_id' => 'required|exists:task_lists,id',
-            'assigned_to' => 'nullable|exists:users,id',
+            'start_time' => 'required|date',
+            'end_time' => 'nullable|date|after_or_equal:start_time',
+            'user_id' => 'required|exists:users,id',
         ];
     }
 }

@@ -3,48 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\ChecklistItem;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\ChecklistItemRequest;
 
 class ChecklistItemController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $checklistItems = ChecklistItem::all();
+        return response()->json($checklistItems);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(ChecklistItemRequest $request)
     {
-        //
+        $checklistItem = ChecklistItem::create($request->validated());
+
+        return response()->json([
+            'message' => 'Checklist item created successfully.',
+            'checklist_item' => $checklistItem,
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(ChecklistItem $checklistItem)
     {
-        //
+        return response()->json($checklistItem);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, ChecklistItem $checklistItem)
+    public function update(ChecklistItemRequest $request, ChecklistItem $checklistItem)
     {
-        //
+        $checklistItem->update($request->validated());
+
+        return response()->json([
+            'message' => 'Checklist item updated successfully.',
+            'checklist_item' => $checklistItem,
+        ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(ChecklistItem $checklistItem)
     {
-        //
+        $checklistItem->delete();
+
+        return response()->json([
+            'message' => 'Checklist item deleted successfully.',
+        ]);
     }
 }

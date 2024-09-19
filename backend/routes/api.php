@@ -1,6 +1,20 @@
 <?php
 
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\BoardController;
+use App\Http\Controllers\CalendarEntryController;
+use App\Http\Controllers\ChecklistController;
+use App\Http\Controllers\ChecklistItemController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\NoteController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\QuickBooksTokenController;
+use App\Http\Controllers\ReminderController;
+use App\Http\Controllers\TaskListController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\ProjectController;
@@ -32,6 +46,7 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function 
     // Developer Dashboard Routes
     Route::middleware('role:developer')->group(function () {
         Route::get('/developer/dashboard', [DeveloperDashboardController::class, 'index']);
+
         // Developer-specific CRUD routes
     });
 
@@ -39,14 +54,26 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function 
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
         // Admin-specific CRUD routes
-        Route::apiResource('projects', ProjectController::class);
-        Route::apiResource('tasks', TaskController::class);
-        // Add other resources as needed
+        Route::apiResource('users', UserController::class);
     });
 
     // Routes accessible by multiple roles
     Route::middleware('role:admin,developer')->group(function () {
-        // Shared routes between admin and developer
+        Route::apiResource('projects', ProjectController::class);
+        Route::apiResource('tasks', TaskController::class);
+        Route::apiResource('boards', BoardController::class);
+        Route::apiResource('calendar-entries', CalendarEntryController::class);
+        Route::apiResource('checklists', ChecklistController::class);
+        Route::apiResource('checklist-items', ChecklistItemController::class);
+        Route::apiResource('documents', DocumentController::class);
+        Route::apiResource('invoices', InvoiceController::class);
+        Route::apiResource('feedback', FeedbackController::class);
+        Route::apiResource('notes', NoteController::class);
+        Route::apiResource('payments', PaymentController::class);
+        Route::apiResource('quickbooks-tokens', QuickBooksTokenController::class);
+        Route::apiResource('reminders', ReminderController::class);
+        Route::apiResource('roles', RoleController::class);
+        Route::apiResource('tasklists', TaskListController::class);
     });
 });
 

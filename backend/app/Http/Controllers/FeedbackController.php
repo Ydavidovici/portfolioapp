@@ -3,48 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\Feedback;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\FeedbackRequest;
 
 class FeedbackController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $feedback = Feedback::with('project', 'submittedBy')->get();
+        return response()->json($feedback);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(FeedbackRequest $request)
     {
-        //
+        $feedback = Feedback::create($request->validated());
+
+        return response()->json([
+            'message' => 'Feedback submitted successfully.',
+            'feedback' => $feedback,
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Feedback $feedback)
     {
-        //
+        return response()->json($feedback->load('project', 'submittedBy'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Feedback $feedback)
+    public function update(FeedbackRequest $request, Feedback $feedback)
     {
-        //
+        $feedback->update($request->validated());
+
+        return response()->json([
+            'message' => 'Feedback updated successfully.',
+            'feedback' => $feedback,
+        ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Feedback $feedback)
     {
-        //
+        $feedback->delete();
+
+        return response()->json([
+            'message' => 'Feedback deleted successfully.',
+        ]);
     }
 }

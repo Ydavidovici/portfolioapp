@@ -3,48 +3,47 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\DocumentRequest;
 
 class DocumentController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        $documents = Document::with('project', 'uploadedBy')->get();
+        return response()->json($documents);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(DocumentRequest $request)
     {
-        //
+        $document = Document::create($request->validated());
+
+        return response()->json([
+            'message' => 'Document uploaded successfully.',
+            'document' => $document,
+        ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Document $document)
     {
-        //
+        return response()->json($document->load('project', 'uploadedBy'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Document $document)
+    public function update(DocumentRequest $request, Document $document)
     {
-        //
+        $document->update($request->validated());
+
+        return response()->json([
+            'message' => 'Document updated successfully.',
+            'document' => $document,
+        ]);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Document $document)
     {
-        //
+        $document->delete();
+
+        return response()->json([
+            'message' => 'Document deleted successfully.',
+        ]);
     }
 }

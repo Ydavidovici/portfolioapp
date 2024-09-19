@@ -8,8 +8,7 @@ class ProjectRequest extends FormRequest
 {
     public function authorize()
     {
-        // Implement authorization logic if needed
-        return $this->user()->hasRole('admin');
+        return true;
     }
 
     public function rules()
@@ -17,7 +16,10 @@ class ProjectRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            // Add other project fields and validation rules
+            'status' => 'required|in:active,completed,archived',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date',
+            'client_id' => 'required|exists:users,id',
         ];
     }
 }
