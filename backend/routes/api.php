@@ -1,27 +1,27 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CalendarEntryController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistItemController;
+use App\Http\Controllers\Client\ClientDashboardController;
+use App\Http\Controllers\Developer\DeveloperDashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\NoteController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\QuickBooksTokenController;
 use App\Http\Controllers\ReminderController;
-use App\Http\Controllers\TaskListController;
-use App\Http\Controllers\UserController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
-use App\Http\Controllers\Admin\AdminDashboardController;
-use App\Http\Controllers\Client\ClientDashboardController;
-use App\Http\Controllers\Developer\DeveloperDashboardController;
+use App\Http\Controllers\TaskListController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
