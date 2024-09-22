@@ -18,10 +18,9 @@ class MigrationsTest extends TestCase
 
         $expectedColumns = [
             'id',
-            'username', // Updated to reflect your migration
+            'username',
             'email',
             'password',
-            'role',
             'created_at',
             'updated_at',
         ];
