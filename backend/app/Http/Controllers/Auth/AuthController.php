@@ -26,8 +26,11 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        // Apply the 'auth:sanctum' middleware to all methods except 'register' and 'login'
-        $this->middleware('auth:sanctum')->except(['register', 'login', 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail']);
+        // Apply the 'auth:sanctum' middleware to all methods except 'register', 'login',
+        // 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail'
+        $this->middleware('auth:sanctum')->except([
+            'register', 'login', 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail'
+        ]);
     }
 
     /**

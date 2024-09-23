@@ -12,19 +12,9 @@ class Kernel extends HttpKernel
     ];
 
     protected $middlewareGroups = [
-        'web' => [
-            // If not using web routes, you can leave this empty or remove it
-        ],
-
         'api' => [
-            // Throttle requests
             'throttle:api',
-
-            // Substitute route bindings
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
-
-            // Authentication middleware (can also be applied per route)
-            // 'auth:api',
         ],
     ];
 
@@ -45,6 +35,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
         // Custom middleware
-        'role' => \App\Http\Middleware\CheckRole::class,
+        // 'role' => \App\Http\Middleware\CheckRole::class,
     ];
 }
