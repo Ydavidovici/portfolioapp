@@ -3,26 +3,35 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
-use App\Models\Project;
 use App\Models\Message;
+use App\Models\Document;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class ClientDashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): \Illuminate\Http\JsonResponse
     {
-        $user = $request->user();
+        // Authorization: Check if the user can access the client dashboard
+        if (!Gate::allows('access-client-dashboard')) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
 
-        // Fetch all projects related to the client
-        $projects = Project::where('client_id', $user->id)->with('tasks', 'invoices', 'feedback')->get();
+        // Fetch client-specific data
+        $messages = Message::where('receiver_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
-        // Fetch the latest messages for the client
-        $messages = Message::where('receiver_id', $user->id)->orderBy('created_at', 'desc')->take(5)->get();
+        $documents = Document::where('owner_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
         return response()->json([
             'message' => 'Welcome to the Client Dashboard',
-            'projects' => $projects,
             'messages' => $messages,
+            'documents' => $documents,
         ]);
     }
 }

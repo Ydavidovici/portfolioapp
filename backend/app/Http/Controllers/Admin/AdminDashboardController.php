@@ -7,19 +7,28 @@ use App\Models\User;
 use App\Models\Project;
 use App\Models\Message;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class AdminDashboardController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): \Illuminate\Http\JsonResponse
     {
-        // Fetch a list of all users for administrative oversight
+        // Authorization: Check if the user can access the admin dashboard
+        if (!Gate::allows('access-admin-dashboard')) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+
+        // Fetch a list of all users with their roles
         $users = User::with('roles')->get();
 
-        // Fetch all projects for administrative purposes
-        $projects = Project::with('client', 'tasks', 'feedback')->get();
+        // Fetch all projects with related client, tasks, and feedback
+        $projects = Project::with(['client', 'tasks', 'feedback'])->get();
 
-        // Fetch the latest messages for the admin
-        $messages = Message::where('receiver_id', $request->user()->id)->orderBy('created_at', 'desc')->take(5)->get();
+        // Fetch the latest 5 messages for the admin
+        $messages = Message::where('receiver_id', $request->user()->id)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
 
         return response()->json([
             'message' => 'Welcome to the Admin Dashboard',

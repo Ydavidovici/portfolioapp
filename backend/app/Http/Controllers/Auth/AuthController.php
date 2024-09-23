@@ -17,14 +17,26 @@ use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class AuthController extends Controller
 {
+    /**
+     * Apply middleware to protect certain actions.
+     */
+    public function __construct()
+    {
+        // Apply the 'auth:sanctum' middleware to all methods except 'register' and 'login'
+        $this->middleware('auth:sanctum')->except(['register', 'login', 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail']);
+    }
+
     /**
      * Register a new user with the specified role.
      */
     public function register(RegisterRequest $request)
     {
+        \Log::info('Register method called.');
+
         // Get the role from the request or default to 'client'
         $roleName = $request->input('role', 'client');
 

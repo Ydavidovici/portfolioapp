@@ -23,7 +23,7 @@ class FactoriesTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $user->id]);
     }
 
-    /** @test */
+    #[Test]
     public function project_factory_creates_project()
     {
         $project = Project::factory()->create();

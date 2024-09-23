@@ -5,9 +5,22 @@ namespace App\Http\Controllers;
 use App\Models\CalendarEntry;
 use Illuminate\Http\Request;
 use App\Http\Requests\CalendarEntryRequest;
+use Illuminate\Support\Facades\Gate;
 
 class CalendarEntryController extends Controller
 {
+    /**
+     * Instantiate a new controller instance.
+     *
+     * Apply authentication middleware to all routes in this controller.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     /**
      * Display a listing of the calendar entries.
      *
@@ -15,6 +28,7 @@ class CalendarEntryController extends Controller
      */
     public function index()
     {
+        // Authorization: Any authenticated user can view calendar entries
         $calendarEntries = CalendarEntry::with('user')->get();
         return response()->json($calendarEntries);
     }
@@ -27,6 +41,9 @@ class CalendarEntryController extends Controller
      */
     public function store(CalendarEntryRequest $request)
     {
+        // Authorization: Only users with 'perform-crud-operations' Gate can create calendar entries
+        Gate::authorize('perform-crud-operations');
+
         $calendarEntry = CalendarEntry::create($request->validated());
 
         return response()->json([
@@ -43,6 +60,7 @@ class CalendarEntryController extends Controller
      */
     public function show(CalendarEntry $calendarEntry)
     {
+        // Authorization: Any authenticated user can view a specific calendar entry
         return response()->json($calendarEntry->load('user'));
     }
 
@@ -55,6 +73,9 @@ class CalendarEntryController extends Controller
      */
     public function update(CalendarEntryRequest $request, CalendarEntry $calendarEntry)
     {
+        // Authorization: Only users with 'perform-crud-operations' Gate can update calendar entries
+        Gate::authorize('perform-crud-operations');
+
         $calendarEntry->update($request->validated());
 
         return response()->json([
@@ -71,6 +92,9 @@ class CalendarEntryController extends Controller
      */
     public function destroy(CalendarEntry $calendarEntry)
     {
+        // Authorization: Only users with 'perform-crud-operations' Gate can delete calendar entries
+        Gate::authorize('perform-crud-operations');
+
         $calendarEntry->delete();
 
         return response()->json([

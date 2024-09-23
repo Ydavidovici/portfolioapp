@@ -31,50 +31,39 @@ use Illuminate\Support\Facades\Route;
 
 // Protected routes with default rate limiting
 Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function () {
-    // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
 
     // Change Password
     Route::post('/password/change', [AuthController::class, 'changePassword']);
 
     // Client Dashboard Routes
-    Route::middleware('role:client')->group(function () {
-        Route::get('/client/dashboard', [ClientDashboardController::class, 'index']);
-        // Client-specific CRUD routes
-    });
+    Route::get('/client/dashboard', [ClientDashboardController::class, 'index']);
 
     // Developer Dashboard Routes
-    Route::middleware('role:developer')->group(function () {
-        Route::get('/developer/dashboard', [DeveloperDashboardController::class, 'index']);
-
-        // Developer-specific CRUD routes
-    });
+    Route::get('/developer/dashboard', [DeveloperDashboardController::class, 'index']);
 
     // Admin Dashboard and CRUD Routes
-    Route::middleware('role:admin')->group(function () {
-        Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
-        // Admin-specific CRUD routes
-        Route::apiResource('users', UserController::class);
-    });
+    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index']);
+    Route::apiResource('users', UserController::class);
+    Route::apiResource('roles', RoleController::class); // Admin manages roles
 
-    // Routes accessible by multiple roles
-    Route::middleware('role:admin,developer')->group(function () {
-        Route::apiResource('projects', ProjectController::class);
-        Route::apiResource('tasks', TaskController::class);
-        Route::apiResource('boards', BoardController::class);
-        Route::apiResource('calendar-entries', CalendarEntryController::class);
-        Route::apiResource('checklists', ChecklistController::class);
-        Route::apiResource('checklist-items', ChecklistItemController::class);
-        Route::apiResource('documents', DocumentController::class);
-        Route::apiResource('invoices', InvoiceController::class);
-        Route::apiResource('feedback', FeedbackController::class);
-        Route::apiResource('notes', NoteController::class);
-        Route::apiResource('payments', PaymentController::class);
-        Route::apiResource('quickbooks-tokens', QuickBooksTokenController::class);
-        Route::apiResource('reminders', ReminderController::class);
-        Route::apiResource('roles', RoleController::class);
-        Route::apiResource('tasklists', TaskListController::class);
-    });
+    // Routes accessible by multiple roles (admin and developer)
+    Route::apiResource('projects', ProjectController::class);
+    Route::apiResource('tasks', TaskController::class);
+    Route::apiResource('boards', BoardController::class);
+    Route::apiResource('calendar-entries', CalendarEntryController::class);
+    Route::apiResource('checklists', ChecklistController::class);
+    Route::apiResource('checklist-items', ChecklistItemController::class);
+    Route::apiResource('documents', DocumentController::class);
+    Route::apiResource('invoices', InvoiceController::class);
+    Route::apiResource('feedback', FeedbackController::class);
+    Route::apiResource('notes', NoteController::class);
+    Route::apiResource('payments', PaymentController::class);
+    Route::apiResource('quickbooks-tokens', QuickBooksTokenController::class);
+    Route::apiResource('reminders', ReminderController::class);
+    Route::apiResource('tasklists', TaskListController::class);
 });
 
 // Email Verification Routes
@@ -89,10 +78,8 @@ Route::middleware(['auth:sanctum', 'throttle:6,1'])->group(function () {
         ->name('verification.resend');
 });
 
-
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/messages', [MessageController::class, 'index']);
     Route::post('/messages', [MessageController::class, 'store']);
     Route::get('/messages/latest', [MessageController::class, 'latest']);
 });
-

@@ -11,9 +11,15 @@ class AdminDashboardControllerTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(\Database\Seeders\RoleSeeder::class); // Seed roles
+    }
+
     public function test_admin_can_access_dashboard()
     {
-        $adminRole = Role::create(['name' => 'admin']);
+        $adminRole = Role::where('name', 'admin')->first();
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 

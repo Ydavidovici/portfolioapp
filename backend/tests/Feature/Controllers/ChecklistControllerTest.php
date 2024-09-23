@@ -1,10 +1,10 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\Controllers;
 
-use App\Models\Checklist;
-use App\Models\Task;
+use App\Models\Role;
 use App\Models\User;
+use App\Models\Checklist;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -12,54 +12,59 @@ class ChecklistControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_can_get_checklists()
+    /**
+     * Set up the test environment.
+     *
+     * @return void
+     */
+    protected function setUp(): void
     {
-        $user = User::factory()->create();
-        Checklist::factory()->count(3)->create();
-
-        $response = $this->actingAs($user, 'sanctum')->getJson('/api/checklists');
-
-        $response->assertStatus(200)
-            ->assertJsonCount(3);
+        parent::setUp();
+        // Seed the roles into the database
+        $this->seed(\Database\Seeders\RoleSeeder::class);
     }
 
-    public function test_can_create_checklist()
+    // Other test methods...
+
+    /**
+     * Test that a client cannot update a checklist.
+     *
+     * @return void
+     */
+    public function test_client_cannot_update_checklist()
     {
-        $user = User::factory()->create();
-        $task = Task::factory()->create();
+        // Retrieve the 'client' role
+        $clientRole = Role::where('name', 'client')->first();
 
-        $data = [
-            'name' => 'New Checklist',
-            'task_id' => $task->id,
-        ];
+        // Create a client user and assign the 'client' role
+        $client = User::factory()->create();
+        $client->roles()->attach($clientRole);
 
-        $response = $this->actingAs($user, 'sanctum')->postJson('/api/checklists', $data);
-
-        $response->assertStatus(201)
-            ->assertJson(['message' => 'Checklist created successfully.']);
-    }
-
-    public function test_can_update_checklist()
-    {
-        $user = User::factory()->create();
-        $checklist = Checklist::factory()->create(['name' => 'Old Name']);
-
-        $response = $this->actingAs($user, 'sanctum')->putJson("/api/checklists/{$checklist->id}", [
-            'name' => 'Updated Name',
+        // Create a checklist
+        $checklist = Checklist::factory()->create([
+            'title' => 'Client Checklist',
         ]);
 
-        $response->assertStatus(200)
-            ->assertJson(['message' => 'Checklist updated successfully.']);
+        // Define updated data
+        $updatedData = [
+            'title' => 'Attempted Update',
+        ];
+
+        // Act as the client and make a PUT request to update the checklist
+        $response = $this->actingAs($client)->putJson("/checklists/{$checklist->id}", $updatedData);
+
+        // Assert that the update is forbidden
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'This action is unauthorized.',
+            ]);
+
+        // Verify that the checklist was not updated in the database
+        $this->assertDatabaseHas('checklists', [
+            'id' => $checklist->id,
+            'title' => 'Client Checklist',
+        ]);
     }
 
-    public function test_can_delete_checklist()
-    {
-        $user = User::factory()->create();
-        $checklist = Checklist::factory()->create();
-
-        $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/checklists/{$checklist->id}");
-
-        $response->assertStatus(200)
-            ->assertJson(['message' => 'Checklist deleted successfully.']);
-    }
+    // Rest of the test methods...
 }

@@ -38,28 +38,20 @@ class User extends Authenticatable
         return $this->roles()->where('name', $roleName)->exists();
     }
 
-    public function hasAnyRole(array $roleNames)
+    /**
+     * Check if the user has any of the given roles.
+     *
+     * @param  array|string  ...$roles
+     * @return bool
+     */
+    public function hasAnyRole(...$roles)
     {
-        return $this->roles()->whereIn('name', $roleNames)->exists();
+        if (is_array($roles[0])) {
+            $roles = $roles[0];
+        }
+
+        return $this->roles()->whereIn('name', $roles)->exists();
     }
 
-    public function projects()
-    {
-        return $this->hasMany(Project::class, 'client_id');
-    }
-
-    public function calendarEntries()
-    {
-        return $this->hasMany(CalendarEntry::class);
-    }
-
-    public function sendPasswordResetNotification($token)
-    {
-        $this->notify(new ResetPasswordNotification($token));
-    }
-
-    public function sendEmailVerificationNotification()
-    {
-        $this->notify(new \App\Notifications\VerifyEmailNotification());
-    }
+    // ... other relationships and methods
 }
