@@ -12,7 +12,7 @@ class Role extends Model
     protected $fillable = ['name'];
 
     /**
-     * Users relationship.
+     * The users that belong to the role.
      */
     public function users()
     {

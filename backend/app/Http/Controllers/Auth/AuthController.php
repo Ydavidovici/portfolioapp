@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -38,18 +39,22 @@ class AuthController extends Controller
      */
     public function register(RegisterRequest $request)
     {
-        \Log::info('Register method called.');
+        Log::info('Register method called.');
 
         // Get the role from the request or default to 'client'
         $roleName = $request->input('role', 'client');
 
         // Only admins can assign 'admin' or 'developer' roles
         if (in_array($roleName, ['admin', 'developer'])) {
-            $authenticatedUser = $request->user();
+            // Utilize Gate for authorization
+            Gate::authorize('perform-crud-operations');
 
-            if (!$authenticatedUser || !$authenticatedUser->hasRole('admin')) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
+            // Log authenticated user details
+            $authenticatedUser = $request->user();
+            Log::info('Authenticated User:', [
+                'id' => $authenticatedUser ? $authenticatedUser->id : null,
+                'roles' => $authenticatedUser ? $authenticatedUser->roles->pluck('name') : null,
+            ]);
         }
 
         // Create user
@@ -66,6 +71,11 @@ class AuthController extends Controller
             $role = Role::where('name', 'client')->first();
         }
         $user->roles()->attach($role);
+
+        Log::info('User registered with roles:', [
+            'user_id' => $user->id,
+            'roles' => $user->roles->pluck('name'),
+        ]);
 
         // Send email verification notification
         $user->sendEmailVerificationNotification();

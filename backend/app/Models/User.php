@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Notifications\ResetPasswordNotification;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -28,12 +28,21 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * The roles that belong to the user.
+     */
     public function roles()
     {
         return $this->belongsToMany(Role::class);
     }
 
-    public function hasRole($roleName)
+    /**
+     * Check if the user has a specific role.
+     *
+     * @param  string  $roleName
+     * @return bool
+     */
+    public function hasRole(string $roleName): bool
     {
         return $this->roles()->where('name', $roleName)->exists();
     }
@@ -44,7 +53,7 @@ class User extends Authenticatable
      * @param  array|string  ...$roles
      * @return bool
      */
-    public function hasAnyRole(...$roles)
+    public function hasAnyRole(...$roles): bool
     {
         if (is_array($roles[0])) {
             $roles = $roles[0];
@@ -52,6 +61,4 @@ class User extends Authenticatable
 
         return $this->roles()->whereIn('name', $roles)->exists();
     }
-
-    // ... other relationships and methods
 }
