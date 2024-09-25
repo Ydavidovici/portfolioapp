@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Gate;
 
 class AuthController extends Controller
 {
@@ -25,14 +26,10 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        // Apply the 'auth:sanctum' middleware to all methods except these ones
+        // Apply the 'auth:sanctum' middleware to all methods except 'register', 'login',
+        // 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail'
         $this->middleware('auth:sanctum')->except([
-            'register',
-            'login',
-            'sendResetLinkEmail',
-            'resetPassword',
-            'verifyEmail',
-            'resendVerificationEmail'
+            'register', 'login', 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail'
         ]);
     }
 
@@ -55,7 +52,7 @@ class AuthController extends Controller
             }
         }
 
-        // Create the new user
+        // Create user
         $user = User::create([
             'username' => $request->username,
             'email'    => $request->email,
@@ -91,7 +88,7 @@ class AuthController extends Controller
             ], 429);
         }
 
-        // Find the user by email
+        // Find user by email
         $user = User::where('email', $request->email)->first();
 
         // Check credentials
@@ -106,7 +103,7 @@ class AuthController extends Controller
         // Clear login attempts
         RateLimiter::clear($this->throttleKey($request));
 
-        // Check if the user's email is verified
+        // Check if email is verified
         if (!$user->hasVerifiedEmail()) {
             return response()->json(['message' => 'Please verify your email address.'], 403);
         }
@@ -114,7 +111,7 @@ class AuthController extends Controller
         // Create token
         $token = $user->createToken('auth_token')->plainTextToken;
 
-        // Return the response with token
+        // Return response
         return response()->json([
             'access_token' => $token,
             'token_type'   => 'Bearer',
@@ -122,7 +119,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Logout the authenticated user (invalidate the token).
+     * Logout a user (invalidate the token).
      */
     public function logout(Request $request)
     {
@@ -135,10 +132,13 @@ class AuthController extends Controller
     }
 
     /**
-     * Send a password reset link to the given user.
+     * Send a reset link to the given user.
      */
     public function sendResetLinkEmail(ForgotPasswordRequest $request)
     {
+        // Throttle password reset requests
+        $request->validate(['email' => 'required|email']);
+
         $status = Password::sendResetLink(
             $request->only('email')
         );
@@ -157,7 +157,7 @@ class AuthController extends Controller
      */
     public function resetPassword(ResetPasswordRequest $request)
     {
-        $status = Password::broker()->reset(
+        $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user) use ($request) {
                 $user->forceFill([
@@ -179,7 +179,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Change the authenticated user's password.
+     * Change the password of the authenticated user.
      */
     public function changePassword(ChangePasswordRequest $request)
     {
@@ -195,6 +195,9 @@ class AuthController extends Controller
         // Update password
         $user->password = Hash::make($request->password);
         $user->save();
+
+        // Optionally, revoke all tokens
+        // $user->tokens()->delete();
 
         return response()->json(['message' => 'Password changed successfully.']);
     }

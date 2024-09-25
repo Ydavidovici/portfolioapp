@@ -27,13 +27,30 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
+|
 */
 
-// Protected routes with default rate limiting
-Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function () {
+// Public Routes: Registration, Login, Password Reset
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Password Reset Routes
+Route::post('/password/email', [AuthController::class, 'sendResetLinkEmail']);
+Route::post('/password/reset', [AuthController::class, 'resetPassword']);
+
+// Email Verification Routes
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
+    ->name('verification.verify')
+    ->middleware(['signed', 'throttle:6,1']);
+
+Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail'])
+    ->name('verification.resend')
+    ->middleware(['auth:sanctum', 'throttle:6,1']);
+
+// Protected Routes: Require Authentication
+Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+    // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register', [AuthController::class, 'register']);
 
     // Change Password
     Route::post('/password/change', [AuthController::class, 'changePassword']);
@@ -64,21 +81,8 @@ Route::middleware(['auth:sanctum', 'verified', 'throttle:api'])->group(function 
     Route::apiResource('quickbooks-tokens', QuickBooksTokenController::class);
     Route::apiResource('reminders', ReminderController::class);
     Route::apiResource('tasklists', TaskListController::class);
-});
 
-// Email Verification Routes
-Route::middleware(['auth:sanctum', 'throttle:6,1'])->group(function () {
-    // Verify Email
-    Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-        ->name('verification.verify')
-        ->middleware('signed');
-
-    // Resend Verification Email
-    Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail'])
-        ->name('verification.resend');
-});
-
-Route::middleware('auth:sanctum')->group(function () {
+    // Messages Routes
     Route::get('/messages', [MessageController::class, 'index']);
     Route::post('/messages', [MessageController::class, 'store']);
     Route::get('/messages/latest', [MessageController::class, 'latest']);
