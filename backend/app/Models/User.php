@@ -6,51 +6,56 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use App\Notifications\ResetPasswordNotification;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable;
+    use Notifiable, HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
         'username',
         'email',
         'password',
+        'api_token',
     ];
 
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
     protected $hidden = [
         'password',
         'remember_token',
+        'api_token',
     ];
 
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
+    /**
+     * Check if the user has a specific role.
+     */
+    public function hasRole($role)
+    {
+        return $this->roles()->where('name', $role)->exists();
+    }
+
+    /**
+     * Define the relationship with Role.
+     */
     public function roles()
     {
         return $this->belongsToMany(Role::class);
     }
-
-    public function hasRole($roleName)
-    {
-        return $this->roles()->where('name', $roleName)->exists();
-    }
-
-    /**
-     * Check if the user has any of the given roles.
-     *
-     * @param  array|string  ...$roles
-     * @return bool
-     */
-    public function hasAnyRole(...$roles)
-    {
-        if (is_array($roles[0])) {
-            $roles = $roles[0];
-        }
-
-        return $this->roles()->whereIn('name', $roles)->exists();
-    }
-
-    // ... other relationships and methods
 }
