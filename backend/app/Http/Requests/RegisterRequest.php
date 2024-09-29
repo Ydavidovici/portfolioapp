@@ -3,7 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class RegisterRequest extends FormRequest
 {
@@ -14,42 +14,26 @@ class RegisterRequest extends FormRequest
      */
     public function authorize()
     {
-        // Allow registration if the user is a guest or has the 'admin' role
-        return Auth::guest() || ($this->user() && $this->user()->hasRole('admin'));
+        // Authorization is handled in the controller
+        return true;
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, mixed>
+     * @return array
      */
     public function rules()
     {
-        // Base validation rules applicable to all registrations
-        $rules = [
-            'username' => 'required|string|unique:users,username|max:255',
-            'email' => 'required|string|email|unique:users,email|max:255',
-            'password' => 'required|string|min:6|confirmed',
-        ];
-
-        // If the user is an admin, allow the 'role' field
-        if ($this->user() && $this->user()->hasRole('admin')) {
-            $rules['role'] = 'required|string|in:admin,developer,client';
-        }
-
-        return $rules;
-    }
-
-    /**
-     * Customize the error messages.
-     *
-     * @return array<string, string>
-     */
-    public function messages()
-    {
         return [
-            'role.in' => 'The selected role is invalid.',
-            'password.confirmed' => 'The password confirmation does not match.',
+            'username'              => 'required|string|max:255|unique:users,username',
+            'email'                 => 'required|string|email|max:255|unique:users,email',
+            'password'              => 'required|string|min:8|confirmed',
+            'role'                  => [
+                'sometimes',
+                'string',
+                Rule::in(['admin', 'developer', 'client']),
+            ],
         ];
     }
 }

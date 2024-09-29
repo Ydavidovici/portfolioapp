@@ -10,8 +10,9 @@ return [
     'guards' => [
 
         'api' => [
-            'driver' => 'sanctum',
+            'driver' => 'token',
             'provider' => 'users',
+            'hash' => true,
         ],
 
         'web' => [

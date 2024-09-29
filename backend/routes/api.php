@@ -3,7 +3,12 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResendVerificationController;
 use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CalendarEntryController;
 use App\Http\Controllers\ChecklistController;
@@ -31,30 +36,21 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public Routes: Registration, Login, Password Reset
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/register', [RegisterController::class, 'register']);
+Route::post('/login', [LoginController::class, 'login']);
+Route::post('/password/email', [PasswordResetController::class, 'sendResetLinkEmail']);
+Route::post('/password/reset', [PasswordResetController::class, 'resetPassword']);
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verifyEmail']);
 
-// Password Reset Routes
-Route::post('/password/email', [AuthController::class, 'sendResetLinkEmail']);
-Route::post('/password/reset', [AuthController::class, 'resetPassword']);
-
-// Email Verification Routes
-Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
-    ->name('verification.verify')
-    ->middleware(['signed', 'throttle:6,1']);
-
-Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail'])
-    ->name('verification.resend')
-    ->middleware(['auth:sanctum', 'throttle:6,1']);
+// Protected Routes
+Route::middleware(['auth:api'])->group(function () {
+    Route::post('/logout', [LogoutController::class, 'logout']);
+    Route::post('/password/change', [LogoutController::class, 'logout']); // Adjust as needed
+    Route::post('/email/resend', [ResendVerificationController::class, 'resendVerificationEmail']);
+});
 
 // Protected Routes: Require Authentication
-Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
-    // Logout
-    Route::post('/logout', [AuthController::class, 'logout']);
-
-    // Change Password
-    Route::post('/password/change', [AuthController::class, 'changePassword']);
-
+Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     // Client Dashboard Routes
     Route::get('/client/dashboard', [ClientDashboardController::class, 'index']);
 

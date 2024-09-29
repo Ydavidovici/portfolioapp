@@ -11,6 +11,17 @@ use Illuminate\Support\Facades\Gate;
 
 class AdminDashboardController extends Controller
 {
+    /**
+     * Apply middleware to ensure only authenticated users can access the dashboard.
+     */
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+
+    /**
+     * Display the admin dashboard.
+     */
     public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         // Authorization: Check if the user can access the admin dashboard
