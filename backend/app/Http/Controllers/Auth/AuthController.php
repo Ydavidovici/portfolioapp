@@ -26,9 +26,9 @@ class AuthController extends Controller
      */
     public function __construct()
     {
-        // Apply the 'auth:sanctum' middleware to all methods except 'register', 'login',
+        // Apply the 'auth:api' middleware to all methods except 'register', 'login',
         // 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail'
-        $this->middleware('auth:sanctum')->except([
+        $this->middleware('auth:api')->except([
             'register', 'login', 'sendResetLinkEmail', 'resetPassword', 'verifyEmail', 'resendVerificationEmail'
         ]);
     }
@@ -45,11 +45,15 @@ class AuthController extends Controller
 
         // Only admins can assign 'admin' or 'developer' roles
         if (in_array($roleName, ['admin', 'developer'])) {
-            $authenticatedUser = $request->user();
+            // Utilize Gate for authorization
+            Gate::authorize('perform-crud-operations');
 
-            if (!$authenticatedUser || !$authenticatedUser->hasRole('admin')) {
-                return response()->json(['message' => 'Unauthorized.'], 403);
-            }
+            // Log authenticated user details
+            $authenticatedUser = $request->user();
+            \Log::info('Authenticated User:', [
+                'id' => $authenticatedUser ? $authenticatedUser->id : null,
+                'roles' => $authenticatedUser ? $authenticatedUser->roles->pluck('name') : null,
+            ]);
         }
 
         // Create user
@@ -67,12 +71,24 @@ class AuthController extends Controller
         }
         $user->roles()->attach($role);
 
+        \Log::info('User registered with roles:', [
+            'user_id' => $user->id,
+            'roles' => $user->roles->pluck('name'),
+        ]);
+
         // Send email verification notification
         $user->sendEmailVerificationNotification();
 
-        // Return response
+        // Generate API token
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        // Return response with token
         return response()->json([
             'message' => 'Registration successful. Please check your email to verify your account.',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
         ], 201);
     }
 
@@ -108,10 +124,12 @@ class AuthController extends Controller
             return response()->json(['message' => 'Please verify your email address.'], 403);
         }
 
-        // Create token
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // Generate API token
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
 
-        // Return response
+        // Return response with token
         return response()->json([
             'access_token' => $token,
             'token_type'   => 'Bearer',
@@ -123,8 +141,10 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke the token
-        $request->user()->currentAccessToken()->delete();
+        // Revoke the API token by setting it to null
+        $user = $request->user();
+        $user->api_token = null;
+        $user->save();
 
         return response()->json([
             'message' => 'Successfully logged out.',
@@ -164,8 +184,9 @@ class AuthController extends Controller
                     'password' => Hash::make($request->password),
                 ])->save();
 
-                // Revoke all tokens
-                $user->tokens()->delete();
+                // Revoke all tokens by setting api_token to null
+                $user->api_token = null;
+                $user->save();
             }
         );
 
@@ -194,10 +215,8 @@ class AuthController extends Controller
 
         // Update password
         $user->password = Hash::make($request->password);
+        $user->api_token = null; // Revoke current token
         $user->save();
-
-        // Optionally, revoke all tokens
-        // $user->tokens()->delete();
 
         return response()->json(['message' => 'Password changed successfully.']);
     }
@@ -221,8 +240,10 @@ class AuthController extends Controller
             event(new Verified($user));
         }
 
-        // Create token upon verification
-        $token = $user->createToken('auth_token')->plainTextToken;
+        // Generate API token upon verification
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
 
         return response()->json([
             'message'      => 'Email verified successfully.',

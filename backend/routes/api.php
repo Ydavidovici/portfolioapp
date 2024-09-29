@@ -8,8 +8,6 @@ use App\Http\Controllers\BoardController;
 use App\Http\Controllers\CalendarEntryController;
 use App\Http\Controllers\ChecklistController;
 use App\Http\Controllers\ChecklistItemController;
-use App\Http\Controllers\Client\ClientDashboardController;
-use App\Http\Controllers\Developer\DeveloperDashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\InvoiceController;
@@ -45,10 +43,10 @@ Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verifyEmail'])
 
 Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail'])
     ->name('verification.resend')
-    ->middleware(['auth:sanctum', 'throttle:6,1']);
+    ->middleware(['auth:api', 'throttle:6,1']); // Changed from 'auth:sanctum' to 'auth:api'
 
 // Protected Routes: Require Authentication
-Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
+Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     // Logout
     Route::post('/logout', [AuthController::class, 'logout']);
 

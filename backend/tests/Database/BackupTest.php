@@ -3,6 +3,7 @@
 namespace Tests\Database;
 
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -14,15 +15,15 @@ class BackupTest extends TestCase
     {
         parent::setUp();
         $this->backupDirectory = storage_path('app/testing-backup');
-        if (file_exists($this->backupDirectory)) {
-            $this->deleteDirectory($this->backupDirectory);
+        if (File::exists($this->backupDirectory)) {
+            File::deleteDirectory($this->backupDirectory);
         }
     }
 
     protected function tearDown(): void
     {
-        if (file_exists($this->backupDirectory)) {
-            $this->deleteDirectory($this->backupDirectory);
+        if (File::exists($this->backupDirectory)) {
+            File::deleteDirectory($this->backupDirectory);
         }
         parent::tearDown();
     }
@@ -40,19 +41,19 @@ class BackupTest extends TestCase
         $this->assertDirectoryExists($this->backupDirectory, 'Backup directory does not exist.');
 
         // Get the list of backup files
-        $backupFiles = glob($this->backupDirectory . '/*.sql');
+        $backupFiles = File::files($this->backupDirectory);
 
         // Assert that a backup file was created
         $this->assertNotEmpty($backupFiles, 'No backup file was created.');
 
         // Get the path of the backup file
-        $backupFilePath = $backupFiles[0];
+        $backupFilePath = $backupFiles[0]->getPathname();
 
         // Assert that the backup file exists
         $this->assertFileExists($backupFilePath, 'Backup file does not exist.');
 
         // Optionally, check the contents of the backup file
-        $backupContents = file_get_contents($backupFilePath);
+        $backupContents = File::get($backupFilePath);
         $this->assertStringContainsString('CREATE TABLE', $backupContents, 'Backup file does not contain expected content.');
     }
 
@@ -82,27 +83,11 @@ class BackupTest extends TestCase
         }
 
         // Ensure no backup file was created
-        $backupFiles = glob($this->backupDirectory . '/*.sql');
-
-        $this->assertEmpty($backupFiles, 'Backup file should not have been created with invalid credentials.');
-    }
-
-    private function deleteDirectory($dir)
-    {
-        if (!file_exists($dir)) {
-            return;
+        if (File::exists($this->backupDirectory)) {
+            $backupFiles = File::files($this->backupDirectory);
+            $this->assertEmpty($backupFiles, 'Backup file should not have been created with invalid credentials.');
+        } else {
+            $this->assertFalse(File::exists($this->backupDirectory), 'Backup directory should not exist with invalid credentials.');
         }
-
-        $it = new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS);
-        $ri = new \RecursiveIteratorIterator($it, \RecursiveIteratorIterator::CHILD_FIRST);
-        foreach ($ri as $file) {
-            $filePath = $file->getPathname();
-            if ($file->isDir()) {
-                rmdir($filePath);
-            } else {
-                unlink($filePath);
-            }
-        }
-        rmdir($dir);
     }
 }

@@ -21,6 +21,7 @@ class MigrationsTest extends TestCase
             'username',
             'email',
             'password',
+            'api_token',
             'created_at',
             'updated_at',
         ];
