@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Gate;
 
 class AdminDashboardController extends Controller
 {
+    /**
+     * Display the admin dashboard.
+     */
     public function index(Request $request): \Illuminate\Http\JsonResponse
     {
         // Authorization: Check if the user can access the admin dashboard

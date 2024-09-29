@@ -8,8 +8,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Tests\TestCase;
+use Illuminate\Support\Str;
+use App\Mail\VerifyEmail;
 
 class AuthControllerTest extends TestCase
 {
@@ -23,6 +26,20 @@ class AuthControllerTest extends TestCase
         parent::setUp();
         // Seed the roles into the database
         $this->seed(\Database\Seeders\RoleSeeder::class);
+        // Fake Mail to prevent actual emails from being sent
+        Mail::fake();
+        // Fake events to prevent actual event dispatching
+        Event::fake();
+    }
+
+    /**
+     * Helper method to authenticate a user by setting the Authorization header.
+     */
+    protected function authenticate(User $user)
+    {
+        return $this->withHeaders([
+            'Authorization' => 'Bearer ' . $user->api_token,
+        ]);
     }
 
     /**
@@ -34,25 +51,32 @@ class AuthControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
 
         // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
         $admin->roles()->attach($adminRole);
 
-        // Define registration data for a new 'admin'
-        $registrationData = [
+        // Authenticate as admin by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
             'username' => 'newadmin',
             'email' => 'newadmin@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => 'admin',
-        ];
-
-        // Act as the admin and make a POST request to register a new admin
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/register', $registrationData);
+        ]);
 
         // Assert that the registration was successful
         $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'access_token',
+                'token_type',
+            ])
             ->assertJson([
                 'message' => 'Registration successful. Please check your email to verify your account.',
+                'token_type' => 'Bearer',
             ]);
 
         // Verify that the user exists in the database with the 'admin' role
@@ -60,6 +84,11 @@ class AuthControllerTest extends TestCase
         $newUser = User::where('email', 'newadmin@example.com')->first();
         $this->assertNotNull($newUser);
         $this->assertTrue($newUser->hasRole('admin'));
+
+        // Assert that a verification email was sent to the new admin
+        Mail::assertSent(VerifyEmail::class, function ($mail) use ($newUser) {
+            return $mail->hasTo($newUser->email);
+        });
     }
 
     /**
@@ -71,20 +100,21 @@ class AuthControllerTest extends TestCase
         $developerRole = Role::where('name', 'developer')->first();
 
         // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
+        $developer = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
         $developer->roles()->attach($developerRole);
 
-        // Define registration data for a new 'admin'
-        $registrationData = [
+        // Authenticate as developer by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
             'username' => 'unauthorizedadmin',
             'email' => 'unauthorizedadmin@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => 'admin',
-        ];
-
-        // Act as the developer and make a POST request to register a new admin
-        $response = $this->actingAs($developer, 'sanctum')->postJson('/register', $registrationData);
+        ]);
 
         // Assert that the registration is forbidden
         $response->assertStatus(403)
@@ -106,25 +136,32 @@ class AuthControllerTest extends TestCase
         $developerRole = Role::where('name', 'developer')->first();
 
         // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
         $admin->roles()->attach($adminRole);
 
-        // Define registration data for a new 'developer'
-        $registrationData = [
+        // Authenticate as admin by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
             'username' => 'newdeveloper',
             'email' => 'newdeveloper@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => 'developer',
-        ];
-
-        // Act as the admin and make a POST request to register a new developer
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/register', $registrationData);
+        ]);
 
         // Assert that the registration was successful
         $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'access_token',
+                'token_type',
+            ])
             ->assertJson([
                 'message' => 'Registration successful. Please check your email to verify your account.',
+                'token_type' => 'Bearer',
             ]);
 
         // Verify that the user exists in the database with the 'developer' role
@@ -132,6 +169,11 @@ class AuthControllerTest extends TestCase
         $newUser = User::where('email', 'newdeveloper@example.com')->first();
         $this->assertNotNull($newUser);
         $this->assertTrue($newUser->hasRole('developer'));
+
+        // Assert that a verification email was sent to the new developer
+        Mail::assertSent(VerifyEmail::class, function ($mail) use ($newUser) {
+            return $mail->hasTo($newUser->email);
+        });
     }
 
     /**
@@ -143,20 +185,21 @@ class AuthControllerTest extends TestCase
         $clientRole = Role::where('name', 'client')->first();
 
         // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
+        $client = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
         $client->roles()->attach($clientRole);
 
-        // Define registration data for a new 'developer'
-        $registrationData = [
+        // Authenticate as client by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
             'username' => 'unauthorizeddeveloper',
             'email' => 'unauthorizeddeveloper@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => 'developer',
-        ];
-
-        // Act as the client and make a POST request to register a new developer
-        $response = $this->actingAs($client, 'sanctum')->postJson('/register', $registrationData);
+        ]);
 
         // Assert that the registration is forbidden
         $response->assertStatus(403)
@@ -179,8 +222,8 @@ class AuthControllerTest extends TestCase
         $registrationData = [
             'username' => 'guestclient',
             'email' => 'guestclient@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             // 'role' is omitted to default to 'client'
         ];
 
@@ -189,8 +232,14 @@ class AuthControllerTest extends TestCase
 
         // Assert that the registration was successful
         $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'access_token',
+                'token_type',
+            ])
             ->assertJson([
                 'message' => 'Registration successful. Please check your email to verify your account.',
+                'token_type' => 'Bearer',
             ]);
 
         // Verify that the user exists in the database with the 'client' role
@@ -198,33 +247,39 @@ class AuthControllerTest extends TestCase
         $newUser = User::where('email', 'guestclient@example.com')->first();
         $this->assertNotNull($newUser);
         $this->assertTrue($newUser->hasRole('client'));
+
+        // Assert that a verification email was sent to the new client
+        Mail::assertSent(VerifyEmail::class, function ($mail) use ($newUser) {
+            return $mail->hasTo($newUser->email);
+        });
     }
 
     /**
-     * Test that a user cannot register without providing required fields.
+     * Test that registration fails when required fields are missing.
      */
-    public function test_registration_fails_without_required_fields()
+    public function test_registration_fails_when_required_fields_are_missing()
     {
         // Create an admin user and assign the 'admin' role
         $adminRole = Role::where('name', 'admin')->first();
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
         $admin->roles()->attach($adminRole);
 
-        // Define incomplete registration data (missing 'username')
-        $registrationData = [
+        // Authenticate as admin by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
             // 'username' is missing
-            'email' => 'incompleteuser@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
-            // 'role' is optional, defaults to 'client'
-        ];
+            // 'email' is missing
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'role' => 'client',
+        ]);
 
-        // Act as the admin and make a POST request to register a new user
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/register', $registrationData);
-
-        // Assert that the registration failed due to missing 'username'
+        // Assert that the registration failed due to missing 'username' and 'email'
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['username']);
+            ->assertJsonValidationErrors(['username', 'email']);
     }
 
     /**
@@ -234,7 +289,9 @@ class AuthControllerTest extends TestCase
     {
         // Create an admin user and assign the 'admin' role
         $adminRole = Role::where('name', 'admin')->first();
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
         $admin->roles()->attach($adminRole);
 
         // Create a user with a specific email
@@ -243,21 +300,25 @@ class AuthControllerTest extends TestCase
         ]);
         $existingUser->roles()->attach(Role::where('name', 'client')->first());
 
-        // Define registration data with the same email
-        $registrationData = [
+        // Authenticate as admin by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
             'username' => 'duplicateuser',
             'email' => 'existing@example.com',
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
             'role' => 'client',
-        ];
-
-        // Act as the admin and make a POST request to register a new user with existing email
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/register', $registrationData);
+        ]);
 
         // Assert that the registration failed due to email duplication
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
+
+        // Optionally, assert the error message
+        $response->assertJsonFragment([
+            'email' => ['The email has already been taken.'],
+        ]);
     }
 
     /**
@@ -268,15 +329,16 @@ class AuthControllerTest extends TestCase
         // Create a user with verified email
         $user = User::factory()->create([
             'email' => 'verifieduser@example.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', $token = Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
         // Act as the user and make a POST request to login
         $response = $this->postJson('/login', [
             'email' => 'verifieduser@example.com',
-            'password' => 'password123',
+            'password' => 'Password123!',
         ]);
 
         // Assert that the login was successful and token is returned
@@ -284,7 +346,14 @@ class AuthControllerTest extends TestCase
             ->assertJsonStructure([
                 'access_token',
                 'token_type',
+            ])
+            ->assertJson([
+                'token_type' => 'Bearer',
             ]);
+
+        // Verify that the token was updated in the database
+        $user->refresh();
+        $this->assertNotNull($user->api_token);
     }
 
     /**
@@ -295,20 +364,26 @@ class AuthControllerTest extends TestCase
         // Create a user with verified email
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
         // Act as the user and make a POST request to login with incorrect password
         $response = $this->postJson('/login', [
             'email' => 'user@example.com',
-            'password' => 'wrongpassword',
+            'password' => 'WrongPassword!',
         ]);
 
         // Assert that the login was forbidden due to incorrect credentials
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
+
+        // Optionally, assert the error message
+        $response->assertJsonFragment([
+            'email' => ['The provided credentials are incorrect.'],
+        ]);
     }
 
     /**
@@ -319,15 +394,16 @@ class AuthControllerTest extends TestCase
         // Create a user without verified email
         $user = User::factory()->create([
             'email' => 'unverifieduser@example.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'email_verified_at' => null,
+            'api_token' => hash('sha256', Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
         // Act as the user and make a POST request to login
         $response = $this->postJson('/login', [
             'email' => 'unverifieduser@example.com',
-            'password' => 'password123',
+            'password' => 'Password123!',
         ]);
 
         // Assert that the login was forbidden due to unverified email
@@ -358,6 +434,16 @@ class AuthControllerTest extends TestCase
             ->assertJson([
                 'message' => 'Reset link sent to your email.',
             ]);
+
+        // Assert that a password reset token was created in the database
+        $this->assertDatabaseHas('password_resets', [
+            'email' => 'user@example.com',
+        ]);
+
+        // Optionally, assert that a password reset email was sent
+        Mail::assertSent(\Illuminate\Auth\Notifications\ResetPassword::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
+        });
     }
 
     /**
@@ -368,7 +454,7 @@ class AuthControllerTest extends TestCase
         // Create a user
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('oldpassword'),
+            'password' => Hash::make('OldPassword123!'),
             'email_verified_at' => now(),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
@@ -379,8 +465,8 @@ class AuthControllerTest extends TestCase
         // Define reset password data
         $resetPasswordData = [
             'email' => 'user@example.com',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
             'token' => $token,
         ];
 
@@ -394,7 +480,10 @@ class AuthControllerTest extends TestCase
             ]);
 
         // Verify that the user's password was updated in the database
-        $this->assertTrue(Hash::check('newpassword123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
+
+        // Optionally, assert that the API token was invalidated
+        $this->assertNull($user->fresh()->api_token);
     }
 
     /**
@@ -405,7 +494,7 @@ class AuthControllerTest extends TestCase
         // Create a user
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('oldpassword'),
+            'password' => Hash::make('OldPassword123!'),
             'email_verified_at' => now(),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
@@ -413,8 +502,8 @@ class AuthControllerTest extends TestCase
         // Define reset password data with invalid token
         $resetPasswordData = [
             'email' => 'user@example.com',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
             'token' => 'invalidtoken',
         ];
 
@@ -425,9 +514,14 @@ class AuthControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['email']);
 
+        // Optionally, assert the error message
+        $response->assertJsonFragment([
+            'email' => ['The provided token is invalid.'],
+        ]);
+
         // Verify that the user's password was not changed in the database
-        $this->assertTrue(Hash::check('oldpassword', $user->fresh()->password));
-        $this->assertFalse(Hash::check('newpassword123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('OldPassword123!', $user->fresh()->password));
+        $this->assertFalse(Hash::check('NewPassword123!', $user->fresh()->password));
     }
 
     /**
@@ -435,8 +529,6 @@ class AuthControllerTest extends TestCase
      */
     public function test_user_can_verify_email_with_valid_link()
     {
-        Event::fake();
-
         // Create a user without verified email
         $user = User::factory()->create([
             'email' => 'user@example.com',
@@ -448,17 +540,18 @@ class AuthControllerTest extends TestCase
         $hash = sha1($user->getEmailForVerification());
 
         // Act as the user and make a GET request to verify email
-        $response = $this->get("/email/verify/{$user->id}/{$hash}");
+        $response = $this->getJson("/email/verify/{$user->id}/{$hash}");
 
         // Assert that the email was verified successfully
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'message',
+                'access_token',
+                'token_type',
+            ])
             ->assertJson([
                 'message' => 'Email verified successfully.',
                 'token_type' => 'Bearer',
-            ])
-            ->assertJsonStructure([
-                'access_token',
-                'token_type',
             ]);
 
         // Assert that the event was dispatched
@@ -468,6 +561,9 @@ class AuthControllerTest extends TestCase
 
         // Verify that the user's email is marked as verified
         $this->assertNotNull($user->fresh()->email_verified_at);
+
+        // Verify that a new API token was generated
+        $this->assertNotNull($user->fresh()->api_token);
     }
 
     /**
@@ -486,7 +582,7 @@ class AuthControllerTest extends TestCase
         $invalidHash = sha1('invalidemail@example.com');
 
         // Act as the user and make a GET request to verify email with invalid hash
-        $response = $this->get("/email/verify/{$user->id}/{$invalidHash}");
+        $response = $this->getJson("/email/verify/{$user->id}/{$invalidHash}");
 
         // Assert that the verification failed
         $response->assertStatus(400)
@@ -507,6 +603,7 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create([
             'email' => 'user@example.com',
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
@@ -514,7 +611,7 @@ class AuthControllerTest extends TestCase
         $hash = sha1($user->getEmailForVerification());
 
         // Act as the user and make a GET request to verify email again
-        $response = $this->get("/email/verify/{$user->id}/{$hash}");
+        $response = $this->getJson("/email/verify/{$user->id}/{$hash}");
 
         // Assert that the email is already verified
         $response->assertStatus(400)
@@ -532,17 +629,25 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create([
             'email' => 'user@example.com',
             'email_verified_at' => null,
+            'api_token' => hash('sha256', $token = Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
-        // Act as the user and make a POST request to resend verification email
-        $response = $this->actingAs($user, 'sanctum')->postJson('/email/resend');
+        // Act as the user by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/email/resend');
 
         // Assert that the verification link was resent
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Verification link resent.',
             ]);
+
+        // Assert that a new verification email was sent
+        Mail::assertSent(VerifyEmail::class, function ($mail) use ($user) {
+            return $mail->hasTo($user->email);
+        });
     }
 
     /**
@@ -554,17 +659,23 @@ class AuthControllerTest extends TestCase
         $user = User::factory()->create([
             'email' => 'user@example.com',
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
-        // Act as the user and make a POST request to resend verification email
-        $response = $this->actingAs($user, 'sanctum')->postJson('/email/resend');
+        // Act as the user by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $user->api_token,
+        ])->postJson('/email/resend');
 
         // Assert that the user is informed that the email is already verified
         $response->assertStatus(400)
             ->assertJson([
                 'message' => 'Email already verified.',
             ]);
+
+        // Assert that no verification email was sent
+        Mail::assertNotSent(VerifyEmail::class);
     }
 
     /**
@@ -575,30 +686,20 @@ class AuthControllerTest extends TestCase
         // Create a user with verified email
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('oldpassword'),
+            'password' => Hash::make('OldPassword123!'),
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', $token = Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
-        // Login the user to obtain a token
-        $loginResponse = $this->postJson('/login', [
-            'email' => 'user@example.com',
-            'password' => 'oldpassword',
-        ]);
-
-        $token = $loginResponse->json('access_token');
-
-        // Define change password data
-        $changePasswordData = [
-            'current_password' => 'oldpassword',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
-        ];
-
-        // Act as the user and make a POST request to change password
+        // Act as the user by setting the Authorization header
         $response = $this->withHeaders([
-            'Authorization' => "Bearer {$token}",
-        ])->postJson('/password/change', $changePasswordData);
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/password/change', [
+            'current_password' => 'OldPassword123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
 
         // Assert that the password was changed successfully
         $response->assertStatus(200)
@@ -607,7 +708,10 @@ class AuthControllerTest extends TestCase
             ]);
 
         // Verify that the user's password was updated in the database
-        $this->assertTrue(Hash::check('newpassword123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('NewPassword123!', $user->fresh()->password));
+
+        // Verify that the API token was invalidated
+        $this->assertNull($user->fresh()->api_token);
     }
 
     /**
@@ -618,38 +722,36 @@ class AuthControllerTest extends TestCase
         // Create a user with verified email
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('oldpassword'),
+            'password' => Hash::make('OldPassword123!'),
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', $token = Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
-        // Login the user to obtain a token
-        $loginResponse = $this->postJson('/login', [
-            'email' => 'user@example.com',
-            'password' => 'oldpassword',
-        ]);
-
-        $token = $loginResponse->json('access_token');
-
-        // Define change password data with incorrect current password
-        $changePasswordData = [
-            'current_password' => 'wrongpassword',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
-        ];
-
-        // Act as the user and make a POST request to change password
+        // Act as the user by setting the Authorization header
         $response = $this->withHeaders([
-            'Authorization' => "Bearer {$token}",
-        ])->postJson('/password/change', $changePasswordData);
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/password/change', [
+            'current_password' => 'WrongPassword!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
 
         // Assert that the response contains validation errors for 'current_password'
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['current_password']);
 
+        // Optionally, assert the error message
+        $response->assertJsonFragment([
+            'current_password' => ['The current password is incorrect.'],
+        ]);
+
         // Verify that the user's password was not changed in the database
-        $this->assertTrue(Hash::check('oldpassword', $user->fresh()->password));
-        $this->assertFalse(Hash::check('newpassword123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('OldPassword123!', $user->fresh()->password));
+        $this->assertFalse(Hash::check('NewPassword123!', $user->fresh()->password));
+
+        // Verify that the API token remains intact
+        $this->assertNotNull($user->fresh()->api_token);
     }
 
     /**
@@ -660,38 +762,36 @@ class AuthControllerTest extends TestCase
         // Create a user with verified email
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('oldpassword'),
+            'password' => Hash::make('OldPassword123!'),
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', $token = Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
-        // Login the user to obtain a token
-        $loginResponse = $this->postJson('/login', [
-            'email' => 'user@example.com',
-            'password' => 'oldpassword',
-        ]);
-
-        $token = $loginResponse->json('access_token');
-
-        // Define change password data without 'current_password'
-        $changePasswordData = [
-            // 'current_password' => 'oldpassword', // Missing
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
-        ];
-
-        // Act as the user and make a POST request to change password
+        // Act as the user by setting the Authorization header
         $response = $this->withHeaders([
-            'Authorization' => "Bearer {$token}",
-        ])->postJson('/password/change', $changePasswordData);
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/password/change', [
+            // 'current_password' => 'OldPassword123!', // Missing
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
 
         // Assert that the response contains validation errors for 'current_password'
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['current_password']);
 
+        // Optionally, assert the error message
+        $response->assertJsonFragment([
+            'current_password' => ['The current password field is required.'],
+        ]);
+
         // Verify that the user's password was not changed in the database
-        $this->assertTrue(Hash::check('oldpassword', $user->fresh()->password));
-        $this->assertFalse(Hash::check('newpassword123', $user->fresh()->password));
+        $this->assertTrue(Hash::check('OldPassword123!', $user->fresh()->password));
+        $this->assertFalse(Hash::check('NewPassword123!', $user->fresh()->password));
+
+        // Verify that the API token remains intact
+        $this->assertNotNull($user->fresh()->api_token);
     }
 
     /**
@@ -701,16 +801,19 @@ class AuthControllerTest extends TestCase
     {
         // Define change password data
         $changePasswordData = [
-            'current_password' => 'oldpassword',
-            'password' => 'newpassword123',
-            'password_confirmation' => 'newpassword123',
+            'current_password' => 'OldPassword123!',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ];
 
         // Make a POST request to change password without authentication
         $response = $this->postJson('/password/change', $changePasswordData);
 
         // Assert that the response status is 401 Unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 
     /**
@@ -721,28 +824,190 @@ class AuthControllerTest extends TestCase
         // Create a user with verified email
         $user = User::factory()->create([
             'email' => 'user@example.com',
-            'password' => Hash::make('password123'),
+            'password' => Hash::make('Password123!'),
             'email_verified_at' => now(),
+            'api_token' => hash('sha256', $token = Str::random(60)),
         ]);
         $user->roles()->attach(Role::where('name', 'client')->first());
 
-        // Login the user to obtain a token
-        $loginResponse = $this->postJson('/login', [
-            'email' => 'user@example.com',
-            'password' => 'password123',
-        ]);
-
-        $token = $loginResponse->json('access_token');
-
-        // Act as the user and make a POST request to logout
+        // Act as the user by setting the Authorization header
         $response = $this->withHeaders([
-            'Authorization' => "Bearer {$token}",
+            'Authorization' => 'Bearer ' . $token,
         ])->postJson('/logout');
 
         // Assert that the logout was successful
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Successfully logged out.',
+            ]);
+
+        // Verify that the user's API token was invalidated
+        $this->assertNull($user->fresh()->api_token);
+    }
+
+    /**
+     * Test that a user cannot register with a non-existent role.
+     */
+    public function test_user_cannot_register_with_non_existent_role()
+    {
+        // Create an admin user and assign the 'admin' role
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
+        $admin->roles()->attach($adminRole);
+
+        // Authenticate as admin by setting the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/register', [
+            'username' => 'invalidroleuser',
+            'email' => 'invalidroleuser@example.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'role' => 'superadmin', // Assuming 'superadmin' does not exist
+        ]);
+
+        // Assert that the registration defaults to 'client' role
+        $response->assertStatus(201)
+            ->assertJsonStructure([
+                'message',
+                'access_token',
+                'token_type',
+            ])
+            ->assertJson([
+                'message' => 'Registration successful. Please check your email to verify your account.',
+                'token_type' => 'Bearer',
+            ]);
+
+        // Verify that the user exists in the database with the 'client' role
+        $this->assertDatabaseHas('users', ['email' => 'invalidroleuser@example.com']);
+        $newUser = User::where('email', 'invalidroleuser@example.com')->first();
+        $this->assertNotNull($newUser);
+        $this->assertTrue($newUser->hasRole('client'));
+
+        // Assert that a verification email was sent to the new user
+        Mail::assertSent(VerifyEmail::class, function ($mail) use ($newUser) {
+            return $mail->hasTo($newUser->email);
+        });
+    }
+
+    /**
+     * Test that password reset link cannot be requested too frequently (rate limiting).
+     */
+    public function test_password_reset_link_is_rate_limited()
+    {
+        // Create a user
+        $user = User::factory()->create([
+            'email' => 'user@example.com',
+        ]);
+        $user->roles()->attach(Role::where('name', 'client')->first());
+
+        // Simulate multiple rapid requests to send reset link
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->postJson('/password/email', [
+                'email' => 'user@example.com',
+            ]);
+
+            $response->assertStatus(200)
+                ->assertJson([
+                    'message' => 'Reset link sent to your email.',
+                ]);
+        }
+
+        // Sixth request should be rate limited
+        $response = $this->postJson('/password/email', [
+            'email' => 'user@example.com',
+        ]);
+
+        $response->assertStatus(429)
+            ->assertJson([
+                'message' => 'Too many requests. Please try again later.',
+            ]);
+    }
+
+    /**
+     * Test that login is rate limited after too many attempts.
+     */
+    public function test_login_is_rate_limited_after_too_many_attempts()
+    {
+        // Create a user with verified email
+        $user = User::factory()->create([
+            'email' => 'user@example.com',
+            'password' => Hash::make('Password123!'),
+            'email_verified_at' => now(),
+        ]);
+        $user->roles()->attach(Role::where('name', 'client')->first());
+
+        // Attempt to login with incorrect password multiple times
+        for ($i = 0; $i < 5; $i++) {
+            $response = $this->postJson('/login', [
+                'email' => 'user@example.com',
+                'password' => 'WrongPassword!',
+            ]);
+
+            $response->assertStatus(422)
+                ->assertJsonValidationErrors(['email']);
+        }
+
+        // Sixth attempt should be rate limited
+        $response = $this->postJson('/login', [
+            'email' => 'user@example.com',
+            'password' => 'WrongPassword!',
+        ]);
+
+        $response->assertStatus(429)
+            ->assertJson([
+                'message' => 'Too many login attempts. Please try again later.',
+            ]);
+    }
+
+    /**
+     * Test that tokens are correctly revoked after password reset.
+     */
+    public function test_tokens_are_revoked_after_password_reset()
+    {
+        // Create a user with verified email and an API token
+        $user = User::factory()->create([
+            'email' => 'user@example.com',
+            'password' => Hash::make('OldPassword123!'),
+            'email_verified_at' => now(),
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
+        $user->roles()->attach(Role::where('name', 'client')->first());
+
+        // Ensure the token exists
+        $this->assertNotNull($user->api_token);
+
+        // Generate a password reset token
+        $passwordResetToken = Password::broker()->createToken($user);
+
+        // Reset the password
+        $response = $this->postJson('/password/reset', [
+            'email' => 'user@example.com',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+            'token' => $passwordResetToken,
+        ]);
+
+        // Assert password reset was successful
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Password has been reset.',
+            ]);
+
+        // Verify that the API token was invalidated
+        $this->assertNull($user->fresh()->api_token);
+
+        // Attempt to use the old token to access a protected route
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/protected-route'); // Replace with an actual protected route
+
+        // Assert that access is denied
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
             ]);
     }
 }

@@ -124,7 +124,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Please verify your email address.'], 403);
         }
 
-        // Generate API token
+        // Generate new API token
         $token = Str::random(60);
         $user->api_token = hash('sha256', $token);
         $user->save();
@@ -141,7 +141,7 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke the API token by setting it to null
+        // Revoke the current token by clearing the api_token
         $user = $request->user();
         $user->api_token = null;
         $user->save();
@@ -184,7 +184,7 @@ class AuthController extends Controller
                     'password' => Hash::make($request->password),
                 ])->save();
 
-                // Revoke all tokens by setting api_token to null
+                // Revoke all tokens by clearing api_token
                 $user->api_token = null;
                 $user->save();
             }
@@ -215,7 +215,8 @@ class AuthController extends Controller
 
         // Update password
         $user->password = Hash::make($request->password);
-        $user->api_token = null; // Revoke current token
+        // Revoke all tokens by clearing api_token
+        $user->api_token = null;
         $user->save();
 
         return response()->json(['message' => 'Password changed successfully.']);
