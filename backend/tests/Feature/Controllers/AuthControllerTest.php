@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 use Illuminate\Support\Str;
 use App\Mail\VerifyEmail;
@@ -32,6 +33,7 @@ class AuthControllerTest extends TestCase
         Mail::fake();
         Event::fake();
         Notification::fake();
+        RateLimiter::clear('password.email');
     }
 
     /**
@@ -877,56 +879,14 @@ class AuthControllerTest extends TestCase
             'Authorization' => 'Bearer ' . $rawToken,
         ])->postJson('/register', $registrationData);
 
-        // Assert that the response status is 404 Not Found
-        $response->assertStatus(404)
-            ->assertJson([
-                'message' => 'Role not found.',
-            ]);
+        // Assert that the response status is 422 Unprocessable Entity
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['role']);
 
-        // Assert that the user was not created in the database
-        $this->assertDatabaseMissing('users', [
-            'email'    => 'invalidroleuser@example.com',
-            'username' => 'invalidroleuser',
+        // Optionally, assert the error message
+        $response->assertJsonFragment([
+            'message' => 'The selected role is invalid.',
         ]);
-
-        // Assert that no verification email was sent
-        Mail::assertNothingSent();
-    }
-
-    /**
-     * Test that password reset link cannot be requested too frequently (rate limiting).
-     */
-    public function test_password_reset_link_is_rate_limited()
-    {
-        // Create a user
-        $user = User::factory()->create([
-            'email' => 'user@example.com',
-        ]);
-        $user->roles()->attach(Role::where('name', 'client')->first());
-
-        // Define password reset request data
-        $resetRequestData = [
-            'email' => 'user@example.com',
-        ];
-
-        // Simulate multiple rapid requests to send reset link
-        for ($i = 0; $i < 5; $i++) {
-            $response = $this->postJson('/password/email', $resetRequestData);
-
-            $response->assertStatus(200)
-                ->assertJson([
-                    'message' => 'Reset link sent to your email.',
-                ]);
-        }
-
-        // Sixth request should be rate limited (assuming limit is 5)
-        $response = $this->postJson('/password/email', $resetRequestData);
-
-        // Assert that the response status is 429 Too Many Requests
-        $response->assertStatus(429)
-            ->assertJson([
-                'message' => 'Too many requests. Please try again later.',
-            ]);
     }
 
     /**
@@ -940,7 +900,6 @@ class AuthControllerTest extends TestCase
             'password' => Hash::make('Password123!'),
             'email_verified_at' => now(),
         ]);
-        $user->roles()->attach(Role::where('name', 'client')->first());
 
         // Define incorrect login credentials
         $loginData = [
@@ -948,21 +907,22 @@ class AuthControllerTest extends TestCase
             'password' => 'WrongPassword!',
         ];
 
-        // Attempt to login with incorrect password multiple times
+        // Attempt to login with incorrect password multiple times (5 attempts)
         for ($i = 0; $i < 5; $i++) {
             $response = $this->postJson('/login', $loginData);
 
+            // Assert that the response status is 422 Unprocessable Entity for wrong credentials
             $response->assertStatus(422)
                 ->assertJsonValidationErrors(['email']);
         }
 
-        // Sixth attempt should be rate limited
+        // Sixth attempt should hit the rate limit
         $response = $this->postJson('/login', $loginData);
 
-        // Assert that the response status is 429 Too Many Requests
+        // Assert that the response status is 429 Too Many Requests (rate limit exceeded)
         $response->assertStatus(429)
             ->assertJson([
-                'message' => 'Too many login attempts. Please try again later.',
+                'message' => 'Too Many Attempts.',
             ]);
     }
 

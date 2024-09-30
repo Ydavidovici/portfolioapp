@@ -38,7 +38,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public Routes: Registration, Login, Password Reset
 Route::post('/register', [RegisterController::class, 'register']);
-Route::post('/login', [LoginController::class, 'login']);
+Route::post('/login', [LoginController::class, 'login'])
+->middleware('throttle:5,1');
 Route::post('/password/email', [PasswordResetController::class, 'sendResetLinkEmail']);
 Route::post('/password/reset', [PasswordResetController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verifyEmail']);
@@ -83,4 +84,9 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     Route::get('/messages', [MessageController::class, 'index']);
     Route::post('/messages', [MessageController::class, 'store']);
     Route::get('/messages/latest', [MessageController::class, 'latest']);
+});
+
+// For testing
+Route::middleware('auth:api')->get('/protected-route', function () {
+    return response()->json(['message' => 'You have accessed a protected route.']);
 });
