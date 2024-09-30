@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -45,11 +46,11 @@ Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 've
 // Protected Routes
 Route::middleware(['auth:api'])->group(function () {
     Route::post('/logout', [LogoutController::class, 'logout']);
-    Route::post('/password/change', [LogoutController::class, 'logout']); // Adjust as needed
+    Route::post('/password/change', [ChangePasswordController::class, 'change']);
     Route::post('/email/resend', [ResendVerificationController::class, 'resendVerificationEmail']);
 });
 
-// Protected Routes: Require Authentication
+// Protected Routes: Require Authentication and Rate Limiting
 Route::middleware(['auth:api', 'throttle:api'])->group(function () {
     // Client Dashboard Routes
     Route::get('/client/dashboard', [ClientDashboardController::class, 'index']);

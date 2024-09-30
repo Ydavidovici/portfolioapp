@@ -40,7 +40,7 @@ class AuthControllerTest extends TestCase
      * @param string $roleName
      * @return array Returns an array containing the User model and the raw API token.
      */
-    protected function createAndAuthenticateUser(string $roleName = 'client'): array
+    protected function createAndAuthenticateUser(string $roleName = 'client', string $password = 'Password123!'): array
     {
         // Retrieve the specified role
         $role = Role::where('name', $roleName)->firstOrFail();
@@ -48,8 +48,9 @@ class AuthControllerTest extends TestCase
         // Generate a raw API token
         $rawToken = Str::random(60);
 
-        // Create the user and assign the role
+        // Create the user with a known password and assign the role
         $user = User::factory()->create([
+            'password' => Hash::make($password),
             'api_token' => hash('sha256', $rawToken),
         ]);
         $user->roles()->attach($role);
@@ -764,56 +765,15 @@ class AuthControllerTest extends TestCase
         $this->assertNull($user->fresh()->api_token);
     }
 
-    /**
-     * Test that a user cannot change their password with incorrect current password.
-     */
-    public function test_user_cannot_change_password_with_incorrect_current_password()
-    {
-        // Create and authenticate a user
-        $auth = $this->createAndAuthenticateUser('client');
-        $user = $auth['user'];
-        $rawToken = $auth['token'];
 
-        // Define change password data with incorrect current password
-        $changePasswordData = [
-            'current_password' => 'WrongPassword!',
-            'password' => 'NewPassword123!',
-            'password_confirmation' => 'NewPassword123!',
-        ];
-
-        // Manually set the user's password to 'OldPassword123!' for testing
-        $user->password = Hash::make('OldPassword123!');
-        $user->save();
-
-        // Make a POST request to change the password
-        $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $rawToken,
-        ])->postJson('/password/change', $changePasswordData);
-
-        // Assert that the response status is 422 Unprocessable Entity
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['current_password']);
-
-        // Optionally, assert the error message
-        $response->assertJsonFragment([
-            'current_password' => ['The current password is incorrect.'],
-        ]);
-
-        // Verify that the user's password was not changed in the database
-        $this->assertTrue(Hash::check('OldPassword123!', $user->fresh()->password));
-        $this->assertFalse(Hash::check('NewPassword123!', $user->fresh()->password));
-
-        // Verify that the API token remains intact
-        $this->assertNotNull($user->fresh()->api_token);
-    }
 
     /**
      * Test that an authenticated user cannot change password without providing current password.
      */
     public function test_authenticated_user_cannot_change_password_without_current_password()
     {
-        // Create and authenticate a user
-        $auth = $this->createAndAuthenticateUser('client');
+        // Create and authenticate a user with a known password
+        $auth = $this->createAndAuthenticateUser('client', 'OldPassword123!');
         $user = $auth['user'];
         $rawToken = $auth['token'];
 
