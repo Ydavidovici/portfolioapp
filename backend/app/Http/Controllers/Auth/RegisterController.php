@@ -29,16 +29,22 @@ class RegisterController extends Controller
         // Only admins can assign 'admin' or 'developer' roles
         if (in_array($roleName, ['admin', 'developer'])) {
             \Log::info("Authorizing user ID: {$request->user()->id} for role assignment: {$roleName}");
-            Gate::authorize('perform-crud-operations');
+            try {
+                Gate::authorize('manage-users/roles'); // Updated Gate
+                \Log::info("Authorization successful for user ID: {$request->user()->id}");
+            } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+                \Log::error("Authorization failed for user ID: {$request->user()->id}");
+                return response()->json(['message' => 'Unauthorized.'], 403);
+            }
         }
 
-        // Find the role or default to 'client'
+        // Find the role or return an error if it doesn't exist
         $role = Role::where('name', $roleName)->first();
 
         if (!$role) {
             // If role does not exist, return error
-            \Log::warning("Role '{$roleName}' not found. Defaulting to 'client'.");
-            $role = Role::where('name', 'client')->first();
+            \Log::warning("Role '{$roleName}' not found.");
+            return response()->json(['message' => 'Role not found.'], 404);
         }
 
         // Create the user

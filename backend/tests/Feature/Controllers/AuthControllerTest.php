@@ -4,15 +4,18 @@ namespace Tests\Feature\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 use Illuminate\Support\Str;
 use App\Mail\VerifyEmail;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Auth\Notifications\ResetPassword;
 
 class AuthControllerTest extends TestCase
@@ -25,12 +28,10 @@ class AuthControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed the roles into the database
         $this->seed(\Database\Seeders\RoleSeeder::class);
-        // Fake Mail to prevent actual emails from being sent
         Mail::fake();
-        // Fake events to prevent actual event dispatching
         Event::fake();
+        Notification::fake();
     }
 
     /**
@@ -485,10 +486,14 @@ class AuthControllerTest extends TestCase
             'email' => 'user@example.com',
         ]);
 
-        // Assert that a password reset email was sent
-        Mail::assertSent(ResetPassword::class, function ($mail) use ($user) {
-            return $mail->hasTo($user->email);
-        });
+        // Assert that a password reset notification was sent using the custom notification
+        Notification::assertSentTo(
+            [$user],
+            ResetPasswordNotification::class,
+            function ($notification, $channels) use ($user) {
+                return in_array('mail', $channels);
+            }
+        );
     }
 
     /**
@@ -561,7 +566,7 @@ class AuthControllerTest extends TestCase
 
         // Optionally, assert the error message
         $response->assertJsonFragment([
-            'email' => ['The provided token is invalid.'],
+            'email' => ['This password reset token is invalid.'],
         ]);
 
         // Verify that the user's password was not changed in the database
