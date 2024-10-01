@@ -12,12 +12,12 @@ class CalendarEntryFactory extends Factory
 
     public function definition()
     {
-        $startTime = $this->faker->dateTimeBetween('now', '+1 month');
-        $endTime = (clone $startTime)->modify('+1 hour');
+        $startTime = $this->faker->time('H:i:s');
+        $endTime = date('H:i:s', strtotime($startTime) + 3600); // Adds 1 hour
 
         return [
             'title' => $this->faker->sentence,
-            'description' => $this->faker->optional()->paragraph,
+            'date' => $this->faker->date(),
             'start_time' => $startTime,
             'end_time' => $endTime,
             'user_id' => User::factory(),

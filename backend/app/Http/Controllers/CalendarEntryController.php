@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CalendarEntry;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Requests\CalendarEntryRequest;
 use Illuminate\Support\Facades\Gate;
@@ -24,7 +25,7 @@ class CalendarEntryController extends Controller
     /**
      * Display a listing of the calendar entries.
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function index()
     {
@@ -37,7 +38,7 @@ class CalendarEntryController extends Controller
      * Store a newly created calendar entry in storage.
      *
      * @param  \App\Http\Requests\CalendarEntryRequest  $request
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
     public function store(CalendarEntryRequest $request)
     {
@@ -55,8 +56,8 @@ class CalendarEntryController extends Controller
     /**
      * Display the specified calendar entry.
      *
-     * @param  \App\Models\CalendarEntry  $calendarEntry
-     * @return \Illuminate\Http\JsonResponse
+     * @param CalendarEntry $calendarEntry
+     * @return JsonResponse
      */
     public function show(CalendarEntry $calendarEntry)
     {
@@ -68,8 +69,8 @@ class CalendarEntryController extends Controller
      * Update the specified calendar entry in storage.
      *
      * @param  \App\Http\Requests\CalendarEntryRequest  $request
-     * @param  \App\Models\CalendarEntry  $calendarEntry
-     * @return \Illuminate\Http\JsonResponse
+     * @param CalendarEntry $calendarEntry
+     * @return JsonResponse
      */
     public function update(CalendarEntryRequest $request, CalendarEntry $calendarEntry)
     {
@@ -87,8 +88,8 @@ class CalendarEntryController extends Controller
     /**
      * Remove the specified calendar entry from storage.
      *
-     * @param  \App\Models\CalendarEntry  $calendarEntry
-     * @return \Illuminate\Http\JsonResponse
+     * @param CalendarEntry $calendarEntry
+     * @return JsonResponse
      */
     public function destroy(CalendarEntry $calendarEntry)
     {

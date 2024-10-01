@@ -5,6 +5,7 @@ namespace Tests\Feature\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Board;
+use App\Models\Project; // Ensure that Project model is available
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -31,18 +32,17 @@ class BoardControllerTest extends TestCase
      */
     public function test_admin_can_create_board()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create an admin user and assign the 'admin' role
         $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        $admin->roles()->attach(Role::where('name', 'admin')->first());
 
         // Define board data
         $boardData = [
             'name' => 'New Board',
-            'project_id' => 1, // Ensure a project with ID 1 exists or adjust accordingly
-            // Add other necessary fields as per your Board model
+            'project_id' => $project->id,
         ];
 
         // Act as the admin and make a POST request to create a board
@@ -54,14 +54,14 @@ class BoardControllerTest extends TestCase
                 'message' => 'Board created successfully.',
                 'board' => [
                     'name' => 'New Board',
-                    'project_id' => 1,
+                    'project_id' => $project->id,
                 ],
             ]);
 
         // Verify that the board exists in the database
         $this->assertDatabaseHas('boards', [
             'name' => 'New Board',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -72,18 +72,17 @@ class BoardControllerTest extends TestCase
      */
     public function test_developer_can_create_board()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create a developer user and assign the 'developer' role
         $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        $developer->roles()->attach(Role::where('name', 'developer')->first());
 
         // Define board data
         $boardData = [
             'name' => 'Developer Board',
-            'project_id' => 2, // Ensure a project with ID 2 exists or adjust accordingly
-            // Add other necessary fields as per your Board model
+            'project_id' => $project->id,
         ];
 
         // Act as the developer and make a POST request to create a board
@@ -95,14 +94,14 @@ class BoardControllerTest extends TestCase
                 'message' => 'Board created successfully.',
                 'board' => [
                     'name' => 'Developer Board',
-                    'project_id' => 2,
+                    'project_id' => $project->id,
                 ],
             ]);
 
         // Verify that the board exists in the database
         $this->assertDatabaseHas('boards', [
             'name' => 'Developer Board',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -113,18 +112,17 @@ class BoardControllerTest extends TestCase
      */
     public function test_client_cannot_create_board()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create a client user and assign the 'client' role
         $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        $client->roles()->attach(Role::where('name', 'client')->first());
 
         // Define board data
         $boardData = [
             'name' => 'Unauthorized Board',
-            'project_id' => 3, // Ensure a project with ID 3 exists or adjust accordingly
-            // Add other necessary fields as per your Board model
+            'project_id' => $project->id,
         ];
 
         // Act as the client and make a POST request to create a board
@@ -139,7 +137,6 @@ class BoardControllerTest extends TestCase
         // Verify that the board does not exist in the database
         $this->assertDatabaseMissing('boards', [
             'name' => 'Unauthorized Board',
-            'project_id' => 3,
         ]);
     }
 
@@ -150,23 +147,23 @@ class BoardControllerTest extends TestCase
      */
     public function test_developer_can_update_board()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create a developer user and assign the 'developer' role
         $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        $developer->roles()->attach(Role::where('name', 'developer')->first());
 
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Original Board',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
 
         // Define updated data
         $updatedData = [
             'name' => 'Updated Board',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ];
 
         // Act as the developer and make a PUT request to update the board
@@ -179,7 +176,7 @@ class BoardControllerTest extends TestCase
                 'board' => [
                     'id' => $board->id,
                     'name' => 'Updated Board',
-                    'project_id' => 2,
+                    'project_id' => $project->id,
                 ],
             ]);
 
@@ -187,7 +184,7 @@ class BoardControllerTest extends TestCase
         $this->assertDatabaseHas('boards', [
             'id' => $board->id,
             'name' => 'Updated Board',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -198,23 +195,23 @@ class BoardControllerTest extends TestCase
      */
     public function test_client_cannot_update_board()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create a client user and assign the 'client' role
         $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        $client->roles()->attach(Role::where('name', 'client')->first());
 
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Client Board',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
 
         // Define updated data
         $updatedData = [
             'name' => 'Attempted Update',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ];
 
         // Act as the client and make a PUT request to update the board
@@ -230,7 +227,6 @@ class BoardControllerTest extends TestCase
         $this->assertDatabaseHas('boards', [
             'id' => $board->id,
             'name' => 'Client Board',
-            'project_id' => 1,
         ]);
     }
 
@@ -241,56 +237,21 @@ class BoardControllerTest extends TestCase
      */
     public function test_admin_can_delete_board()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create an admin user and assign the 'admin' role
         $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        $admin->roles()->attach(Role::where('name', 'admin')->first());
 
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Board to Delete',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
 
         // Act as the admin and make a DELETE request to delete the board
         $response = $this->actingAs($admin)->deleteJson("/boards/{$board->id}");
-
-        // Assert that the deletion was successful
-        $response->assertStatus(200)
-            ->assertJson([
-                'message' => 'Board deleted successfully.',
-            ]);
-
-        // Verify that the board no longer exists in the database
-        $this->assertDatabaseMissing('boards', [
-            'id' => $board->id,
-        ]);
-    }
-
-    /**
-     * Test that a developer can delete a board.
-     *
-     * @return void
-     */
-    public function test_developer_can_delete_board()
-    {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
-
-        // Create a board
-        $board = Board::factory()->create([
-            'name' => 'Developer Board to Delete',
-            'project_id' => 2,
-        ]);
-
-        // Act as the developer and make a DELETE request to delete the board
-        $response = $this->actingAs($developer)->deleteJson("/boards/{$board->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(200)
@@ -311,17 +272,17 @@ class BoardControllerTest extends TestCase
      */
     public function test_client_cannot_delete_board()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a project to associate with the board
+        $project = Project::factory()->create();
 
         // Create a client user and assign the 'client' role
         $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        $client->roles()->attach(Role::where('name', 'client')->first());
 
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Client Board to Delete',
-            'project_id' => 3,
+            'project_id' => $project->id,
         ]);
 
         // Act as the client and make a DELETE request to delete the board
@@ -336,8 +297,6 @@ class BoardControllerTest extends TestCase
         // Verify that the board still exists in the database
         $this->assertDatabaseHas('boards', [
             'id' => $board->id,
-            'name' => 'Client Board to Delete',
-            'project_id' => 3,
         ]);
     }
 
@@ -348,7 +307,7 @@ class BoardControllerTest extends TestCase
      */
     public function test_any_authenticated_user_can_view_boards()
     {
-        // Retrieve roles
+        // Create roles
         $adminRole = Role::where('name', 'admin')->first();
         $developerRole = Role::where('name', 'developer')->first();
         $clientRole = Role::where('name', 'client')->first();

@@ -18,7 +18,7 @@ class BoardController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth'); // Ensure the use of regular auth middleware
     }
 
     /**
@@ -41,7 +41,7 @@ class BoardController extends Controller
      */
     public function store(BoardRequest $request)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can create boards
+        // Authorization: Only users with 'perform-crud-operations' gate can create boards
         Gate::authorize('perform-crud-operations');
 
         $board = Board::create($request->validated());
@@ -73,7 +73,7 @@ class BoardController extends Controller
      */
     public function update(BoardRequest $request, Board $board)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can update boards
+        // Authorization: Only users with 'perform-crud-operations' gate can update boards
         Gate::authorize('perform-crud-operations');
 
         $board->update($request->validated());
@@ -92,7 +92,7 @@ class BoardController extends Controller
      */
     public function destroy(Board $board)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can delete boards
+        // Authorization: Only users with 'perform-crud-operations' gate can delete boards
         Gate::authorize('perform-crud-operations');
 
         $board->delete();
