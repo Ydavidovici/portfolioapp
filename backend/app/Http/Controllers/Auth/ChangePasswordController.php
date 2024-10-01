@@ -3,43 +3,34 @@
 namespace App\Http\Controllers\Auth;
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
+use App\Http\Controllers\Controller;
 
 class ChangePasswordController extends Controller
 {
-    /**
-     * Handle an authenticated user's password change request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function change(Request $request)
     {
-        // Validate the incoming request data
+        // Check if the user is authenticated
+        if (!$request->user()) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
+        }
+
+        // Validate the request data
         $request->validate([
             'current_password' => 'required',
             'password' => 'required|confirmed|min:8',
         ]);
 
-        $user = $request->user();
-
-        // Check if the provided current password matches the user's password
-        if (!Hash::check($request->current_password, $user->password)) {
-            throw ValidationException::withMessages([
-                'current_password' => ['The current password is incorrect.'],
-            ]);
+        // Check if the current password matches
+        if (!Hash::check($request->input('current_password'), $request->user()->password)) {
+            return response()->json(['message' => 'Current password is incorrect.'], 400);
         }
 
         // Update the user's password and invalidate the API token
-        $user->forceFill([
-            'password'  => Hash::make($request->password),
-            'api_token' => null, // Invalidate existing tokens
-        ])->save();
+        $request->user()->password = Hash::make($request->input('password'));
+        $request->user()->api_token = null; // Invalidate the API token
+        $request->user()->save();
 
-        return response()->json([
-            'message' => 'Password changed successfully.',
-        ], 200);
+        return response()->json(['message' => 'Password changed successfully.'], 200);
     }
 }

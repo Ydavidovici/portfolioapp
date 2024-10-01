@@ -5,6 +5,7 @@ namespace Tests\Feature\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Checklist;
+use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -14,8 +15,6 @@ class ChecklistControllerTest extends TestCase
 
     /**
      * Set up the test environment.
-     *
-     * @return void
      */
     protected function setUp(): void
     {
@@ -24,47 +23,265 @@ class ChecklistControllerTest extends TestCase
         $this->seed(\Database\Seeders\RoleSeeder::class);
     }
 
-    // Other test methods...
+    /**
+     * Test that an admin can create a checklist.
+     */
+    public function test_admin_can_create_checklist()
+    {
+        // Arrange
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create();
+        $admin->roles()->attach($adminRole);
+
+        $task = Task::factory()->create();
+
+        $checklistData = [
+            'name' => 'Admin Checklist',
+            'task_id' => $task->id,
+        ];
+
+        // Act
+        $response = $this->actingAs($admin)->postJson('/checklists', $checklistData);
+
+        // Assert
+        $response->assertStatus(201)
+            ->assertJson([
+                'message' => 'Checklist created successfully.',
+                'checklist' => [
+                    'name' => 'Admin Checklist',
+                    'task_id' => $task->id,
+                ],
+            ]);
+
+        $this->assertDatabaseHas('checklists', [
+            'name' => 'Admin Checklist',
+            'task_id' => $task->id,
+        ]);
+    }
 
     /**
-     * Test that a client cannot update a checklist.
-     *
-     * @return void
+     * Test that a client cannot create a checklist.
      */
-    public function test_client_cannot_update_checklist()
+    public function test_client_cannot_create_checklist()
     {
-        // Retrieve the 'client' role
+        // Arrange
         $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
-        // Create a checklist
-        $checklist = Checklist::factory()->create([
-            'title' => 'Client Checklist',
-        ]);
+        $task = Task::factory()->create();
 
-        // Define updated data
-        $updatedData = [
-            'title' => 'Attempted Update',
+        $checklistData = [
+            'name' => 'Client Checklist',
+            'task_id' => $task->id,
         ];
 
-        // Act as the client and make a PUT request to update the checklist
-        $response = $this->actingAs($client)->putJson("/checklists/{$checklist->id}", $updatedData);
+        // Act
+        $response = $this->actingAs($client)->postJson('/checklists', $checklistData);
 
-        // Assert that the update is forbidden
+        // Assert
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
-        // Verify that the checklist was not updated in the database
-        $this->assertDatabaseHas('checklists', [
-            'id' => $checklist->id,
-            'title' => 'Client Checklist',
+        $this->assertDatabaseMissing('checklists', [
+            'name' => 'Client Checklist',
+            'task_id' => $task->id,
         ]);
     }
 
-    // Rest of the test methods...
+    /**
+     * Test that an admin can update a checklist.
+     */
+    public function test_admin_can_update_checklist()
+    {
+        // Arrange
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create();
+        $admin->roles()->attach($adminRole);
+
+        $task = Task::factory()->create();
+
+        $checklist = Checklist::factory()->create([
+            'name' => 'Original Checklist',
+            'task_id' => $task->id,
+        ]);
+
+        $updatedData = [
+            'name' => 'Updated Checklist',
+            'task_id' => $task->id,
+        ];
+
+        // Act
+        $response = $this->actingAs($admin)->putJson("/checklists/{$checklist->id}", $updatedData);
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Checklist updated successfully.',
+                'checklist' => [
+                    'id' => $checklist->id,
+                    'name' => 'Updated Checklist',
+                    'task_id' => $task->id,
+                ],
+            ]);
+
+        $this->assertDatabaseHas('checklists', [
+            'id' => $checklist->id,
+            'name' => 'Updated Checklist',
+            'task_id' => $task->id,
+        ]);
+    }
+
+    /**
+     * Test that a client cannot update a checklist.
+     */
+    public function test_client_cannot_update_checklist()
+    {
+        // Arrange
+        $clientRole = Role::where('name', 'client')->first();
+        $client = User::factory()->create();
+        $client->roles()->attach($clientRole);
+
+        $task = Task::factory()->create();
+
+        $checklist = Checklist::factory()->create([
+            'name' => 'Client Checklist',
+            'task_id' => $task->id,
+        ]);
+
+        $updatedData = [
+            'name' => 'Attempted Update',
+            'task_id' => $task->id,
+        ];
+
+        // Act
+        $response = $this->actingAs($client)->putJson("/checklists/{$checklist->id}", $updatedData);
+
+        // Assert
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'This action is unauthorized.',
+            ]);
+
+        $this->assertDatabaseHas('checklists', [
+            'id' => $checklist->id,
+            'name' => 'Client Checklist',
+            'task_id' => $task->id,
+        ]);
+    }
+
+    /**
+     * Test that an admin can delete a checklist.
+     */
+    public function test_admin_can_delete_checklist()
+    {
+        // Arrange
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create();
+        $admin->roles()->attach($adminRole);
+
+        $task = Task::factory()->create();
+
+        $checklist = Checklist::factory()->create([
+            'name' => 'Checklist to Delete',
+            'task_id' => $task->id,
+        ]);
+
+        // Act
+        $response = $this->actingAs($admin)->deleteJson("/checklists/{$checklist->id}");
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Checklist deleted successfully.',
+            ]);
+
+        $this->assertDatabaseMissing('checklists', [
+            'id' => $checklist->id,
+        ]);
+    }
+
+    /**
+     * Test that a client cannot delete a checklist.
+     */
+    public function test_client_cannot_delete_checklist()
+    {
+        // Arrange
+        $clientRole = Role::where('name', 'client')->first();
+        $client = User::factory()->create();
+        $client->roles()->attach($clientRole);
+
+        $task = Task::factory()->create();
+
+        $checklist = Checklist::factory()->create([
+            'name' => 'Client Checklist to Delete',
+            'task_id' => $task->id,
+        ]);
+
+        // Act
+        $response = $this->actingAs($client)->deleteJson("/checklists/{$checklist->id}");
+
+        // Assert
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'This action is unauthorized.',
+            ]);
+
+        $this->assertDatabaseHas('checklists', [
+            'id' => $checklist->id,
+            'name' => 'Client Checklist to Delete',
+            'task_id' => $task->id,
+        ]);
+    }
+
+    /**
+     * Test that any authenticated user can view checklists.
+     */
+    public function test_any_authenticated_user_can_view_checklists()
+    {
+        // Arrange
+        $roles = ['admin', 'developer', 'client'];
+
+        $users = collect($roles)->map(function ($roleName) {
+            $role = Role::where('name', $roleName)->first();
+            $user = User::factory()->create();
+            $user->roles()->attach($role);
+            return $user;
+        });
+
+        $checklists = Checklist::factory()->count(3)->create();
+
+        // Act & Assert
+        $users->each(function ($user) use ($checklists) {
+            $response = $this->actingAs($user)->getJson('/checklists');
+
+            $response->assertStatus(200)
+                ->assertJsonCount(3);
+
+            $checklists->each(function ($checklist) use ($response) {
+                $response->assertJsonFragment([
+                    'id' => $checklist->id,
+                    'name' => $checklist->name,
+                    'task_id' => $checklist->task_id,
+                ]);
+            });
+        });
+    }
+
+    /**
+     * Test that an unauthenticated user cannot view checklists.
+     */
+    public function test_unauthenticated_user_cannot_view_checklists()
+    {
+        // Arrange
+        Checklist::factory()->count(3)->create();
+
+        // Act
+        $response = $this->getJson('/checklists');
+
+        // Assert
+        $response->assertStatus(401);
+    }
 }

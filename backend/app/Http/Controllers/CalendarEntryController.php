@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\CalendarEntry;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Http\Requests\CalendarEntryRequest;
 use Illuminate\Support\Facades\Gate;
@@ -23,14 +22,38 @@ class CalendarEntryController extends Controller
     }
 
     /**
+     * Transform a calendar entry to an array with formatted date.
+     *
+     * @param  \App\Models\CalendarEntry  $calendarEntry
+     * @return array
+     */
+    protected function transformCalendarEntry(CalendarEntry $calendarEntry)
+    {
+        return $calendarEntry->only([
+            'id',
+            'title',
+            'date',
+            'start_time',
+            'end_time',
+            'user_id',
+        ]);
+    }
+
+    /**
      * Display a listing of the calendar entries.
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
         // Authorization: Any authenticated user can view calendar entries
         $calendarEntries = CalendarEntry::with('user')->get();
+
+        // Transform each calendar entry
+        $calendarEntries = $calendarEntries->map(function ($entry) {
+            return $this->transformCalendarEntry($entry);
+        });
+
         return response()->json($calendarEntries);
     }
 
@@ -38,7 +61,7 @@ class CalendarEntryController extends Controller
      * Store a newly created calendar entry in storage.
      *
      * @param  \App\Http\Requests\CalendarEntryRequest  $request
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function store(CalendarEntryRequest $request)
     {
@@ -47,30 +70,34 @@ class CalendarEntryController extends Controller
 
         $calendarEntry = CalendarEntry::create($request->validated());
 
+        $calendarEntryData = $this->transformCalendarEntry($calendarEntry);
+
         return response()->json([
             'message' => 'Calendar entry created successfully.',
-            'calendar_entry' => $calendarEntry
+            'calendar_entry' => $calendarEntryData
         ], 201);
     }
 
     /**
      * Display the specified calendar entry.
      *
-     * @param CalendarEntry $calendarEntry
-     * @return JsonResponse
+     * @param  \App\Models\CalendarEntry  $calendarEntry
+     * @return \Illuminate\Http\JsonResponse
      */
     public function show(CalendarEntry $calendarEntry)
     {
         // Authorization: Any authenticated user can view a specific calendar entry
-        return response()->json($calendarEntry->load('user'));
+        $calendarEntryData = $this->transformCalendarEntry($calendarEntry);
+
+        return response()->json($calendarEntryData);
     }
 
     /**
      * Update the specified calendar entry in storage.
      *
      * @param  \App\Http\Requests\CalendarEntryRequest  $request
-     * @param CalendarEntry $calendarEntry
-     * @return JsonResponse
+     * @param  \App\Models\CalendarEntry  $calendarEntry
+     * @return \Illuminate\Http\JsonResponse
      */
     public function update(CalendarEntryRequest $request, CalendarEntry $calendarEntry)
     {
@@ -79,17 +106,19 @@ class CalendarEntryController extends Controller
 
         $calendarEntry->update($request->validated());
 
+        $calendarEntryData = $this->transformCalendarEntry($calendarEntry);
+
         return response()->json([
             'message' => 'Calendar entry updated successfully.',
-            'calendar_entry' => $calendarEntry
+            'calendar_entry' => $calendarEntryData
         ]);
     }
 
     /**
      * Remove the specified calendar entry from storage.
      *
-     * @param CalendarEntry $calendarEntry
-     * @return JsonResponse
+     * @param  \App\Models\CalendarEntry  $calendarEntry
+     * @return \Illuminate\Http\JsonResponse
      */
     public function destroy(CalendarEntry $calendarEntry)
     {

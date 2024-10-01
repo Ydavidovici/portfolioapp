@@ -33,12 +33,12 @@ class AuthServiceProvider extends ServiceProvider
 
         // Gate to access Client Dashboard
         Gate::define('access-client-dashboard', function (User $user) {
-            return $user->hasRole('client');
+            return $user->hasAnyRole(['client', 'admin']);
         });
 
         // Gate to access Developer Dashboard
         Gate::define('access-developer-dashboard', function (User $user) {
-            return $user->hasRole('developer');
+            return $user->hasAnyRole(['developer', 'admin']);
         });
 
         // Gate to perform CRUD operations

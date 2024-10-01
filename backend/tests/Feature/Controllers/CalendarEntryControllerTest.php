@@ -52,9 +52,10 @@ class CalendarEntryControllerTest extends TestCase
 
         // Assert that the calendar entry was created successfully
         $response->assertStatus(201)
-            ->assertJsonFragment([
+            ->assertJson([
                 'message' => 'Calendar entry created successfully.',
                 'calendar_entry' => [
+                    'id' => $response->json('calendar_entry.id'),
                     'title' => 'Team Meeting',
                     'date' => '2024-12-01',
                     'start_time' => '10:00:00',
@@ -101,9 +102,10 @@ class CalendarEntryControllerTest extends TestCase
 
         // Assert that the calendar entry was created successfully
         $response->assertStatus(201)
-            ->assertJsonFragment([
+            ->assertJson([
                 'message' => 'Calendar entry created successfully.',
                 'calendar_entry' => [
+                    'id' => $response->json('calendar_entry.id'),
                     'title' => 'Developer Standup',
                     'date' => '2024-12-02',
                     'start_time' => '09:00:00',
@@ -115,7 +117,7 @@ class CalendarEntryControllerTest extends TestCase
         // Verify that the calendar entry exists in the database
         $this->assertDatabaseHas('calendar_entries', [
             'title' => 'Developer Standup',
-            'date' => '2024-12-02', // Database stores date without time
+            'date' => '2024-12-02',
             'start_time' => '09:00:00',
             'end_time' => '10:00:00',
             'user_id' => $developer->id,
@@ -150,7 +152,7 @@ class CalendarEntryControllerTest extends TestCase
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
-            ->assertJsonFragment([
+            ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
@@ -193,6 +195,7 @@ class CalendarEntryControllerTest extends TestCase
             'date' => '2024-12-05',
             'start_time' => '14:00:00',
             'end_time' => '15:00:00',
+            'user_id' => $developer->id,
         ];
 
         // Act as the developer and make a PUT request to update the calendar entry
@@ -200,7 +203,7 @@ class CalendarEntryControllerTest extends TestCase
 
         // Assert that the calendar entry was updated successfully
         $response->assertStatus(200)
-            ->assertJsonFragment([
+            ->assertJson([
                 'message' => 'Calendar entry updated successfully.',
                 'calendar_entry' => [
                     'id' => $entry->id,
@@ -208,6 +211,7 @@ class CalendarEntryControllerTest extends TestCase
                     'date' => '2024-12-05',
                     'start_time' => '14:00:00',
                     'end_time' => '15:00:00',
+                    'user_id' => $developer->id,
                 ],
             ]);
 
@@ -218,6 +222,7 @@ class CalendarEntryControllerTest extends TestCase
             'date' => '2024-12-05',
             'start_time' => '14:00:00',
             'end_time' => '15:00:00',
+            'user_id' => $developer->id,
         ]);
     }
 
@@ -250,6 +255,7 @@ class CalendarEntryControllerTest extends TestCase
             'date' => '2024-12-07',
             'start_time' => '11:00:00',
             'end_time' => '12:00:00',
+            'user_id' => $client->id,
         ];
 
         // Act as the client and make a PUT request to update the calendar entry
@@ -257,7 +263,7 @@ class CalendarEntryControllerTest extends TestCase
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
-            ->assertJsonFragment([
+            ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
@@ -268,6 +274,7 @@ class CalendarEntryControllerTest extends TestCase
             'date' => '2024-12-06',
             'start_time' => '09:00:00',
             'end_time' => '10:00:00',
+            'user_id' => $client->id,
         ]);
     }
 
@@ -299,7 +306,7 @@ class CalendarEntryControllerTest extends TestCase
 
         // Assert that the deletion was successful
         $response->assertStatus(200)
-            ->assertJsonFragment([
+            ->assertJson([
                 'message' => 'Calendar entry deleted successfully.',
             ]);
 
@@ -339,16 +346,13 @@ class CalendarEntryControllerTest extends TestCase
             $response = $this->actingAs($user)->getJson('/calendar-entries');
 
             $response->assertStatus(200)
-                ->assertJsonCount(3)
-                ->assertJsonFragment([
-                    'title' => 'Team Meeting', // Example fragment
-                ]);
+                ->assertJsonCount(3);
 
             foreach ($entries as $entry) {
                 $response->assertJsonFragment([
                     'id' => $entry->id,
                     'title' => $entry->title,
-                    'date' => $entry->date->format('Y-m-d'), // Adjusted to match serialized date
+                    'date' => $entry->date, // Use the date string directly
                     'start_time' => $entry->start_time,
                     'end_time' => $entry->end_time,
                     'user_id' => $entry->user_id,

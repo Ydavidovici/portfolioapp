@@ -15,8 +15,6 @@ class ClientDashboardControllerTest extends TestCase
 
     /**
      * Set up the test environment.
-     *
-     * @return void
      */
     protected function setUp(): void
     {
@@ -27,15 +25,11 @@ class ClientDashboardControllerTest extends TestCase
 
     /**
      * Test that an admin can access the client dashboard.
-     *
-     * @return void
      */
     public function test_admin_can_access_client_dashboard()
     {
-        // Retrieve the 'admin' role
+        // Arrange
         $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
@@ -45,13 +39,13 @@ class ClientDashboardControllerTest extends TestCase
         ]);
 
         $documents = Document::factory()->count(5)->create([
-            'owner_id' => $admin->id,
+            'uploaded_by' => $admin->id,
         ]);
 
-        // Act as the admin and make a GET request to the client dashboard
-        $response = $this->actingAs($admin, 'sanctum')->get('/api/client/dashboard');
+        // Act
+        $response = $this->actingAs($admin)->get('/client/dashboard');
 
-        // Assert that the response is successful and contains the expected data
+        // Assert
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Welcome to the Client Dashboard',
@@ -62,15 +56,11 @@ class ClientDashboardControllerTest extends TestCase
 
     /**
      * Test that a client can access the client dashboard.
-     *
-     * @return void
      */
     public function test_client_can_access_client_dashboard()
     {
-        // Retrieve the 'client' role
+        // Arrange
         $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
@@ -80,13 +70,13 @@ class ClientDashboardControllerTest extends TestCase
         ]);
 
         $documents = Document::factory()->count(5)->create([
-            'owner_id' => $client->id,
+            'uploaded_by' => $client->id,
         ]);
 
-        // Act as the client and make a GET request to the client dashboard
-        $response = $this->actingAs($client, 'sanctum')->get('/api/client/dashboard');
+        // Act
+        $response = $this->actingAs($client)->get('/client/dashboard');
 
-        // Assert that the response is successful and contains the expected data
+        // Assert
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Welcome to the Client Dashboard',
@@ -97,22 +87,18 @@ class ClientDashboardControllerTest extends TestCase
 
     /**
      * Test that a developer cannot access the client dashboard.
-     *
-     * @return void
      */
     public function test_developer_cannot_access_client_dashboard()
     {
-        // Retrieve the 'developer' role
+        // Arrange
         $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
-        // Act as the developer and make a GET request to the client dashboard
-        $response = $this->actingAs($developer, 'sanctum')->get('/api/client/dashboard');
+        // Act
+        $response = $this->actingAs($developer)->get('/client/dashboard');
 
-        // Assert that the response status is 403 Forbidden
+        // Assert
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'Forbidden.',
@@ -121,18 +107,16 @@ class ClientDashboardControllerTest extends TestCase
 
     /**
      * Test that a user with no role cannot access the client dashboard.
-     *
-     * @return void
      */
     public function test_user_with_no_role_cannot_access_client_dashboard()
     {
-        // Create a user without any roles
+        // Arrange
         $user = User::factory()->create();
 
-        // Act as the user and make a GET request to the client dashboard
-        $response = $this->actingAs($user, 'sanctum')->get('/api/client/dashboard');
+        // Act
+        $response = $this->actingAs($user)->get('/client/dashboard');
 
-        // Assert that the response status is 403 Forbidden
+        // Assert
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'Forbidden.',
@@ -141,47 +125,41 @@ class ClientDashboardControllerTest extends TestCase
 
     /**
      * Test that an unauthenticated user cannot access the client dashboard.
-     *
-     * @return void
      */
     public function test_unauthenticated_user_cannot_access_client_dashboard()
     {
-        // Make a GET request to the client dashboard without authentication
-        $response = $this->get('/api/client/dashboard');
+        // Act
+        $response = $this->get('/client/dashboard');
 
-        // Assert that the response status is 401 Unauthorized
+        // Assert
         $response->assertStatus(401);
     }
 
     /**
      * Test that the client dashboard returns the correct messages and documents.
-     *
-     * @return void
      */
     public function test_client_dashboard_returns_correct_data()
     {
-        // Retrieve the 'client' role
+        // Arrange
         $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
-        // Create 5 specific messages and 5 specific documents for the client
+        // Create specific messages and documents for the client
         $messages = Message::factory()->count(5)->create([
             'receiver_id' => $client->id,
             'content' => 'Test message content',
         ]);
 
         $documents = Document::factory()->count(5)->create([
-            'owner_id' => $client->id,
-            'title' => 'Test Document Title',
+            'uploaded_by' => $client->id,
+            'name' => 'Test Document Name',
         ]);
 
-        // Act as the client and make a GET request to the client dashboard
-        $response = $this->actingAs($client, 'sanctum')->get('/api/client/dashboard');
+        // Act
+        $response = $this->actingAs($client)->get('/client/dashboard');
 
-        // Assert that the response contains the specific messages and documents
+        // Assert
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Welcome to the Client Dashboard',
@@ -199,7 +177,7 @@ class ClientDashboardControllerTest extends TestCase
         foreach ($documents as $document) {
             $response->assertJsonFragment([
                 'id' => $document->id,
-                'title' => 'Test Document Title',
+                'name' => 'Test Document Name',
             ]);
         }
     }

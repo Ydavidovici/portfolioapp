@@ -8,15 +8,15 @@ class ChecklistItemRequest extends FormRequest
 {
     public function authorize()
     {
-        // You can add role-based authorization logic here if necessary
+        // Authorization is handled in the controller via Gates
         return true;
     }
 
     public function rules()
     {
         return [
-            'description' => 'required|string',
-            'is_completed' => 'boolean',
+            'description' => 'required|string|max:255',
+            'is_completed' => 'sometimes|boolean',
             'checklist_id' => 'required|exists:checklists,id',
         ];
     }

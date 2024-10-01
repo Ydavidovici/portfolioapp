@@ -60,6 +60,41 @@ class AuthControllerTest extends TestCase
         return ['user' => $user, 'token' => $rawToken];
     }
 
+    public function test_authentication_middleware_allows_authenticated_users()
+    {
+        // Create a user and generate an API token
+        $user = User::factory()->create([
+            'api_token' => hash('sha256', $token = Str::random(60)),
+        ]);
+
+        // Make a GET request to the test route with the valid token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->getJson('/test-auth-middleware');
+
+        // Assert that the response is successful
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'You are authenticated!',
+            ])
+            ->assertJsonStructure([
+                'message',
+                'user' => ['id', 'username', 'email'], // Adjust the structure based on your User model
+            ]);
+    }
+
+    public function test_authentication_middleware_blocks_unauthenticated_users()
+    {
+        // Make a GET request to the test route without a token
+        $response = $this->getJson('/test-auth-middleware');
+
+        // Assert that access is denied
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
+    }
+
     /**
      * Test that an admin can register a user with the 'admin' role.
      */
@@ -971,7 +1006,7 @@ class AuthControllerTest extends TestCase
         // Replace '/protected-route' with an actual protected route in your application
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token,
-        ])->getJson('/protected-route'); // Replace with an actual protected route
+        ])->getJson('/client/dashboard');
 
         // Assert that access is denied
         $response->assertStatus(401)

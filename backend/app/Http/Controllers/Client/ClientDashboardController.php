@@ -23,7 +23,7 @@ class ClientDashboardController extends Controller
             ->take(5)
             ->get();
 
-        $documents = Document::where('owner_id', $request->user()->id)
+        $documents = Document::where('uploaded_by', $request->user()->id)
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();

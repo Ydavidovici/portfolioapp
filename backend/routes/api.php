@@ -27,6 +27,8 @@ use App\Http\Controllers\QuickBooksTokenController;
 use App\Http\Controllers\ReminderController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskListController;
+use App\Http\Middleware\AuthenticateApiToken;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -39,20 +41,16 @@ use Illuminate\Support\Facades\Route;
 // Public Routes: Registration, Login, Password Reset
 Route::post('/register', [RegisterController::class, 'register']);
 Route::post('/login', [LoginController::class, 'login'])
-->middleware('throttle:5,1');
+    ->middleware('throttle:5,1');
 Route::post('/password/email', [PasswordResetController::class, 'sendResetLinkEmail']);
 Route::post('/password/reset', [PasswordResetController::class, 'resetPassword']);
 Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verifyEmail']);
-
-// Protected Routes
-Route::middleware(['auth:api'])->group(function () {
-    Route::post('/logout', [LogoutController::class, 'logout']);
-    Route::post('/password/change', [ChangePasswordController::class, 'change']);
-    Route::post('/email/resend', [ResendVerificationController::class, 'resendVerificationEmail']);
-});
+Route::post('/logout', [LogoutController::class, 'logout']);
+Route::post('/password/change', [ChangePasswordController::class, 'change']);
+Route::post('/email/resend', [ResendVerificationController::class, 'resendVerificationEmail']);
 
 // Protected Routes: Require Authentication and Rate Limiting
-Route::middleware(['auth:api', 'throttle:api'])->group(function () {
+Route::middleware([AuthenticateApiToken::class, 'throttle:api'])->group(function () {
     // Client Dashboard Routes
     Route::get('/client/dashboard', [ClientDashboardController::class, 'index']);
 
@@ -87,6 +85,11 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
 });
 
 // For testing
-Route::middleware('auth:api')->get('/protected-route', function () {
-    return response()->json(['message' => 'You have accessed a protected route.']);
+Route::middleware([AuthenticateApiToken::class])->group(function () {
+    Route::get('/test-auth-middleware', function (Request $request) {
+        return response()->json([
+            'message' => 'You are authenticated!',
+            'user' => $request->user(), // This should return the authenticated user
+        ]);
+    });
 });

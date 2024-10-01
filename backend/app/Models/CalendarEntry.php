@@ -23,6 +23,16 @@ class CalendarEntry extends Model
     ];
 
     /**
+     * The attributes that should be hidden for arrays and JSON serialization.
+     *
+     * @var array
+     */
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
      * The attributes that should be cast to native types.
      *
      * @var array
@@ -34,21 +44,21 @@ class CalendarEntry extends Model
     ];
 
     /**
-     * Customize the serialization of date fields.
-     *
-     * @param \DateTimeInterface $date
-     * @return string
-     */
-    protected function serializeDate(\DateTimeInterface $date)
-    {
-        return $date->format('Y-m-d');
-    }
-
-    /**
      * Get the user that owns the calendar entry.
      */
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Accessor to format the date attribute when retrieved.
+     *
+     * @param  string  $value
+     * @return string
+     */
+    public function getDateAttribute($value)
+    {
+        return \Carbon\Carbon::parse($value)->format('Y-m-d');
     }
 }

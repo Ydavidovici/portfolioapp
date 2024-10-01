@@ -8,13 +8,6 @@ use Illuminate\Support\Facades\Gate;
 
 class ChecklistController extends Controller
 {
-    /**
-     * Instantiate a new controller instance.
-     *
-     * Apply authentication middleware to all routes in this controller.
-     *
-     * @return void
-     */
     public function __construct()
     {
         $this->middleware('auth');
@@ -27,8 +20,13 @@ class ChecklistController extends Controller
      */
     public function index()
     {
-        // Authorization: Any authenticated user can view checklists
         $checklists = Checklist::with('items')->get();
+
+        // Transform the data if necessary
+        $checklists = $checklists->map(function ($checklist) {
+            return $checklist->only(['id', 'name', 'task_id']);
+        });
+
         return response()->json($checklists);
     }
 
@@ -40,14 +38,13 @@ class ChecklistController extends Controller
      */
     public function store(ChecklistRequest $request)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can create checklists
         Gate::authorize('perform-crud-operations');
 
         $checklist = Checklist::create($request->validated());
 
         return response()->json([
             'message' => 'Checklist created successfully.',
-            'checklist' => $checklist,
+            'checklist' => $checklist->only(['id', 'name', 'task_id']),
         ], 201);
     }
 
@@ -59,8 +56,7 @@ class ChecklistController extends Controller
      */
     public function show(Checklist $checklist)
     {
-        // Authorization: Any authenticated user can view a specific checklist
-        return response()->json($checklist->load('items'));
+        return response()->json($checklist->only(['id', 'name', 'task_id']));
     }
 
     /**
@@ -72,14 +68,13 @@ class ChecklistController extends Controller
      */
     public function update(ChecklistRequest $request, Checklist $checklist)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can update checklists
         Gate::authorize('perform-crud-operations');
 
         $checklist->update($request->validated());
 
         return response()->json([
             'message' => 'Checklist updated successfully.',
-            'checklist' => $checklist,
+            'checklist' => $checklist->only(['id', 'name', 'task_id']),
         ]);
     }
 
@@ -91,7 +86,6 @@ class ChecklistController extends Controller
      */
     public function destroy(Checklist $checklist)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can delete checklists
         Gate::authorize('perform-crud-operations');
 
         $checklist->delete();

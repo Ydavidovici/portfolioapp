@@ -8,7 +8,7 @@ class ChecklistRequest extends FormRequest
 {
     public function authorize()
     {
-        // You can add role-based authorization logic here if necessary
+        // Authorization is handled in the controller via Gates
         return true;
     }
 

@@ -4,6 +4,7 @@ namespace Tests\Feature\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Checklist;
 use App\Models\ChecklistItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,8 +15,6 @@ class ChecklistItemControllerTest extends TestCase
 
     /**
      * Set up the test environment.
-     *
-     * @return void
      */
     protected function setUp(): void
     {
@@ -26,228 +25,309 @@ class ChecklistItemControllerTest extends TestCase
 
     /**
      * Test that an admin can create a checklist item.
-     *
-     * @return void
      */
     public function test_admin_can_create_checklist_item()
     {
-        // Retrieve the 'admin' role
+        // Arrange
         $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
-        // Define checklist item data
+        $checklist = Checklist::factory()->create();
+
         $checklistItemData = [
-            'title' => 'New Checklist Item',
-            // Add other necessary fields as per your ChecklistItem model
+            'description' => 'Admin Checklist Item',
+            'is_completed' => false,
+            'checklist_id' => $checklist->id,
         ];
 
-        // Act as the admin and make a POST request to create a checklist item
+        // Act
         $response = $this->actingAs($admin)->postJson('/checklist-items', $checklistItemData);
 
-        // Assert that the checklist item was created successfully
+        // Assert
         $response->assertStatus(201)
             ->assertJson([
                 'message' => 'Checklist item created successfully.',
                 'checklist_item' => [
-                    'title' => 'New Checklist Item',
+                    'description' => 'Admin Checklist Item',
+                    'is_completed' => false,
+                    'checklist_id' => $checklist->id,
                 ],
             ]);
 
-        // Verify that the checklist item exists in the database
         $this->assertDatabaseHas('checklist_items', [
-            'title' => 'New Checklist Item',
+            'description' => 'Admin Checklist Item',
+            'is_completed' => false,
+            'checklist_id' => $checklist->id,
         ]);
     }
 
     /**
      * Test that a developer can create a checklist item.
-     *
-     * @return void
      */
     public function test_developer_can_create_checklist_item()
     {
-        // Retrieve the 'developer' role
+        // Arrange
         $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
-        // Define checklist item data
+        $checklist = Checklist::factory()->create();
+
         $checklistItemData = [
-            'title' => 'Developer Checklist Item',
-            // Add other necessary fields as per your ChecklistItem model
+            'description' => 'Developer Checklist Item',
+            'is_completed' => true,
+            'checklist_id' => $checklist->id,
         ];
 
-        // Act as the developer and make a POST request to create a checklist item
+        // Act
         $response = $this->actingAs($developer)->postJson('/checklist-items', $checklistItemData);
 
-        // Assert that the checklist item was created successfully
+        // Assert
         $response->assertStatus(201)
             ->assertJson([
                 'message' => 'Checklist item created successfully.',
                 'checklist_item' => [
-                    'title' => 'Developer Checklist Item',
+                    'description' => 'Developer Checklist Item',
+                    'is_completed' => true,
+                    'checklist_id' => $checklist->id,
                 ],
             ]);
 
-        // Verify that the checklist item exists in the database
         $this->assertDatabaseHas('checklist_items', [
-            'title' => 'Developer Checklist Item',
+            'description' => 'Developer Checklist Item',
+            'is_completed' => true,
+            'checklist_id' => $checklist->id,
         ]);
     }
 
     /**
      * Test that a client cannot create a checklist item.
-     *
-     * @return void
      */
     public function test_client_cannot_create_checklist_item()
     {
-        // Retrieve the 'client' role
+        // Arrange
         $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
-        // Define checklist item data
+        $checklist = Checklist::factory()->create();
+
         $checklistItemData = [
-            'title' => 'Unauthorized Checklist Item',
-            // Add other necessary fields as per your ChecklistItem model
+            'description' => 'Client Checklist Item',
+            'is_completed' => false,
+            'checklist_id' => $checklist->id,
         ];
 
-        // Act as the client and make a POST request to create a checklist item
+        // Act
         $response = $this->actingAs($client)->postJson('/checklist-items', $checklistItemData);
 
-        // Assert that the creation is forbidden
+        // Assert
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
-        // Verify that the checklist item does not exist in the database
         $this->assertDatabaseMissing('checklist_items', [
-            'title' => 'Unauthorized Checklist Item',
+            'description' => 'Client Checklist Item',
+            'checklist_id' => $checklist->id,
         ]);
     }
 
     /**
+     * Test that any authenticated user can view checklist items.
+     */
+    public function test_any_authenticated_user_can_view_checklist_items()
+    {
+        // Arrange
+        $roles = ['admin', 'developer', 'client'];
+
+        $users = collect($roles)->map(function ($roleName) {
+            $role = Role::where('name', $roleName)->first();
+            $user = User::factory()->create();
+            $user->roles()->attach($role);
+            return $user;
+        });
+
+        $checklistItems = ChecklistItem::factory()->count(3)->create();
+
+        // Act & Assert
+        $users->each(function ($user) use ($checklistItems) {
+            $response = $this->actingAs($user)->getJson('/checklist-items');
+
+            $response->assertStatus(200)
+                ->assertJsonCount(3);
+
+            $checklistItems->each(function ($item) use ($response) {
+                $response->assertJsonFragment([
+                    'id' => $item->id,
+                    'description' => $item->description,
+                    'is_completed' => $item->is_completed,
+                    'checklist_id' => $item->checklist_id,
+                ]);
+            });
+        });
+    }
+
+    /**
+     * Test that an unauthenticated user cannot view checklist items.
+     */
+    public function test_unauthenticated_user_cannot_view_checklist_items()
+    {
+        // Arrange
+        $checklistItems = ChecklistItem::factory()->count(3)->create();
+
+        // Act
+        $response = $this->getJson('/checklist-items');
+
+        // Assert
+        $response->assertStatus(401);
+    }
+
+    /**
      * Test that an admin can update a checklist item.
-     *
-     * @return void
      */
     public function test_admin_can_update_checklist_item()
     {
-        // Retrieve the 'admin' role
+        // Arrange
         $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
-        // Create a checklist item
         $checklistItem = ChecklistItem::factory()->create([
-            'title' => 'Original Checklist Item',
+            'description' => 'Original Description',
+            'is_completed' => false,
         ]);
 
-        // Define updated data
         $updatedData = [
-            'title' => 'Updated Checklist Item',
+            'description' => 'Updated Description',
+            'is_completed' => true,
+            'checklist_id' => $checklistItem->checklist_id,
         ];
 
-        // Act as the admin and make a PUT request to update the checklist item
+        // Act
         $response = $this->actingAs($admin)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
 
-        // Assert that the checklist item was updated successfully
+        // Assert
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Checklist item updated successfully.',
                 'checklist_item' => [
                     'id' => $checklistItem->id,
-                    'title' => 'Updated Checklist Item',
+                    'description' => 'Updated Description',
+                    'is_completed' => true,
+                    'checklist_id' => $checklistItem->checklist_id,
                 ],
             ]);
 
-        // Verify that the checklist item was updated in the database
         $this->assertDatabaseHas('checklist_items', [
             'id' => $checklistItem->id,
-            'title' => 'Updated Checklist Item',
+            'description' => 'Updated Description',
+            'is_completed' => true,
+        ]);
+    }
+
+    /**
+     * Test that a developer can update a checklist item.
+     */
+    public function test_developer_can_update_checklist_item()
+    {
+        // Arrange
+        $developerRole = Role::where('name', 'developer')->first();
+        $developer = User::factory()->create();
+        $developer->roles()->attach($developerRole);
+
+        $checklistItem = ChecklistItem::factory()->create([
+            'description' => 'Original Description',
+            'is_completed' => false,
+        ]);
+
+        $updatedData = [
+            'description' => 'Updated by Developer',
+            'is_completed' => true,
+            'checklist_id' => $checklistItem->checklist_id,
+        ];
+
+        // Act
+        $response = $this->actingAs($developer)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Checklist item updated successfully.',
+                'checklist_item' => [
+                    'id' => $checklistItem->id,
+                    'description' => 'Updated by Developer',
+                    'is_completed' => true,
+                    'checklist_id' => $checklistItem->checklist_id,
+                ],
+            ]);
+
+        $this->assertDatabaseHas('checklist_items', [
+            'id' => $checklistItem->id,
+            'description' => 'Updated by Developer',
+            'is_completed' => true,
         ]);
     }
 
     /**
      * Test that a client cannot update a checklist item.
-     *
-     * @return void
      */
     public function test_client_cannot_update_checklist_item()
     {
-        // Retrieve the 'client' role
+        // Arrange
         $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
-        // Create a checklist item
         $checklistItem = ChecklistItem::factory()->create([
-            'title' => 'Client Checklist Item',
+            'description' => 'Client Original Description',
+            'is_completed' => false,
         ]);
 
-        // Define updated data
         $updatedData = [
-            'title' => 'Attempted Update',
+            'description' => 'Attempted Update by Client',
+            'is_completed' => true,
+            'checklist_id' => $checklistItem->checklist_id,
         ];
 
-        // Act as the client and make a PUT request to update the checklist item
+        // Act
         $response = $this->actingAs($client)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
 
-        // Assert that the update is forbidden
+        // Assert
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
-        // Verify that the checklist item was not updated in the database
         $this->assertDatabaseHas('checklist_items', [
             'id' => $checklistItem->id,
-            'title' => 'Client Checklist Item',
+            'description' => 'Client Original Description',
+            'is_completed' => false,
         ]);
     }
 
     /**
      * Test that an admin can delete a checklist item.
-     *
-     * @return void
      */
     public function test_admin_can_delete_checklist_item()
     {
-        // Retrieve the 'admin' role
+        // Arrange
         $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
-        // Create a checklist item
-        $checklistItem = ChecklistItem::factory()->create([
-            'title' => 'Checklist Item to Delete',
-        ]);
+        $checklistItem = ChecklistItem::factory()->create();
 
-        // Act as the admin and make a DELETE request to delete the checklist item
+        // Act
         $response = $this->actingAs($admin)->deleteJson("/checklist-items/{$checklistItem->id}");
 
-        // Assert that the deletion was successful
+        // Assert
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Checklist item deleted successfully.',
             ]);
 
-        // Verify that the checklist item no longer exists in the database
         $this->assertDatabaseMissing('checklist_items', [
             'id' => $checklistItem->id,
         ]);
@@ -255,33 +335,25 @@ class ChecklistItemControllerTest extends TestCase
 
     /**
      * Test that a developer can delete a checklist item.
-     *
-     * @return void
      */
     public function test_developer_can_delete_checklist_item()
     {
-        // Retrieve the 'developer' role
+        // Arrange
         $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
-        // Create a checklist item
-        $checklistItem = ChecklistItem::factory()->create([
-            'title' => 'Developer Checklist Item to Delete',
-        ]);
+        $checklistItem = ChecklistItem::factory()->create();
 
-        // Act as the developer and make a DELETE request to delete the checklist item
+        // Act
         $response = $this->actingAs($developer)->deleteJson("/checklist-items/{$checklistItem->id}");
 
-        // Assert that the deletion was successful
+        // Assert
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Checklist item deleted successfully.',
             ]);
 
-        // Verify that the checklist item no longer exists in the database
         $this->assertDatabaseMissing('checklist_items', [
             'id' => $checklistItem->id,
         ]);
@@ -289,94 +361,73 @@ class ChecklistItemControllerTest extends TestCase
 
     /**
      * Test that a client cannot delete a checklist item.
-     *
-     * @return void
      */
     public function test_client_cannot_delete_checklist_item()
     {
-        // Retrieve the 'client' role
+        // Arrange
         $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
-        // Create a checklist item
-        $checklistItem = ChecklistItem::factory()->create([
-            'title' => 'Client Checklist Item to Delete',
-        ]);
+        $checklistItem = ChecklistItem::factory()->create();
 
-        // Act as the client and make a DELETE request to delete the checklist item
+        // Act
         $response = $this->actingAs($client)->deleteJson("/checklist-items/{$checklistItem->id}");
 
-        // Assert that the deletion is forbidden
+        // Assert
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
-        // Verify that the checklist item still exists in the database
         $this->assertDatabaseHas('checklist_items', [
             'id' => $checklistItem->id,
-            'title' => 'Client Checklist Item to Delete',
         ]);
     }
 
     /**
-     * Test that any authenticated user can view checklist items.
-     *
-     * @return void
+     * Test that a user cannot create a checklist item without required fields.
      */
-    public function test_any_authenticated_user_can_view_checklist_items()
+    public function test_cannot_create_checklist_item_without_required_fields()
     {
-        // Retrieve roles
+        // Arrange
         $adminRole = Role::where('name', 'admin')->first();
-        $developerRole = Role::where('name', 'developer')->first();
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create users
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        $checklistItemData = []; // Missing required fields
 
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Act
+        $response = $this->actingAs($admin)->postJson('/checklist-items', $checklistItemData);
 
-        // Create checklist items
-        $checklistItems = ChecklistItem::factory()->count(3)->create();
-
-        // Test for each user
-        foreach ([$admin, $developer, $client] as $user) {
-            $response = $this->actingAs($user)->getJson('/checklist-items');
-
-            $response->assertStatus(200)
-                ->assertJsonCount(3);
-
-            foreach ($checklistItems as $item) {
-                $response->assertJsonFragment([
-                    'id' => $item->id,
-                    'title' => $item->title,
-                ]);
-            }
-        }
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['description', 'checklist_id']);
     }
 
     /**
-     * Test that an unauthenticated user cannot view checklist items.
-     *
-     * @return void
+     * Test that a user cannot update a checklist item with invalid data.
      */
-    public function test_unauthenticated_user_cannot_view_checklist_items()
+    public function test_cannot_update_checklist_item_with_invalid_data()
     {
-        // Create checklist items
-        $checklistItems = ChecklistItem::factory()->count(3)->create();
+        // Arrange
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create();
+        $admin->roles()->attach($adminRole);
 
-        // Make a GET request without authentication
-        $response = $this->getJson('/checklist-items');
+        $checklistItem = ChecklistItem::factory()->create();
 
-        // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $updatedData = [
+            'description' => '', // Invalid: empty string
+            'is_completed' => 'not a boolean', // Invalid: not a boolean
+            'checklist_id' => 9999, // Assuming this ID does not exist
+        ];
+
+        // Act
+        $response = $this->actingAs($admin)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['description', 'is_completed', 'checklist_id']);
     }
 }

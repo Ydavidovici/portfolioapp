@@ -15,6 +15,10 @@ class ChecklistItem extends Model
         'checklist_id',
     ];
 
+    protected $casts = [
+        'is_completed' => 'boolean',
+    ];
+
     public function checklist()
     {
         return $this->belongsTo(Checklist::class);
