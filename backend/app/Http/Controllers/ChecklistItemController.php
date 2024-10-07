@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Gate;
 
 class ChecklistItemController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
+    /**
+     * Display a listing of the checklist items.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function index()
     {
         $checklistItems = ChecklistItem::all();
@@ -25,6 +25,12 @@ class ChecklistItemController extends Controller
         return response()->json($checklistItems);
     }
 
+    /**
+     * Store a newly created checklist item in storage.
+     *
+     * @param  \App\Http\Requests\ChecklistItemRequest  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function store(ChecklistItemRequest $request)
     {
         Gate::authorize('perform-crud-operations');
@@ -37,11 +43,24 @@ class ChecklistItemController extends Controller
         ], 201);
     }
 
+    /**
+     * Display the specified checklist item.
+     *
+     * @param  \App\Models\ChecklistItem  $checklistItem
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function show(ChecklistItem $checklistItem)
     {
         return response()->json($checklistItem->only(['id', 'description', 'is_completed', 'checklist_id']));
     }
 
+    /**
+     * Update the specified checklist item in storage.
+     *
+     * @param  \App\Http\Requests\ChecklistItemRequest  $request
+     * @param  \App\Models\ChecklistItem  $checklistItem
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function update(ChecklistItemRequest $request, ChecklistItem $checklistItem)
     {
         Gate::authorize('perform-crud-operations');
@@ -54,6 +73,12 @@ class ChecklistItemController extends Controller
         ]);
     }
 
+    /**
+     * Remove the specified checklist item from storage.
+     *
+     * @param  \App\Models\ChecklistItem  $checklistItem
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function destroy(ChecklistItem $checklistItem)
     {
         Gate::authorize('perform-crud-operations');

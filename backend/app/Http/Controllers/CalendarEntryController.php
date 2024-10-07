@@ -3,24 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\CalendarEntry;
-use Illuminate\Http\Request;
 use App\Http\Requests\CalendarEntryRequest;
 use Illuminate\Support\Facades\Gate;
 
 class CalendarEntryController extends Controller
 {
-    /**
-     * Instantiate a new controller instance.
-     *
-     * Apply authentication middleware to all routes in this controller.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /**
      * Transform a calendar entry to an array with formatted date.
      *
@@ -29,14 +16,14 @@ class CalendarEntryController extends Controller
      */
     protected function transformCalendarEntry(CalendarEntry $calendarEntry)
     {
-        return $calendarEntry->only([
-            'id',
-            'title',
-            'date',
-            'start_time',
-            'end_time',
-            'user_id',
-        ]);
+        return [
+            'id' => $calendarEntry->id,
+            'title' => $calendarEntry->title,
+            'date' => $calendarEntry->date->format('Y-m-d'), // Explicitly format the date
+            'start_time' => $calendarEntry->start_time,
+            'end_time' => $calendarEntry->end_time,
+            'user_id' => $calendarEntry->user_id,
+        ];
     }
 
     /**
@@ -65,7 +52,7 @@ class CalendarEntryController extends Controller
      */
     public function store(CalendarEntryRequest $request)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can create calendar entries
+        // Authorization: Only users with 'perform-crud-operations' ability can create calendar entries
         Gate::authorize('perform-crud-operations');
 
         $calendarEntry = CalendarEntry::create($request->validated());
@@ -101,7 +88,7 @@ class CalendarEntryController extends Controller
      */
     public function update(CalendarEntryRequest $request, CalendarEntry $calendarEntry)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can update calendar entries
+        // Authorization: Only users with 'perform-crud-operations' ability can update calendar entries
         Gate::authorize('perform-crud-operations');
 
         $calendarEntry->update($request->validated());
@@ -122,7 +109,7 @@ class CalendarEntryController extends Controller
      */
     public function destroy(CalendarEntry $calendarEntry)
     {
-        // Authorization: Only users with 'perform-crud-operations' Gate can delete calendar entries
+        // Authorization: Only users with 'perform-crud-operations' ability can delete calendar entries
         Gate::authorize('perform-crud-operations');
 
         $calendarEntry->delete();

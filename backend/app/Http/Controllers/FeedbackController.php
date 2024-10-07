@@ -34,8 +34,8 @@ class FeedbackController extends Controller
             $feedback = Feedback::with(['project', 'submittedBy'])->get();
         } elseif (Gate::allows('manage-client-things')) {
             // Clients can view only their own feedback
-            $feedback = Feedback::with(['project', 'submittedBy'])
-                ->where('submitted_by', $user->id)
+            $feedback = Feedback::where('submitted_by', $user->id)
+                ->with(['project', 'submittedBy'])
                 ->get();
         } else {
             // Other roles (if any) cannot view feedback
@@ -57,11 +57,15 @@ class FeedbackController extends Controller
     {
         $user = auth()->user();
 
-        if (Gate::allows('perform-crud-operations') || Gate::allows('manage-client-things')) {
+        // Only admins and clients can submit feedback
+        if (Gate::allows('access-admin-dashboard') || Gate::allows('manage-client-things')) {
             $feedbackData = $request->validated();
-            $feedbackData['submitted_by'] = $user->id; // Assuming 'submitted_by' is the foreign key
+            $feedbackData['submitted_by'] = $user->id; // Set the authenticated user as the submitter
 
             $feedback = Feedback::create($feedbackData);
+
+            // Load relationships to include in the response
+            $feedback->load(['project', 'submittedBy']);
 
             return response()->json([
                 'message' => 'Feedback submitted successfully.',
@@ -104,8 +108,13 @@ class FeedbackController extends Controller
     {
         $user = auth()->user();
 
+        // Admins and developers can perform CRUD operations
+        // Clients can update their own feedback
         if (Gate::allows('perform-crud-operations') || ($feedback->submitted_by === $user->id && Gate::allows('manage-client-things'))) {
             $feedback->update($request->validated());
+
+            // Reload relationships after update
+            $feedback->load(['project', 'submittedBy']);
 
             return response()->json([
                 'message' => 'Feedback updated successfully.',
@@ -128,6 +137,8 @@ class FeedbackController extends Controller
     {
         $user = auth()->user();
 
+        // Admins and developers can perform CRUD operations
+        // Clients can delete their own feedback
         if (Gate::allows('perform-crud-operations') || ($feedback->submitted_by === $user->id && Gate::allows('manage-client-things'))) {
             $feedback->delete();
 

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Checklist;
 use App\Models\ChecklistItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ChecklistItemControllerTest extends TestCase
@@ -24,6 +25,23 @@ class ChecklistItemControllerTest extends TestCase
     }
 
     /**
+     * Authenticate a user and return headers with the Bearer token.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function authenticate(User $user)
+    {
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    /**
      * Test that an admin can create a checklist item.
      */
     public function test_admin_can_create_checklist_item()
@@ -32,6 +50,9 @@ class ChecklistItemControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
+
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
 
         $checklist = Checklist::factory()->create();
 
@@ -42,7 +63,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->postJson('/checklist-items', $checklistItemData);
+        $response = $this->withHeaders($headers)->postJson('/checklist-items', $checklistItemData);
 
         // Assert
         $response->assertStatus(201)
@@ -72,6 +93,9 @@ class ChecklistItemControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         $checklist = Checklist::factory()->create();
 
         $checklistItemData = [
@@ -81,7 +105,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($developer)->postJson('/checklist-items', $checklistItemData);
+        $response = $this->withHeaders($headers)->postJson('/checklist-items', $checklistItemData);
 
         // Assert
         $response->assertStatus(201)
@@ -111,6 +135,9 @@ class ChecklistItemControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         $checklist = Checklist::factory()->create();
 
         $checklistItemData = [
@@ -120,7 +147,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($client)->postJson('/checklist-items', $checklistItemData);
+        $response = $this->withHeaders($headers)->postJson('/checklist-items', $checklistItemData);
 
         // Assert
         $response->assertStatus(403)
@@ -146,6 +173,8 @@ class ChecklistItemControllerTest extends TestCase
             $role = Role::where('name', $roleName)->first();
             $user = User::factory()->create();
             $user->roles()->attach($role);
+            // Authenticate the user and store headers
+            $user->headers = $this->authenticate($user);
             return $user;
         });
 
@@ -153,7 +182,7 @@ class ChecklistItemControllerTest extends TestCase
 
         // Act & Assert
         $users->each(function ($user) use ($checklistItems) {
-            $response = $this->actingAs($user)->getJson('/checklist-items');
+            $response = $this->withHeaders($user->headers)->getJson('/checklist-items');
 
             $response->assertStatus(200)
                 ->assertJsonCount(3);
@@ -181,7 +210,10 @@ class ChecklistItemControllerTest extends TestCase
         $response = $this->getJson('/checklist-items');
 
         // Assert
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 
     /**
@@ -193,6 +225,9 @@ class ChecklistItemControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
+
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
 
         $checklistItem = ChecklistItem::factory()->create([
             'description' => 'Original Description',
@@ -206,7 +241,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
+        $response = $this->withHeaders($headers)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
 
         // Assert
         $response->assertStatus(200)
@@ -237,6 +272,9 @@ class ChecklistItemControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         $checklistItem = ChecklistItem::factory()->create([
             'description' => 'Original Description',
             'is_completed' => false,
@@ -249,7 +287,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($developer)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
+        $response = $this->withHeaders($headers)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
 
         // Assert
         $response->assertStatus(200)
@@ -280,6 +318,9 @@ class ChecklistItemControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         $checklistItem = ChecklistItem::factory()->create([
             'description' => 'Client Original Description',
             'is_completed' => false,
@@ -292,7 +333,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($client)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
+        $response = $this->withHeaders($headers)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
 
         // Assert
         $response->assertStatus(403)
@@ -317,10 +358,13 @@ class ChecklistItemControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         $checklistItem = ChecklistItem::factory()->create();
 
         // Act
-        $response = $this->actingAs($admin)->deleteJson("/checklist-items/{$checklistItem->id}");
+        $response = $this->withHeaders($headers)->deleteJson("/checklist-items/{$checklistItem->id}");
 
         // Assert
         $response->assertStatus(200)
@@ -343,10 +387,13 @@ class ChecklistItemControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         $checklistItem = ChecklistItem::factory()->create();
 
         // Act
-        $response = $this->actingAs($developer)->deleteJson("/checklist-items/{$checklistItem->id}");
+        $response = $this->withHeaders($headers)->deleteJson("/checklist-items/{$checklistItem->id}");
 
         // Assert
         $response->assertStatus(200)
@@ -369,10 +416,13 @@ class ChecklistItemControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         $checklistItem = ChecklistItem::factory()->create();
 
         // Act
-        $response = $this->actingAs($client)->deleteJson("/checklist-items/{$checklistItem->id}");
+        $response = $this->withHeaders($headers)->deleteJson("/checklist-items/{$checklistItem->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -395,10 +445,13 @@ class ChecklistItemControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         $checklistItemData = []; // Missing required fields
 
         // Act
-        $response = $this->actingAs($admin)->postJson('/checklist-items', $checklistItemData);
+        $response = $this->withHeaders($headers)->postJson('/checklist-items', $checklistItemData);
 
         // Assert
         $response->assertStatus(422)
@@ -415,6 +468,9 @@ class ChecklistItemControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         $checklistItem = ChecklistItem::factory()->create();
 
         $updatedData = [
@@ -424,7 +480,7 @@ class ChecklistItemControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
+        $response = $this->withHeaders($headers)->putJson("/checklist-items/{$checklistItem->id}", $updatedData);
 
         // Assert
         $response->assertStatus(422)

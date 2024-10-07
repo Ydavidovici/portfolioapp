@@ -12,6 +12,7 @@ class InvoiceFactory extends Factory
     public function definition()
     {
         return [
+            'title' => $this->faker->sentence(3),
             'amount' => $this->faker->randomFloat(2, 100, 10000),
             'status' => $this->faker->randomElement(['pending', 'paid', 'overdue']),
             'client_id' => \App\Models\User::factory(),

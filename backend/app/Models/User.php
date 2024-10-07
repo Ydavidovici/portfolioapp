@@ -55,17 +55,15 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * Check if the user has a specific role.
      */
-    public function hasRole($role)
+    public function hasRole(string $role): bool
     {
-        return $this->roles()->where('name', $role)->exists();
+        return $this->roles()->whereRaw('LOWER(name) = ?', [strtolower($role)])->exists();
     }
 
-    /**
-     * Check if the user has any of the specified roles.
-     */
-    public function hasAnyRole(array $roles)
+    public function hasAnyRole(array $roles): bool
     {
-        return $this->roles()->whereIn('name', $roles)->exists();
+        $lowerRoles = array_map('strtolower', $roles);
+        return $this->roles()->whereIn(\DB::raw('LOWER(name)'), $lowerRoles)->exists();
     }
 
     /**

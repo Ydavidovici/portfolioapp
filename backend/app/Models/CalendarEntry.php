@@ -38,7 +38,7 @@ class CalendarEntry extends Model
      * @var array
      */
     protected $casts = [
-        'date' => 'date',
+        'date' => 'date:Y-m-d',
         'start_time' => 'string',
         'end_time' => 'string',
     ];
@@ -49,16 +49,5 @@ class CalendarEntry extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Accessor to format the date attribute when retrieved.
-     *
-     * @param  string  $value
-     * @return string
-     */
-    public function getDateAttribute($value)
-    {
-        return \Carbon\Carbon::parse($value)->format('Y-m-d');
     }
 }

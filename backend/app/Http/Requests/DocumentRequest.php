@@ -18,7 +18,6 @@ class DocumentRequest extends FormRequest
             'name' => 'required|string|max:255',
             'url' => 'required|string|max:255',
             'project_id' => 'required|exists:projects,id',
-            'uploaded_by' => 'required|exists:users,id',
         ];
     }
 }

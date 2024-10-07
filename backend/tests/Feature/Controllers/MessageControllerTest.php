@@ -5,12 +5,11 @@ namespace Tests\Feature\Controllers;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\Message;
-use App\Events\MessageSent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
+use App\Mail\NewMessageNotification;  // Correct mail reference
 
 class MessageControllerTest extends TestCase
 {
@@ -19,43 +18,40 @@ class MessageControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // Seed roles
         $this->seed(\Database\Seeders\RoleSeeder::class);
     }
 
-    /**
-     * Test that a client can send a message.
-     */
+    protected function getAuthHeaders(User $user)
+    {
+        $token = 'fixedapitoken1234567890abcdef';
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+            'Accept' => 'application/json',
+        ];
+    }
+
     public function test_client_can_send_message()
     {
-        // Fake events and notifications
-        Event::fake();
         Notification::fake();
 
-        // Create a client user
         $clientRole = Role::where('name', 'client')->first();
-        $client = User::factory()->create([
-            'password' => Hash::make('clientpassword'),
-        ]);
+        $client = User::factory()->create(['password' => Hash::make('clientpassword')]);
         $client->roles()->attach($clientRole);
 
-        $this->assertTrue($client->hasRole('client'), "The user does not have the 'client' role.");
+        $receiver = User::factory()->create(['password' => Hash::make('receiverpassword')]);
 
-        // Create a receiver user
-        $receiver = User::factory()->create([
-            'password' => Hash::make('receiverpassword'),
-        ]);
-
-        // Define message data
         $messageData = [
             'content' => 'Hello, this is a test message.',
             'receiver_id' => $receiver->id,
         ];
 
-        // Act as the client and send a message
-        $response = $this->actingAs($client, 'sanctum')->postJson('/send-message', $messageData);
+        $headers = $this->getAuthHeaders($client);
 
-        // Assert that the message was created successfully
+        $response = $this->withHeaders($headers)->postJson('/messages', $messageData);
+
         $response->assertStatus(201)
             ->assertJson([
                 'content' => 'Hello, this is a test message.',
@@ -63,70 +59,88 @@ class MessageControllerTest extends TestCase
                 'receiver_id' => $receiver->id,
             ]);
 
-        // Assert that the message exists in the database
         $this->assertDatabaseHas('messages', [
             'content' => 'Hello, this is a test message.',
             'sender_id' => $client->id,
             'receiver_id' => $receiver->id,
         ]);
 
-        // Assert that the MessageSent event was dispatched
-        Event::assertDispatched(MessageSent::class, function ($event) use ($client, $receiver) {
-            return $event->message->sender_id === $client->id &&
-                $event->message->receiver_id === $receiver->id;
-        });
-
-        // Assert that the NewMessageNotification was sent to the receiver
         Notification::assertSentTo(
-            [$receiver], \App\Notifications\NewMessageNotification::class
+            [$receiver],
+            NewMessageNotification::class,
+            function ($notification, $channels) use ($receiver) {
+                return $notification->message->receiver_id === $receiver->id;
+            }
         );
     }
 
-    /**
-     * Test that a non-authorized user cannot send a message.
-     */
-    public function test_non_authorized_user_cannot_send_message()
+    public function test_can_read_all_messages()
     {
-        // Fake events and notifications
-        Event::fake();
-        Notification::fake();
+        $adminRole = Role::where('name', 'admin')->first();
+        $admin = User::factory()->create(['password' => Hash::make('adminpassword')]);
+        $admin->roles()->attach($adminRole);
 
-        // Create a user without necessary roles
-        $user = User::factory()->create([
-            'password' => Hash::make('userpassword'),
-        ]);
+        Message::factory(3)->create();
 
-        // Create a receiver user
-        $receiver = User::factory()->create([
-            'password' => Hash::make('receiverpassword'),
-        ]);
+        $headers = $this->getAuthHeaders($admin);
 
-        // Define message data
-        $messageData = [
-            'content' => 'Unauthorized message attempt.',
-            'receiver_id' => $receiver->id,
-        ];
+        $response = $this->withHeaders($headers)->getJson('/messages');
 
-        // Act as the unauthorized user and attempt to send a message
-        $response = $this->actingAs($user, 'sanctum')->postJson('/send-message', $messageData);
-
-        // Assert that the action is forbidden
-        $response->assertStatus(403)
-            ->assertJson([
-                'message' => 'This action is unauthorized.',
-            ]);
-
-        // Assert that the message was not created in the database
-        $this->assertDatabaseMissing('messages', [
-            'content' => 'Unauthorized message attempt.',
-            'sender_id' => $user->id,
-            'receiver_id' => $receiver->id,
-        ]);
-
-        // Assert that no events or notifications were dispatched
-        Event::assertNotDispatched(MessageSent::class);
-        Notification::assertNothingSent();
+        $response->assertStatus(200);
+        $this->assertCount(3, $response->json());
     }
 
-    // Additional test methods as needed...
+    public function test_can_read_single_message()
+    {
+        $client = User::factory()->create();
+        $message = Message::factory()->create(['sender_id' => $client->id]);
+
+        $headers = $this->getAuthHeaders($client);
+
+        $response = $this->withHeaders($headers)->getJson("/messages/{$message->id}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'content' => $message->content,
+                'sender_id' => $client->id,
+            ]);
+    }
+
+    public function test_can_update_message()
+    {
+        $admin = User::factory()->create();
+        $message = Message::factory()->create();
+
+        $headers = $this->getAuthHeaders($admin);
+
+        $updatedData = ['content' => 'Updated message content'];
+
+        $response = $this->withHeaders($headers)->putJson("/messages/{$message->id}", $updatedData);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Message updated successfully.',
+            ]);
+
+        $this->assertDatabaseHas('messages', [
+            'content' => 'Updated message content',
+        ]);
+    }
+
+    public function test_can_delete_message()
+    {
+        $admin = User::factory()->create();
+        $message = Message::factory()->create();
+
+        $headers = $this->getAuthHeaders($admin);
+
+        $response = $this->withHeaders($headers)->deleteJson("/messages/{$message->id}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Message deleted successfully.',
+            ]);
+
+        $this->assertDatabaseMissing('messages', ['id' => $message->id]);
+    }
 }

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Task;
+use App\Models\Project;
 use App\Models\TaskList;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,7 +20,8 @@ class TaskFactory extends Factory
             'status' => $this->faker->randomElement(['to-do', 'in-progress', 'done']),
             'due_date' => $this->faker->optional()->date,
             'task_list_id' => TaskList::factory(),
-            'assigned_to' => User::factory(),
+            'assigned_to' => User::inRandomOrder()->first()->id ?? User::factory(),
+            'project_id' => Project::factory(), // Added project_id field
         ];
     }
 }

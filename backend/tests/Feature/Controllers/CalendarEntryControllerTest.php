@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\CalendarEntry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CalendarEntryControllerTest extends TestCase
@@ -25,6 +26,23 @@ class CalendarEntryControllerTest extends TestCase
     }
 
     /**
+     * Authenticate a user and return headers with the Bearer token.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function authenticate(User $user)
+    {
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    /**
      * Test that an admin can create a calendar entry.
      *
      * @return void
@@ -38,6 +56,9 @@ class CalendarEntryControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         // Define calendar entry data with correct time format
         $entryData = [
             'title' => 'Team Meeting',
@@ -47,8 +68,8 @@ class CalendarEntryControllerTest extends TestCase
             'user_id' => $admin->id,
         ];
 
-        // Act as the admin and make a POST request to create a calendar entry
-        $response = $this->actingAs($admin)->postJson('/calendar-entries', $entryData);
+        // Make a POST request to create a calendar entry with the token
+        $response = $this->withHeaders($headers)->postJson('/calendar-entries', $entryData);
 
         // Assert that the calendar entry was created successfully
         $response->assertStatus(201)
@@ -88,6 +109,9 @@ class CalendarEntryControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Define calendar entry data with correct time format
         $entryData = [
             'title' => 'Developer Standup',
@@ -97,8 +121,8 @@ class CalendarEntryControllerTest extends TestCase
             'user_id' => $developer->id,
         ];
 
-        // Act as the developer and make a POST request to create a calendar entry
-        $response = $this->actingAs($developer)->postJson('/calendar-entries', $entryData);
+        // Make a POST request to create a calendar entry with the token
+        $response = $this->withHeaders($headers)->postJson('/calendar-entries', $entryData);
 
         // Assert that the calendar entry was created successfully
         $response->assertStatus(201)
@@ -138,6 +162,9 @@ class CalendarEntryControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         // Define calendar entry data with correct time format
         $entryData = [
             'title' => 'Client Meeting',
@@ -147,8 +174,8 @@ class CalendarEntryControllerTest extends TestCase
             'user_id' => $client->id,
         ];
 
-        // Act as the client and make a POST request to create a calendar entry
-        $response = $this->actingAs($client)->postJson('/calendar-entries', $entryData);
+        // Make a POST request to create a calendar entry with the token
+        $response = $this->withHeaders($headers)->postJson('/calendar-entries', $entryData);
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
@@ -180,6 +207,9 @@ class CalendarEntryControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Create a calendar entry
         $entry = CalendarEntry::factory()->create([
             'title' => 'Original Entry',
@@ -198,8 +228,8 @@ class CalendarEntryControllerTest extends TestCase
             'user_id' => $developer->id,
         ];
 
-        // Act as the developer and make a PUT request to update the calendar entry
-        $response = $this->actingAs($developer)->putJson("/calendar-entries/{$entry->id}", $updatedData);
+        // Make a PUT request to update the calendar entry with the token
+        $response = $this->withHeaders($headers)->putJson("/calendar-entries/{$entry->id}", $updatedData);
 
         // Assert that the calendar entry was updated successfully
         $response->assertStatus(200)
@@ -240,6 +270,9 @@ class CalendarEntryControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         // Create a calendar entry
         $entry = CalendarEntry::factory()->create([
             'title' => 'Client Entry',
@@ -258,8 +291,8 @@ class CalendarEntryControllerTest extends TestCase
             'user_id' => $client->id,
         ];
 
-        // Act as the client and make a PUT request to update the calendar entry
-        $response = $this->actingAs($client)->putJson("/calendar-entries/{$entry->id}", $updatedData);
+        // Make a PUT request to update the calendar entry with the token
+        $response = $this->withHeaders($headers)->putJson("/calendar-entries/{$entry->id}", $updatedData);
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
@@ -292,6 +325,9 @@ class CalendarEntryControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         // Create a calendar entry
         $entry = CalendarEntry::factory()->create([
             'title' => 'Entry to Delete',
@@ -301,8 +337,8 @@ class CalendarEntryControllerTest extends TestCase
             'user_id' => $admin->id,
         ]);
 
-        // Act as the admin and make a DELETE request to delete the calendar entry
-        $response = $this->actingAs($admin)->deleteJson("/calendar-entries/{$entry->id}");
+        // Make a DELETE request to delete the calendar entry with the token
+        $response = $this->withHeaders($headers)->deleteJson("/calendar-entries/{$entry->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(200)
@@ -328,22 +364,31 @@ class CalendarEntryControllerTest extends TestCase
         $developerRole = Role::where('name', 'developer')->first();
         $clientRole = Role::where('name', 'client')->first();
 
-        // Create users
+        // Create users and authenticate them
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
+        $adminHeaders = $this->authenticate($admin);
 
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
+        $developerHeaders = $this->authenticate($developer);
 
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
+        $clientHeaders = $this->authenticate($client);
 
         // Create calendar entries
         $entries = CalendarEntry::factory()->count(3)->create();
 
         // Test for each user
-        foreach ([$admin, $developer, $client] as $user) {
-            $response = $this->actingAs($user)->getJson('/calendar-entries');
+        $users = [
+            ['user' => $admin, 'headers' => $adminHeaders],
+            ['user' => $developer, 'headers' => $developerHeaders],
+            ['user' => $client, 'headers' => $clientHeaders],
+        ];
+
+        foreach ($users as $userData) {
+            $response = $this->withHeaders($userData['headers'])->getJson('/calendar-entries');
 
             $response->assertStatus(200)
                 ->assertJsonCount(3);
@@ -352,7 +397,7 @@ class CalendarEntryControllerTest extends TestCase
                 $response->assertJsonFragment([
                     'id' => $entry->id,
                     'title' => $entry->title,
-                    'date' => $entry->date, // Use the date string directly
+                    'date' => $entry->date->format('Y-m-d'), // Format the date
                     'start_time' => $entry->start_time,
                     'end_time' => $entry->end_time,
                     'user_id' => $entry->user_id,
@@ -375,6 +420,9 @@ class CalendarEntryControllerTest extends TestCase
         $response = $this->getJson('/calendar-entries');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

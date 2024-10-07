@@ -17,7 +17,6 @@ class FeedbackRequest extends FormRequest
             'content' => 'required|string',
             'rating' => 'required|integer|min:1|max:5',
             'project_id' => 'required|exists:projects,id',
-            'submitted_by' => 'required|exists:users,id',
         ];
     }
 }

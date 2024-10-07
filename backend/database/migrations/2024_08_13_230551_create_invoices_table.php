@@ -10,6 +10,7 @@ class CreateInvoicesTable extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
+            $table->string('title')->default('New Invoice');
             $table->decimal('amount', 10, 2);
             $table->enum('status', ['pending', 'paid', 'overdue']);
             $table->foreignId('client_id')->constrained('users');

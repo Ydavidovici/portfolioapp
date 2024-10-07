@@ -22,7 +22,10 @@ class CreateTasksTable extends Migration
                 ->nullable()
                 ->constrained('users')
                 ->onDelete('set null');
+            $table->unsignedBigInteger('project_id'); // Foreign key to projects
             $table->timestamps();
+
+            $table->foreign('project_id')->references('id')->on('projects')->onDelete('cascade');
         });
     }
 

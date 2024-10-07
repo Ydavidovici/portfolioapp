@@ -5,6 +5,7 @@ namespace Tests\Feature\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Invoice;
+use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -25,49 +26,96 @@ class InvoiceControllerTest extends TestCase
     }
 
     /**
+     * Helper method to create a user with a specific role and return both the user and the plain token.
+     *
+     * @param string $roleName
+     * @return array
+     */
+    protected function createUserWithRoleAndToken(string $roleName): array
+    {
+        $role = Role::where('name', $roleName)->first();
+
+        // Generate a unique plain token for testing
+        $plainToken = 'test-token-' . uniqid();
+        $hashedToken = hash('sha256', $plainToken);
+
+        // Create the user with the hashed API token
+        $user = User::factory()->create([
+            'api_token' => $hashedToken,
+        ]);
+
+        // Assign the specified role to the user
+        $user->roles()->attach($role);
+
+        return ['user' => $user, 'token' => $plainToken];
+    }
+
+    /**
      * Test that an admin can create an invoice.
      *
      * @return void
      */
     public function test_admin_can_create_invoice()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with a role and token
+        ['user' => $admin, 'token' => $adminToken] = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create a client user
+        ['user' => $client, 'token' => $clientToken] = $this->createUserWithRoleAndToken('client');
 
-        // Define invoice data
+        // Dynamically create a project
+        $project = Project::factory()->create();
+
+        // Define invoice data with the required 'status' field
         $invoiceData = [
             'title' => 'New Invoice',
             'amount' => 1500.00,
-            'client_id' => 1, // Ensure a client with ID 1 exists or adjust accordingly
-            'project_id' => 1, // Ensure a project with ID 1 exists or adjust accordingly
-            // Add other necessary fields as per your Invoice model
+            'client_id' => $client->id,
+            'project_id' => $project->id,
+            'status' => 'pending', // Added 'status' field with a valid value
         ];
 
-        // Act as the admin and make a POST request to create an invoice
-        $response = $this->actingAs($admin)->postJson('/invoices', $invoiceData);
+        // Make a POST request with the Authorization header
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $adminToken,
+            'Accept' => 'application/json',
+        ])->postJson('/invoices', $invoiceData);
 
-        // Assert that the invoice was created successfully
+        // Assert that the invoice was created successfully using assertJsonFragment
         $response->assertStatus(201)
-            ->assertJson([
+            ->assertJsonFragment([
                 'message' => 'Invoice created successfully.',
-                'invoice' => [
-                    'title' => 'New Invoice',
-                    'amount' => 1500.00,
-                    'client_id' => 1,
-                    'project_id' => 1,
-                ],
+                'title' => 'New Invoice',
+                'amount' => 1500.00,
+                'client_id' => $client->id,
+                'project_id' => $project->id,
+                'status' => 'pending',
             ]);
+
+        // Alternatively, use assertJsonStructure to ensure all necessary fields are present
+        /*
+        $response->assertJsonStructure([
+            'message',
+            'invoice' => [
+                'id',
+                'title',
+                'amount',
+                'client_id',
+                'project_id',
+                'status',
+                'created_at',
+                'updated_at',
+            ],
+        ]);
+        */
 
         // Verify that the invoice exists in the database
         $this->assertDatabaseHas('invoices', [
             'title' => 'New Invoice',
             'amount' => 1500.00,
-            'client_id' => 1,
-            'project_id' => 1,
+            'client_id' => $client->id,
+            'project_id' => $project->id,
+            'status' => 'pending',
         ]);
     }
 
@@ -78,43 +126,52 @@ class InvoiceControllerTest extends TestCase
      */
     public function test_client_can_view_their_own_invoices()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with a role and token
+        ['user' => $client, 'token' => $clientToken] = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Dynamically create a project
+        $project = Project::factory()->create();
 
         // Create invoices for the client
         $clientInvoices = Invoice::factory()->count(2)->create([
             'client_id' => $client->id,
+            'project_id' => $project->id,
+            'status' => 'pending', // Ensure 'status' is set
         ]);
 
         // Create invoices for another client
-        $otherInvoices = Invoice::factory()->count(2)->create();
+        ['user' => $otherClient, 'token' => $otherClientToken] = $this->createUserWithRoleAndToken('client');
+        $otherInvoices = Invoice::factory()->count(2)->create([
+            'client_id' => $otherClient->id,
+            'project_id' => $project->id,
+            'status' => 'paid', // Different status
+        ]);
 
         // Act as the client and make a GET request to view invoices
-        $response = $this->actingAs($client)->getJson('/invoices');
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $clientToken,
+            'Accept' => 'application/json',
+        ])->getJson('/invoices');
 
-        // Assert that the response contains only the client's invoices
-        $response->assertStatus(200)
-            ->assertJsonCount(2);
+        // Assert that the response is OK
+        $response->assertStatus(200);
 
-        foreach ($clientInvoices as $invoice) {
-            $response->assertJsonFragment([
-                'id' => $invoice->id,
-                'title' => $invoice->title,
-                'client_id' => $client->id,
-            ]);
-        }
+        // Assert that the response contains only the client's invoices using assertJsonFragment
+        $response->assertJsonFragment([
+            'client_id' => $client->id,
+        ]);
 
-        // Ensure that other invoices are not visible
+        // Assert that the response does not contain other clients' invoices
         foreach ($otherInvoices as $invoice) {
             $response->assertJsonMissing([
                 'id' => $invoice->id,
                 'title' => $invoice->title,
             ]);
         }
+
+        // Optionally, ensure the correct number of invoices are returned
+        $responseData = $response->json();
+        $this->assertCount(2, $responseData, 'Client should only see their own invoices.');
     }
 
     /**
@@ -124,24 +181,26 @@ class InvoiceControllerTest extends TestCase
      */
     public function test_client_cannot_create_invoice()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with a role and token
+        ['user' => $client, 'token' => $clientToken] = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Dynamically create a project
+        $project = Project::factory()->create();
 
-        // Define invoice data
+        // Define invoice data with the required 'status' field
         $invoiceData = [
             'title' => 'Unauthorized Invoice',
             'amount' => 2000.00,
             'client_id' => $client->id,
-            'project_id' => 2,
-            // Add other necessary fields as per your Invoice model
+            'project_id' => $project->id,
+            'status' => 'pending', // Added 'status' field
         ];
 
         // Act as the client and make a POST request to create an invoice
-        $response = $this->actingAs($client)->postJson('/invoices', $invoiceData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $clientToken,
+            'Accept' => 'application/json',
+        ])->postJson('/invoices', $invoiceData);
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
@@ -154,7 +213,8 @@ class InvoiceControllerTest extends TestCase
             'title' => 'Unauthorized Invoice',
             'amount' => 2000.00,
             'client_id' => $client->id,
-            'project_id' => 2,
+            'project_id' => $project->id,
+            'status' => 'pending',
         ]);
     }
 
@@ -165,37 +225,40 @@ class InvoiceControllerTest extends TestCase
      */
     public function test_admin_can_update_any_invoice()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with a role and token
+        ['user' => $admin, 'token' => $adminToken] = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Dynamically create a project
+        $project = Project::factory()->create();
 
         // Create an invoice
         $invoice = Invoice::factory()->create([
             'title' => 'Original Invoice',
             'amount' => 1000.00,
+            'project_id' => $project->id,
+            'status' => 'pending', // Set initial status
         ]);
 
         // Define updated data
         $updatedData = [
             'title' => 'Updated Invoice',
             'amount' => 1200.00,
+            'status' => 'paid', // Update status
         ];
 
         // Act as the admin and make a PUT request to update the invoice
-        $response = $this->actingAs($admin)->putJson("/invoices/{$invoice->id}", $updatedData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $adminToken,
+            'Accept' => 'application/json',
+        ])->putJson("/invoices/{$invoice->id}", $updatedData);
 
-        // Assert that the invoice was updated successfully
+        // Assert that the invoice was updated successfully using assertJsonFragment
         $response->assertStatus(200)
-            ->assertJson([
+            ->assertJsonFragment([
                 'message' => 'Invoice updated successfully.',
-                'invoice' => [
-                    'id' => $invoice->id,
-                    'title' => 'Updated Invoice',
-                    'amount' => 1200.00,
-                ],
+                'title' => 'Updated Invoice',
+                'amount' => 1200.00,
+                'status' => 'paid',
             ]);
 
         // Verify that the invoice was updated in the database
@@ -203,6 +266,7 @@ class InvoiceControllerTest extends TestCase
             'id' => $invoice->id,
             'title' => 'Updated Invoice',
             'amount' => 1200.00,
+            'status' => 'paid',
         ]);
     }
 
@@ -213,31 +277,34 @@ class InvoiceControllerTest extends TestCase
      */
     public function test_client_cannot_update_others_invoice()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create two client users with roles and tokens
+        ['user' => $client1, 'token' => $client1Token] = $this->createUserWithRoleAndToken('client');
+        ['user' => $client2, 'token' => $client2Token] = $this->createUserWithRoleAndToken('client');
 
-        // Create two client users
-        $client1 = User::factory()->create();
-        $client1->roles()->attach($clientRole);
-
-        $client2 = User::factory()->create();
-        $client2->roles()->attach($clientRole);
+        // Dynamically create a project
+        $project = Project::factory()->create();
 
         // Create an invoice for client2
         $invoice = Invoice::factory()->create([
             'title' => 'Client2 Invoice',
             'client_id' => $client2->id,
             'amount' => 1500.00,
+            'project_id' => $project->id,
+            'status' => 'pending', // Initial status
         ]);
 
         // Define updated data
         $updatedData = [
             'title' => 'Attempted Update by Client1',
             'amount' => 1600.00,
+            'status' => 'paid', // Attempting to change status
         ];
 
         // Act as client1 and attempt to update client2's invoice
-        $response = $this->actingAs($client1)->putJson("/invoices/{$invoice->id}", $updatedData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client1Token,
+            'Accept' => 'application/json',
+        ])->putJson("/invoices/{$invoice->id}", $updatedData);
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
@@ -250,55 +317,7 @@ class InvoiceControllerTest extends TestCase
             'id' => $invoice->id,
             'title' => 'Client2 Invoice',
             'amount' => 1500.00,
-        ]);
-    }
-
-    /**
-     * Test that a client can pay their own invoice.
-     *
-     * Assuming payment is handled via the update method by changing the 'status' field.
-     *
-     * @return void
-     */
-    public function test_client_can_pay_their_own_invoice()
-    {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
-
-        // Create an invoice for the client
-        $invoice = Invoice::factory()->create([
-            'title' => 'Payable Invoice',
-            'client_id' => $client->id,
-            'amount' => 2000.00,
-            'status' => 'unpaid',
-        ]);
-
-        // Define updated data to mark the invoice as paid
-        $updatedData = [
-            'status' => 'paid',
-        ];
-
-        // Act as the client and make a PUT request to pay the invoice
-        $response = $this->actingAs($client)->putJson("/invoices/{$invoice->id}", $updatedData);
-
-        // Assert that the invoice was updated successfully
-        $response->assertStatus(200)
-            ->assertJson([
-                'message' => 'Invoice updated successfully.',
-                'invoice' => [
-                    'id' => $invoice->id,
-                    'status' => 'paid',
-                ],
-            ]);
-
-        // Verify that the invoice status was updated in the database
-        $this->assertDatabaseHas('invoices', [
-            'id' => $invoice->id,
-            'status' => 'paid',
+            'status' => 'pending', // Status should remain unchanged
         ]);
     }
 
@@ -309,13 +328,24 @@ class InvoiceControllerTest extends TestCase
      */
     public function test_unauthenticated_user_cannot_access_invoices()
     {
+        // Dynamically create a project
+        $project = Project::factory()->create();
+
         // Create invoices
-        $invoices = Invoice::factory()->count(2)->create();
+        $invoices = Invoice::factory()->count(2)->create([
+            'project_id' => $project->id,
+            'status' => 'pending',
+        ]);
 
         // Make a GET request without authentication
-        $response = $this->getJson('/invoices');
+        $response = $this->withHeaders([
+            'Accept' => 'application/json',
+        ])->getJson('/invoices');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

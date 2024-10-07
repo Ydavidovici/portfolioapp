@@ -5,8 +5,9 @@ namespace Tests\Feature\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Board;
-use App\Models\Project; // Ensure that Project model is available
+use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class BoardControllerTest extends TestCase
@@ -26,6 +27,23 @@ class BoardControllerTest extends TestCase
     }
 
     /**
+     * Authenticate a user and return headers with the Bearer token.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function authenticate(User $user)
+    {
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    /**
      * Test that an admin can create a board.
      *
      * @return void
@@ -39,14 +57,17 @@ class BoardControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach(Role::where('name', 'admin')->first());
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         // Define board data
         $boardData = [
             'name' => 'New Board',
             'project_id' => $project->id,
         ];
 
-        // Act as the admin and make a POST request to create a board
-        $response = $this->actingAs($admin)->postJson('/boards', $boardData);
+        // Make a POST request to create a board with the token
+        $response = $this->withHeaders($headers)->postJson('/boards', $boardData);
 
         // Assert that the board was created successfully
         $response->assertStatus(201)
@@ -79,14 +100,17 @@ class BoardControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach(Role::where('name', 'developer')->first());
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Define board data
         $boardData = [
             'name' => 'Developer Board',
             'project_id' => $project->id,
         ];
 
-        // Act as the developer and make a POST request to create a board
-        $response = $this->actingAs($developer)->postJson('/boards', $boardData);
+        // Make a POST request to create a board with the token
+        $response = $this->withHeaders($headers)->postJson('/boards', $boardData);
 
         // Assert that the board was created successfully
         $response->assertStatus(201)
@@ -119,14 +143,17 @@ class BoardControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach(Role::where('name', 'client')->first());
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         // Define board data
         $boardData = [
             'name' => 'Unauthorized Board',
             'project_id' => $project->id,
         ];
 
-        // Act as the client and make a POST request to create a board
-        $response = $this->actingAs($client)->postJson('/boards', $boardData);
+        // Make a POST request to create a board with the token
+        $response = $this->withHeaders($headers)->postJson('/boards', $boardData);
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
@@ -154,6 +181,9 @@ class BoardControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach(Role::where('name', 'developer')->first());
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Original Board',
@@ -166,8 +196,8 @@ class BoardControllerTest extends TestCase
             'project_id' => $project->id,
         ];
 
-        // Act as the developer and make a PUT request to update the board
-        $response = $this->actingAs($developer)->putJson("/boards/{$board->id}", $updatedData);
+        // Make a PUT request to update the board with the token
+        $response = $this->withHeaders($headers)->putJson("/boards/{$board->id}", $updatedData);
 
         // Assert that the board was updated successfully
         $response->assertStatus(200)
@@ -202,6 +232,9 @@ class BoardControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach(Role::where('name', 'client')->first());
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Client Board',
@@ -214,8 +247,8 @@ class BoardControllerTest extends TestCase
             'project_id' => $project->id,
         ];
 
-        // Act as the client and make a PUT request to update the board
-        $response = $this->actingAs($client)->putJson("/boards/{$board->id}", $updatedData);
+        // Make a PUT request to update the board with the token
+        $response = $this->withHeaders($headers)->putJson("/boards/{$board->id}", $updatedData);
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
@@ -244,14 +277,17 @@ class BoardControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach(Role::where('name', 'admin')->first());
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Board to Delete',
             'project_id' => $project->id,
         ]);
 
-        // Act as the admin and make a DELETE request to delete the board
-        $response = $this->actingAs($admin)->deleteJson("/boards/{$board->id}");
+        // Make a DELETE request to delete the board with the token
+        $response = $this->withHeaders($headers)->deleteJson("/boards/{$board->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(200)
@@ -279,14 +315,17 @@ class BoardControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach(Role::where('name', 'client')->first());
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         // Create a board
         $board = Board::factory()->create([
             'name' => 'Client Board to Delete',
             'project_id' => $project->id,
         ]);
 
-        // Act as the client and make a DELETE request to delete the board
-        $response = $this->actingAs($client)->deleteJson("/boards/{$board->id}");
+        // Make a DELETE request to delete the board with the token
+        $response = $this->withHeaders($headers)->deleteJson("/boards/{$board->id}");
 
         // Assert that the deletion is forbidden
         $response->assertStatus(403)
@@ -315,19 +354,28 @@ class BoardControllerTest extends TestCase
         // Create users
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
+        $adminHeaders = $this->authenticate($admin);
 
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
+        $developerHeaders = $this->authenticate($developer);
 
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
+        $clientHeaders = $this->authenticate($client);
 
         // Create boards
         $boards = Board::factory()->count(3)->create();
 
         // Test for each user
-        foreach ([$admin, $developer, $client] as $user) {
-            $response = $this->actingAs($user)->getJson('/boards');
+        $users = [
+            ['user' => $admin, 'headers' => $adminHeaders],
+            ['user' => $developer, 'headers' => $developerHeaders],
+            ['user' => $client, 'headers' => $clientHeaders],
+        ];
+
+        foreach ($users as $userData) {
+            $response = $this->withHeaders($userData['headers'])->getJson('/boards');
 
             $response->assertStatus(200)
                 ->assertJsonCount(3);
@@ -356,6 +404,9 @@ class BoardControllerTest extends TestCase
         $response = $this->getJson('/boards');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

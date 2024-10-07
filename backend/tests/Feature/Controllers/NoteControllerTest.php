@@ -6,7 +6,9 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Note;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
+use Illuminate\Support\Str;
 
 class NoteControllerTest extends TestCase
 {
@@ -25,6 +27,25 @@ class NoteControllerTest extends TestCase
     }
 
     /**
+     * Helper method to assign an API token to a user and get headers.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function getAuthHeaders(User $user)
+    {
+        // Generate a unique API token
+        $apiToken = Str::random(60);
+        $user->api_token = $apiToken;
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $apiToken,
+            'Accept' => 'application/json',
+        ];
+    }
+
+    /**
      * Test that an admin can create a note.
      *
      * @return void
@@ -35,7 +56,9 @@ class NoteControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
 
         // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'password' => Hash::make('adminpassword'),
+        ]);
         $admin->roles()->attach($adminRole);
 
         // Define note data
@@ -45,10 +68,13 @@ class NoteControllerTest extends TestCase
             // Add other necessary fields as per your Note model
         ];
 
-        // Act as the admin and make a POST request to create a note
-        $response = $this->actingAs($admin)->postJson('/notes', $noteData);
+        // Assign an API token to the admin and get headers
+        $headers = $this->getAuthHeaders($admin);
 
-        // Assert that the note was created successfully
+        // Act as the admin and make a POST request to create a note
+        $response = $this->withHeaders($headers)->postJson('/notes', $noteData);
+
+        // Assert that the response status is 201 Created
         $response->assertStatus(201)
             ->assertJson([
                 'message' => 'Note created successfully.',
@@ -76,7 +102,9 @@ class NoteControllerTest extends TestCase
         $developerRole = Role::where('name', 'developer')->first();
 
         // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
+        $developer = User::factory()->create([
+            'password' => Hash::make('developerpassword'),
+        ]);
         $developer->roles()->attach($developerRole);
 
         // Define note data
@@ -86,10 +114,13 @@ class NoteControllerTest extends TestCase
             // Add other necessary fields as per your Note model
         ];
 
-        // Act as the developer and make a POST request to create a note
-        $response = $this->actingAs($developer)->postJson('/notes', $noteData);
+        // Assign an API token to the developer and get headers
+        $headers = $this->getAuthHeaders($developer);
 
-        // Assert that the note was created successfully
+        // Act as the developer and make a POST request to create a note
+        $response = $this->withHeaders($headers)->postJson('/notes', $noteData);
+
+        // Assert that the response status is 201 Created
         $response->assertStatus(201)
             ->assertJson([
                 'message' => 'Note created successfully.',
@@ -117,7 +148,9 @@ class NoteControllerTest extends TestCase
         $clientRole = Role::where('name', 'client')->first();
 
         // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
+        $client = User::factory()->create([
+            'password' => Hash::make('clientpassword'),
+        ]);
         $client->roles()->attach($clientRole);
 
         // Define note data
@@ -127,16 +160,19 @@ class NoteControllerTest extends TestCase
             // Add other necessary fields as per your Note model
         ];
 
-        // Act as the client and make a POST request to create a note
-        $response = $this->actingAs($client)->postJson('/notes', $noteData);
+        // Assign an API token to the client and get headers
+        $headers = $this->getAuthHeaders($client);
 
-        // Assert that the creation is forbidden
+        // Act as the client and make a POST request to create a note
+        $response = $this->withHeaders($headers)->postJson('/notes', $noteData);
+
+        // Assert that the response status is 403 Forbidden
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
             ]);
 
-        // Verify that the note does not exist in the database
+        // Assert that the note was not created in the database
         $this->assertDatabaseMissing('notes', [
             'content' => 'Client attempting to create a note.',
             'project_id' => 3,
@@ -154,7 +190,9 @@ class NoteControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
 
         // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'password' => Hash::make('adminpassword'),
+        ]);
         $admin->roles()->attach($adminRole);
 
         // Create a note
@@ -168,10 +206,13 @@ class NoteControllerTest extends TestCase
             'content' => 'Updated Note Content by Admin',
         ];
 
-        // Act as the admin and make a PUT request to update the note
-        $response = $this->actingAs($admin)->putJson("/notes/{$note->id}", $updatedData);
+        // Assign an API token to the admin and get headers
+        $headers = $this->getAuthHeaders($admin);
 
-        // Assert that the note was updated successfully
+        // Act as the admin and make a PUT request to update the note
+        $response = $this->withHeaders($headers)->putJson("/notes/{$note->id}", $updatedData);
+
+        // Assert that the response status is 200 OK
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Note updated successfully.',
@@ -199,7 +240,9 @@ class NoteControllerTest extends TestCase
         $developerRole = Role::where('name', 'developer')->first();
 
         // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
+        $developer = User::factory()->create([
+            'password' => Hash::make('developerpassword'),
+        ]);
         $developer->roles()->attach($developerRole);
 
         // Create a note
@@ -213,10 +256,13 @@ class NoteControllerTest extends TestCase
             'content' => 'Updated Developer Note Content',
         ];
 
-        // Act as the developer and make a PUT request to update the note
-        $response = $this->actingAs($developer)->putJson("/notes/{$note->id}", $updatedData);
+        // Assign an API token to the developer and get headers
+        $headers = $this->getAuthHeaders($developer);
 
-        // Assert that the note was updated successfully
+        // Act as the developer and make a PUT request to update the note
+        $response = $this->withHeaders($headers)->putJson("/notes/{$note->id}", $updatedData);
+
+        // Assert that the response status is 200 OK
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Note updated successfully.',
@@ -244,7 +290,9 @@ class NoteControllerTest extends TestCase
         $clientRole = Role::where('name', 'client')->first();
 
         // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
+        $client = User::factory()->create([
+            'password' => Hash::make('clientpassword'),
+        ]);
         $client->roles()->attach($clientRole);
 
         // Create a note
@@ -258,10 +306,13 @@ class NoteControllerTest extends TestCase
             'content' => 'Attempted Update by Client',
         ];
 
-        // Act as the client and make a PUT request to update the note
-        $response = $this->actingAs($client)->putJson("/notes/{$note->id}", $updatedData);
+        // Assign an API token to the client and get headers
+        $headers = $this->getAuthHeaders($client);
 
-        // Assert that the update is forbidden
+        // Act as the client and make a PUT request to update the note
+        $response = $this->withHeaders($headers)->putJson("/notes/{$note->id}", $updatedData);
+
+        // Assert that the response status is 403 Forbidden
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
@@ -285,7 +336,9 @@ class NoteControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
 
         // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'password' => Hash::make('adminpassword'),
+        ]);
         $admin->roles()->attach($adminRole);
 
         // Create a note
@@ -294,10 +347,13 @@ class NoteControllerTest extends TestCase
             'project_id' => 1,
         ]);
 
-        // Act as the admin and make a DELETE request to delete the note
-        $response = $this->actingAs($admin)->deleteJson("/notes/{$note->id}");
+        // Assign an API token to the admin and get headers
+        $headers = $this->getAuthHeaders($admin);
 
-        // Assert that the deletion was successful
+        // Act as the admin and make a DELETE request to delete the note
+        $response = $this->withHeaders($headers)->deleteJson("/notes/{$note->id}");
+
+        // Assert that the response status is 200 OK
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Note deleted successfully.',
@@ -320,7 +376,9 @@ class NoteControllerTest extends TestCase
         $developerRole = Role::where('name', 'developer')->first();
 
         // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
+        $developer = User::factory()->create([
+            'password' => Hash::make('developerpassword'),
+        ]);
         $developer->roles()->attach($developerRole);
 
         // Create a note
@@ -329,10 +387,13 @@ class NoteControllerTest extends TestCase
             'project_id' => 2,
         ]);
 
-        // Act as the developer and make a DELETE request to delete the note
-        $response = $this->actingAs($developer)->deleteJson("/notes/{$note->id}");
+        // Assign an API token to the developer and get headers
+        $headers = $this->getAuthHeaders($developer);
 
-        // Assert that the deletion was successful
+        // Act as the developer and make a DELETE request to delete the note
+        $response = $this->withHeaders($headers)->deleteJson("/notes/{$note->id}");
+
+        // Assert that the response status is 200 OK
         $response->assertStatus(200)
             ->assertJson([
                 'message' => 'Note deleted successfully.',
@@ -355,7 +416,9 @@ class NoteControllerTest extends TestCase
         $clientRole = Role::where('name', 'client')->first();
 
         // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
+        $client = User::factory()->create([
+            'password' => Hash::make('clientpassword'),
+        ]);
         $client->roles()->attach($clientRole);
 
         // Create a note
@@ -364,10 +427,13 @@ class NoteControllerTest extends TestCase
             'project_id' => 3,
         ]);
 
-        // Act as the client and make a DELETE request to delete the note
-        $response = $this->actingAs($client)->deleteJson("/notes/{$note->id}");
+        // Assign an API token to the client and get headers
+        $headers = $this->getAuthHeaders($client);
 
-        // Assert that the deletion is forbidden
+        // Act as the client and make a DELETE request to delete the note
+        $response = $this->withHeaders($headers)->deleteJson("/notes/{$note->id}");
+
+        // Assert that the response status is 403 Forbidden
         $response->assertStatus(403)
             ->assertJson([
                 'message' => 'This action is unauthorized.',
@@ -391,7 +457,9 @@ class NoteControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
 
         // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
+        $admin = User::factory()->create([
+            'password' => Hash::make('adminpassword'),
+        ]);
         $admin->roles()->attach($adminRole);
 
         // Create a note
@@ -400,8 +468,11 @@ class NoteControllerTest extends TestCase
             'project_id' => 1,
         ]);
 
+        // Assign an API token to the admin and get headers
+        $headers = $this->getAuthHeaders($admin);
+
         // Act as the admin and make a GET request to view the note
-        $response = $this->actingAs($admin)->getJson("/notes/{$note->id}");
+        $response = $this->withHeaders($headers)->getJson("/notes/{$note->id}");
 
         // Assert that the response is successful and contains the note data
         $response->assertStatus(200)
@@ -423,7 +494,9 @@ class NoteControllerTest extends TestCase
         $clientRole = Role::where('name', 'client')->first();
 
         // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
+        $client = User::factory()->create([
+            'password' => Hash::make('clientpassword'),
+        ]);
         $client->roles()->attach($clientRole);
 
         // Create a note
@@ -432,8 +505,11 @@ class NoteControllerTest extends TestCase
             'project_id' => 3,
         ]);
 
+        // Assign an API token to the client and get headers
+        $headers = $this->getAuthHeaders($client);
+
         // Act as the client and make a GET request to view the note
-        $response = $this->actingAs($client)->getJson("/notes/{$note->id}");
+        $response = $this->withHeaders($headers)->getJson("/notes/{$note->id}");
 
         // Assert that the response is forbidden
         $response->assertStatus(403)
@@ -456,6 +532,9 @@ class NoteControllerTest extends TestCase
         $response = $this->getJson('/notes');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

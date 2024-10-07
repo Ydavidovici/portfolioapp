@@ -77,11 +77,7 @@ Route::middleware([AuthenticateApiToken::class, 'throttle:api'])->group(function
     Route::apiResource('quickbooks-tokens', QuickBooksTokenController::class);
     Route::apiResource('reminders', ReminderController::class);
     Route::apiResource('tasklists', TaskListController::class);
-
-    // Messages Routes
-    Route::get('/messages', [MessageController::class, 'index']);
-    Route::post('/messages', [MessageController::class, 'store']);
-    Route::get('/messages/latest', [MessageController::class, 'latest']);
+    Route::apiResource('messages', MessageController::class);
 });
 
 // For testing

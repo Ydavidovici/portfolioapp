@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Message;
 use App\Models\Document;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ClientDashboardControllerTest extends TestCase
@@ -24,6 +25,23 @@ class ClientDashboardControllerTest extends TestCase
     }
 
     /**
+     * Authenticate a user and return headers with the Bearer token.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function authenticate(User $user)
+    {
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    /**
      * Test that an admin can access the client dashboard.
      */
     public function test_admin_can_access_client_dashboard()
@@ -32,6 +50,9 @@ class ClientDashboardControllerTest extends TestCase
         $adminRole = Role::where('name', 'admin')->first();
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
+
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
 
         // Create messages and documents for the admin
         $messages = Message::factory()->count(5)->create([
@@ -43,7 +64,7 @@ class ClientDashboardControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($admin)->get('/client/dashboard');
+        $response = $this->withHeaders($headers)->getJson('/client/dashboard');
 
         // Assert
         $response->assertStatus(200)
@@ -64,6 +85,9 @@ class ClientDashboardControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         // Create messages and documents for the client
         $messages = Message::factory()->count(5)->create([
             'receiver_id' => $client->id,
@@ -74,7 +98,7 @@ class ClientDashboardControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($client)->get('/client/dashboard');
+        $response = $this->withHeaders($headers)->getJson('/client/dashboard');
 
         // Assert
         $response->assertStatus(200)
@@ -95,8 +119,11 @@ class ClientDashboardControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Act
-        $response = $this->actingAs($developer)->get('/client/dashboard');
+        $response = $this->withHeaders($headers)->getJson('/client/dashboard');
 
         // Assert
         $response->assertStatus(403)
@@ -113,8 +140,11 @@ class ClientDashboardControllerTest extends TestCase
         // Arrange
         $user = User::factory()->create();
 
+        // Authenticate the user and get headers
+        $headers = $this->authenticate($user);
+
         // Act
-        $response = $this->actingAs($user)->get('/client/dashboard');
+        $response = $this->withHeaders($headers)->getJson('/client/dashboard');
 
         // Assert
         $response->assertStatus(403)
@@ -129,10 +159,13 @@ class ClientDashboardControllerTest extends TestCase
     public function test_unauthenticated_user_cannot_access_client_dashboard()
     {
         // Act
-        $response = $this->get('/client/dashboard');
+        $response = $this->getJson('/client/dashboard');
 
         // Assert
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 
     /**
@@ -144,6 +177,9 @@ class ClientDashboardControllerTest extends TestCase
         $clientRole = Role::where('name', 'client')->first();
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
+
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
 
         // Create specific messages and documents for the client
         $messages = Message::factory()->count(5)->create([
@@ -157,7 +193,7 @@ class ClientDashboardControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($client)->get('/client/dashboard');
+        $response = $this->withHeaders($headers)->getJson('/client/dashboard');
 
         // Assert
         $response->assertStatus(200)

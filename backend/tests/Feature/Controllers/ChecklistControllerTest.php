@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Checklist;
 use App\Models\Task;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ChecklistControllerTest extends TestCase
@@ -24,6 +25,23 @@ class ChecklistControllerTest extends TestCase
     }
 
     /**
+     * Authenticate a user and return headers with the Bearer token.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function authenticate(User $user)
+    {
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    /**
      * Test that an admin can create a checklist.
      */
     public function test_admin_can_create_checklist()
@@ -33,6 +51,9 @@ class ChecklistControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         $task = Task::factory()->create();
 
         $checklistData = [
@@ -41,7 +62,7 @@ class ChecklistControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->postJson('/checklists', $checklistData);
+        $response = $this->withHeaders($headers)->postJson('/checklists', $checklistData);
 
         // Assert
         $response->assertStatus(201)
@@ -69,6 +90,9 @@ class ChecklistControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         $task = Task::factory()->create();
 
         $checklistData = [
@@ -77,7 +101,7 @@ class ChecklistControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($client)->postJson('/checklists', $checklistData);
+        $response = $this->withHeaders($headers)->postJson('/checklists', $checklistData);
 
         // Assert
         $response->assertStatus(403)
@@ -101,6 +125,9 @@ class ChecklistControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         $task = Task::factory()->create();
 
         $checklist = Checklist::factory()->create([
@@ -114,7 +141,7 @@ class ChecklistControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($admin)->putJson("/checklists/{$checklist->id}", $updatedData);
+        $response = $this->withHeaders($headers)->putJson("/checklists/{$checklist->id}", $updatedData);
 
         // Assert
         $response->assertStatus(200)
@@ -144,6 +171,9 @@ class ChecklistControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         $task = Task::factory()->create();
 
         $checklist = Checklist::factory()->create([
@@ -157,7 +187,7 @@ class ChecklistControllerTest extends TestCase
         ];
 
         // Act
-        $response = $this->actingAs($client)->putJson("/checklists/{$checklist->id}", $updatedData);
+        $response = $this->withHeaders($headers)->putJson("/checklists/{$checklist->id}", $updatedData);
 
         // Assert
         $response->assertStatus(403)
@@ -182,6 +212,9 @@ class ChecklistControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         $task = Task::factory()->create();
 
         $checklist = Checklist::factory()->create([
@@ -190,7 +223,7 @@ class ChecklistControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($admin)->deleteJson("/checklists/{$checklist->id}");
+        $response = $this->withHeaders($headers)->deleteJson("/checklists/{$checklist->id}");
 
         // Assert
         $response->assertStatus(200)
@@ -213,6 +246,9 @@ class ChecklistControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
         $task = Task::factory()->create();
 
         $checklist = Checklist::factory()->create([
@@ -221,7 +257,7 @@ class ChecklistControllerTest extends TestCase
         ]);
 
         // Act
-        $response = $this->actingAs($client)->deleteJson("/checklists/{$checklist->id}");
+        $response = $this->withHeaders($headers)->deleteJson("/checklists/{$checklist->id}");
 
         // Assert
         $response->assertStatus(403)
@@ -248,6 +284,8 @@ class ChecklistControllerTest extends TestCase
             $role = Role::where('name', $roleName)->first();
             $user = User::factory()->create();
             $user->roles()->attach($role);
+            // Authenticate the user and store headers
+            $user->headers = $this->authenticate($user);
             return $user;
         });
 
@@ -255,7 +293,7 @@ class ChecklistControllerTest extends TestCase
 
         // Act & Assert
         $users->each(function ($user) use ($checklists) {
-            $response = $this->actingAs($user)->getJson('/checklists');
+            $response = $this->withHeaders($user->headers)->getJson('/checklists');
 
             $response->assertStatus(200)
                 ->assertJsonCount(3);
@@ -282,6 +320,9 @@ class ChecklistControllerTest extends TestCase
         $response = $this->getJson('/checklists');
 
         // Assert
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

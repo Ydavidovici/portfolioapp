@@ -4,8 +4,10 @@ namespace Tests\Feature\Controllers;
 
 use App\Models\Role;
 use App\Models\User;
+use App\Models\Project;
 use App\Models\Document;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class DocumentControllerTest extends TestCase
@@ -25,43 +27,126 @@ class DocumentControllerTest extends TestCase
     }
 
     /**
+     * Helper method to create a user with a specific role and API token.
+     *
+     * @param string $roleName
+     * @return \App\Models\User
+     */
+    protected function createUserWithRoleAndToken(string $roleName): User
+    {
+        // Retrieve the role by name
+        $role = Role::where('name', $roleName)->first();
+
+        // Create a user and assign the role
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+
+        // Generate and store the API token
+        $apiToken = Str::random(80);
+        $user->api_token = hash('sha256', $apiToken);
+        $user->save();
+
+        // Store the plain token for use in tests
+        $user->plainApiToken = $apiToken;
+
+        return $user;
+    }
+
+    /**
      * Test that an admin can create a document.
      *
      * @return void
      */
     public function test_admin_can_create_document()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Confirm that the user has the 'admin' role
+        $this->assertTrue($admin->hasRole('admin'), 'User does not have admin role.');
 
-        // Define document data
+        // Create a project to associate with the document
+        $project = Project::factory()->create();
+
+        // Define document data with required fields
         $documentData = [
-            'title' => 'New Document',
-            'project_id' => 1, // Ensure a project with ID 1 exists or adjust accordingly
-            // Add other necessary fields as per your Document model
+            'name' => 'New Document',
+            'project_id' => $project->id,
+            'url' => 'https://example.com/document.pdf',
+            // 'uploaded_by' is set in the controller
         ];
 
-        // Act as the admin and make a POST request to create a document
-        $response = $this->actingAs($admin)->postJson('/documents', $documentData);
+        // Make a POST request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->postJson('/documents', $documentData);
 
         // Assert that the document was created successfully
         $response->assertStatus(201)
             ->assertJson([
                 'message' => 'Document uploaded successfully.',
                 'document' => [
-                    'title' => 'New Document',
-                    'project_id' => 1,
+                    'name' => 'New Document',
+                    'project_id' => $project->id,
+                    'url' => 'https://example.com/document.pdf',
+                    'uploaded_by' => $admin->id,
                 ],
             ]);
 
         // Verify that the document exists in the database
         $this->assertDatabaseHas('documents', [
-            'title' => 'New Document',
-            'project_id' => 1,
+            'name' => 'New Document',
+            'project_id' => $project->id,
+            'url' => 'https://example.com/document.pdf',
+            'uploaded_by' => $admin->id,
+        ]);
+    }
+
+    /**
+     * Test that a developer can create a document.
+     *
+     * @return void
+     */
+    public function test_developer_can_create_document()
+    {
+        $developer = $this->createUserWithRoleAndToken('developer');
+
+        // Confirm that the user has the 'developer' role
+        $this->assertTrue($developer->hasRole('developer'), 'User does not have developer role.');
+
+        // Create a project to associate with the document
+        $project = Project::factory()->create();
+
+        // Define document data with required fields
+        $documentData = [
+            'name' => 'Developer Document',
+            'project_id' => $project->id,
+            'url' => 'https://example.com/developer-document.pdf',
+            // 'uploaded_by' is set in the controller
+        ];
+
+        // Make a POST request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->postJson('/documents', $documentData);
+
+        // Assert that the document was created successfully
+        $response->assertStatus(201)
+            ->assertJson([
+                'message' => 'Document uploaded successfully.',
+                'document' => [
+                    'name' => 'Developer Document',
+                    'project_id' => $project->id,
+                    'url' => 'https://example.com/developer-document.pdf',
+                    'uploaded_by' => $developer->id,
+                ],
+            ]);
+
+        // Verify that the document exists in the database
+        $this->assertDatabaseHas('documents', [
+            'name' => 'Developer Document',
+            'project_id' => $project->id,
+            'url' => 'https://example.com/developer-document.pdf',
+            'uploaded_by' => $developer->id,
         ]);
     }
 
@@ -72,75 +157,45 @@ class DocumentControllerTest extends TestCase
      */
     public function test_client_can_create_document()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
 
-        // Define document data
+        // Create a project to associate with the document
+        $project = Project::factory()->create();
+
+        // Define document data with required fields
         $documentData = [
-            'title' => 'Client Document',
-            'project_id' => 2, // Ensure a project with ID 2 exists or adjust accordingly
-            // Add other necessary fields as per your Document model
+            'name' => 'Client Document',
+            'project_id' => $project->id,
+            'url' => 'https://example.com/client-document.pdf',
+            // 'uploaded_by' is set in the controller
         ];
 
-        // Act as the client and make a POST request to create a document
-        $response = $this->actingAs($client)->postJson('/documents', $documentData);
+        // Make a POST request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->postJson('/documents', $documentData);
 
         // Assert that the document was created successfully
         $response->assertStatus(201)
             ->assertJson([
                 'message' => 'Document uploaded successfully.',
                 'document' => [
-                    'title' => 'Client Document',
-                    'project_id' => 2,
+                    'name' => 'Client Document',
+                    'project_id' => $project->id,
+                    'url' => 'https://example.com/client-document.pdf',
+                    'uploaded_by' => $client->id,
                 ],
             ]);
 
         // Verify that the document exists in the database
         $this->assertDatabaseHas('documents', [
-            'title' => 'Client Document',
-            'project_id' => 2,
+            'name' => 'Client Document',
+            'project_id' => $project->id,
+            'url' => 'https://example.com/client-document.pdf',
             'uploaded_by' => $client->id,
-        ]);
-    }
-
-    /**
-     * Test that a developer cannot create a document.
-     *
-     * @return void
-     */
-    public function test_developer_cannot_create_document()
-    {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
-
-        // Define document data
-        $documentData = [
-            'title' => 'Developer Document',
-            'project_id' => 3, // Ensure a project with ID 3 exists or adjust accordingly
-            // Add other necessary fields as per your Document model
-        ];
-
-        // Act as the developer and make a POST request to create a document
-        $response = $this->actingAs($developer)->postJson('/documents', $documentData);
-
-        // Assert that the creation is forbidden
-        $response->assertStatus(403)
-            ->assertJson([
-                'message' => 'This action is unauthorized.',
-            ]);
-
-        // Verify that the document does not exist in the database
-        $this->assertDatabaseMissing('documents', [
-            'title' => 'Developer Document',
-            'project_id' => 3,
         ]);
     }
 
@@ -151,30 +206,78 @@ class DocumentControllerTest extends TestCase
      */
     public function test_admin_can_view_all_documents()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Confirm that the user has the 'admin' role
+        $this->assertTrue($admin->hasRole('admin'), 'User does not have admin role.');
 
-        // Create documents
+        // Create multiple documents associated with different projects and users
         $documents = Document::factory()->count(3)->create();
 
-        // Act as the admin and make a GET request to view all documents
-        $response = $this->actingAs($admin)->getJson('/documents');
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->getJson('/documents');
 
         // Assert that the response is successful and contains all documents
         $response->assertStatus(200)
             ->assertJsonCount(3);
 
+        $responseData = $response->json();
+
         foreach ($documents as $document) {
-            $response->assertJsonFragment([
-                'id' => $document->id,
-                'title' => $document->title,
-                'project_id' => $document->project_id,
-                'uploaded_by' => $document->uploaded_by,
-            ]);
+            $this->assertTrue(
+                collect($responseData)->contains(function ($item) use ($document) {
+                    return $item['id'] === $document->id &&
+                        $item['name'] === $document->name &&
+                        $item['project_id'] === $document->project_id &&
+                        $item['url'] === $document->url &&
+                        isset($item['uploaded_by']['id']) &&
+                        $item['uploaded_by']['id'] === $document->uploaded_by;
+                }),
+                "Failed asserting that the document with id {$document->id} is present in the response."
+            );
+        }
+    }
+
+    /**
+     * Test that a developer can view all documents.
+     *
+     * @return void
+     */
+    public function test_developer_can_view_all_documents()
+    {
+        $developer = $this->createUserWithRoleAndToken('developer');
+
+        // Confirm that the user has the 'developer' role
+        $this->assertTrue($developer->hasRole('developer'), 'User does not have developer role.');
+
+        // Create multiple documents associated with different projects and users
+        $documents = Document::factory()->count(3)->create();
+
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->getJson('/documents');
+
+        // Assert that the response is successful and contains all documents
+        $response->assertStatus(200)
+            ->assertJsonCount(3);
+
+        $responseData = $response->json();
+
+        foreach ($documents as $document) {
+            $this->assertTrue(
+                collect($responseData)->contains(function ($item) use ($document) {
+                    return $item['id'] === $document->id &&
+                        $item['name'] === $document->name &&
+                        $item['project_id'] === $document->project_id &&
+                        $item['url'] === $document->url &&
+                        isset($item['uploaded_by']['id']) &&
+                        $item['uploaded_by']['id'] === $document->uploaded_by;
+                }),
+                "Failed asserting that the document with id {$document->id} is present in the response."
+            );
         }
     }
 
@@ -185,12 +288,10 @@ class DocumentControllerTest extends TestCase
      */
     public function test_client_can_view_their_own_documents()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
 
         // Create documents for the client
         $clientDocuments = Document::factory()->count(2)->create([
@@ -198,30 +299,31 @@ class DocumentControllerTest extends TestCase
         ]);
 
         // Create documents for another user
-        $otherDocuments = Document::factory()->count(2)->create();
+        Document::factory()->count(2)->create();
 
-        // Act as the client and make a GET request to view their documents
-        $response = $this->actingAs($client)->getJson('/documents');
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->getJson('/documents');
 
         // Assert that the response contains only the client's documents
         $response->assertStatus(200)
             ->assertJsonCount(2);
 
-        foreach ($clientDocuments as $doc) {
-            $response->assertJsonFragment([
-                'id' => $doc->id,
-                'title' => $doc->title,
-                'project_id' => $doc->project_id,
-                'uploaded_by' => $doc->uploaded_by,
-            ]);
-        }
+        $responseData = $response->json();
 
-        // Ensure that other documents are not visible
-        foreach ($otherDocuments as $doc) {
-            $response->assertJsonMissing([
-                'id' => $doc->id,
-                'title' => $doc->title,
-            ]);
+        foreach ($clientDocuments as $doc) {
+            $this->assertTrue(
+                collect($responseData)->contains(function ($item) use ($doc) {
+                    return $item['id'] === $doc->id &&
+                        $item['name'] === $doc->name &&
+                        $item['project_id'] === $doc->project_id &&
+                        $item['url'] === $doc->url &&
+                        isset($item['uploaded_by']['id']) &&
+                        $item['uploaded_by']['id'] === $doc->uploaded_by;
+                }),
+                "Failed asserting that the client's document with id {$doc->id} is present in the response."
+            );
         }
     }
 
@@ -232,26 +334,141 @@ class DocumentControllerTest extends TestCase
      */
     public function test_client_cannot_view_others_documents()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
 
         // Create documents for another user
         $otherDocuments = Document::factory()->count(2)->create();
 
-        // Act as the client and make a GET request to view documents
-        $response = $this->actingAs($client)->getJson('/documents');
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->getJson('/documents');
 
         // Assert that the response does not contain other users' documents
+        $responseData = $response->json();
+
         foreach ($otherDocuments as $doc) {
-            $response->assertJsonMissing([
-                'id' => $doc->id,
-                'title' => $doc->title,
-            ]);
+            $this->assertFalse(
+                collect($responseData)->contains(function ($item) use ($doc) {
+                    return $item['id'] === $doc->id &&
+                        $item['name'] === $doc->name &&
+                        $item['project_id'] === $doc->project_id &&
+                        $item['url'] === $doc->url &&
+                        isset($item['uploaded_by']['id']) &&
+                        $item['uploaded_by']['id'] === $doc->uploaded_by;
+                }),
+                "Failed asserting that the other user's document with id {$doc->id} is not present in the response."
+            );
         }
+    }
+
+    /**
+     * Test that an admin can update a document.
+     *
+     * @return void
+     */
+    public function test_admin_can_update_document()
+    {
+        $admin = $this->createUserWithRoleAndToken('admin');
+
+        // Confirm that the user has the 'admin' role
+        $this->assertTrue($admin->hasRole('admin'), 'User does not have admin role.');
+
+        // Create a document
+        $document = Document::factory()->create([
+            'name' => 'Original Document',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/original-document.pdf',
+            'uploaded_by' => $admin->id,
+        ]);
+
+        // Define updated data
+        $updatedData = [
+            'name' => 'Updated Document',
+            'project_id' => $document->project_id,
+            'url' => 'https://example.com/updated-document.pdf',
+        ];
+
+        // Make a PUT request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->putJson("/documents/{$document->id}", $updatedData);
+
+        // Assert that the document was updated successfully
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Document updated successfully.',
+                'document' => [
+                    'id' => $document->id,
+                    'name' => 'Updated Document',
+                    'project_id' => $document->project_id,
+                    'url' => 'https://example.com/updated-document.pdf',
+                    'uploaded_by' => $admin->id,
+                ],
+            ]);
+
+        // Verify that the document was updated in the database
+        $this->assertDatabaseHas('documents', [
+            'id' => $document->id,
+            'name' => 'Updated Document',
+            'url' => 'https://example.com/updated-document.pdf',
+        ]);
+    }
+
+    /**
+     * Test that a developer can update a document.
+     *
+     * @return void
+     */
+    public function test_developer_can_update_document()
+    {
+        $developer = $this->createUserWithRoleAndToken('developer');
+
+        // Confirm that the user has the 'developer' role
+        $this->assertTrue($developer->hasRole('developer'), 'User does not have developer role.');
+
+        // Create a document uploaded by the developer
+        $document = Document::factory()->create([
+            'name' => 'Dev Document',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/dev-document.pdf',
+            'uploaded_by' => $developer->id,
+        ]);
+
+        // Define updated data
+        $updatedData = [
+            'name' => 'Updated Dev Document',
+            'project_id' => $document->project_id,
+            'url' => 'https://example.com/updated-dev-document.pdf',
+        ];
+
+        // Make a PUT request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->putJson("/documents/{$document->id}", $updatedData);
+
+        // Assert that the document was updated successfully
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Document updated successfully.',
+                'document' => [
+                    'id' => $document->id,
+                    'name' => 'Updated Dev Document',
+                    'project_id' => $document->project_id,
+                    'url' => 'https://example.com/updated-dev-document.pdf',
+                    'uploaded_by' => $developer->id,
+                ],
+            ]);
+
+        // Verify that the document was updated in the database
+        $this->assertDatabaseHas('documents', [
+            'id' => $document->id,
+            'name' => 'Updated Dev Document',
+            'url' => 'https://example.com/updated-dev-document.pdf',
+        ]);
     }
 
     /**
@@ -261,27 +478,30 @@ class DocumentControllerTest extends TestCase
      */
     public function test_client_can_update_their_own_document()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
 
         // Create a document for the client
         $document = Document::factory()->create([
-            'title' => 'Client Document',
+            'name' => 'Client Document',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/client-document.pdf',
             'uploaded_by' => $client->id,
         ]);
 
         // Define updated data
         $updatedData = [
-            'title' => 'Updated Client Document',
-            // Add other fields if necessary
+            'name' => 'Updated Client Document',
+            'project_id' => $document->project_id,
+            'url' => 'https://example.com/updated-client-document.pdf',
         ];
 
-        // Act as the client and make a PUT request to update the document
-        $response = $this->actingAs($client)->putJson("/documents/{$document->id}", $updatedData);
+        // Make a PUT request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->putJson("/documents/{$document->id}", $updatedData);
 
         // Assert that the document was updated successfully
         $response->assertStatus(200)
@@ -289,77 +509,45 @@ class DocumentControllerTest extends TestCase
                 'message' => 'Document updated successfully.',
                 'document' => [
                     'id' => $document->id,
-                    'title' => 'Updated Client Document',
+                    'name' => 'Updated Client Document',
+                    'project_id' => $document->project_id,
+                    'url' => 'https://example.com/updated-client-document.pdf',
+                    'uploaded_by' => $client->id,
                 ],
             ]);
 
         // Verify that the document was updated in the database
         $this->assertDatabaseHas('documents', [
             'id' => $document->id,
-            'title' => 'Updated Client Document',
+            'name' => 'Updated Client Document',
+            'url' => 'https://example.com/updated-client-document.pdf',
         ]);
     }
 
     /**
-     * Test that a client cannot update others' documents.
+     * Test that an admin can delete a document.
      *
      * @return void
      */
-    public function test_client_cannot_update_others_documents()
+    public function test_admin_can_delete_document()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'admin' role
+        $this->assertTrue($admin->hasRole('admin'), 'User does not have admin role.');
 
-        // Create a document for another user
-        $otherDocument = Document::factory()->create();
-
-        // Define updated data
-        $updatedData = [
-            'title' => 'Attempted Update',
-        ];
-
-        // Act as the client and make a PUT request to update the other user's document
-        $response = $this->actingAs($client)->putJson("/documents/{$otherDocument->id}", $updatedData);
-
-        // Assert that the update is forbidden
-        $response->assertStatus(403)
-            ->assertJson([
-                'message' => 'This action is unauthorized.',
-            ]);
-
-        // Verify that the document was not updated in the database
-        $this->assertDatabaseHas('documents', [
-            'id' => $otherDocument->id,
-            'title' => $otherDocument->title,
-        ]);
-    }
-
-    /**
-     * Test that a client can delete their own document.
-     *
-     * @return void
-     */
-    public function test_client_can_delete_their_own_document()
-    {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
-
-        // Create a document for the client
+        // Create a document
         $document = Document::factory()->create([
-            'title' => 'Client Document to Delete',
-            'uploaded_by' => $client->id,
+            'name' => 'Document to Delete',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/document-to-delete.pdf',
+            'uploaded_by' => $admin->id,
         ]);
 
-        // Act as the client and make a DELETE request to delete the document
-        $response = $this->actingAs($client)->deleteJson("/documents/{$document->id}");
+        // Make a DELETE request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->deleteJson("/documents/{$document->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(200)
@@ -370,39 +558,86 @@ class DocumentControllerTest extends TestCase
         // Verify that the document no longer exists in the database
         $this->assertDatabaseMissing('documents', [
             'id' => $document->id,
+            'name' => 'Document to Delete',
+            'url' => 'https://example.com/document-to-delete.pdf',
         ]);
     }
 
     /**
-     * Test that a client cannot delete others' documents.
+     * Test that a developer can delete a document.
      *
      * @return void
      */
-    public function test_client_cannot_delete_others_documents()
+    public function test_developer_can_delete_document()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'developer' role
+        $this->assertTrue($developer->hasRole('developer'), 'User does not have developer role.');
 
-        // Create a document for another user
-        $otherDocument = Document::factory()->create();
+        // Create a document uploaded by the developer
+        $document = Document::factory()->create([
+            'name' => 'Developer Document to Delete',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/developer-document-to-delete.pdf',
+            'uploaded_by' => $developer->id,
+        ]);
 
-        // Act as the client and make a DELETE request to delete the other user's document
-        $response = $this->actingAs($client)->deleteJson("/documents/{$otherDocument->id}");
+        // Make a DELETE request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->deleteJson("/documents/{$document->id}");
 
-        // Assert that the deletion is forbidden
-        $response->assertStatus(403)
+        // Assert that the deletion was successful
+        $response->assertStatus(200)
             ->assertJson([
-                'message' => 'This action is unauthorized.',
+                'message' => 'Document deleted successfully.',
             ]);
 
-        // Verify that the document still exists in the database
-        $this->assertDatabaseHas('documents', [
-            'id' => $otherDocument->id,
-            'title' => $otherDocument->title,
+        // Verify that the document no longer exists in the database
+        $this->assertDatabaseMissing('documents', [
+            'id' => $document->id,
+            'name' => 'Developer Document to Delete',
+            'url' => 'https://example.com/developer-document-to-delete.pdf',
+        ]);
+    }
+
+    /**
+     * Test that a client can delete their own document.
+     *
+     * @return void
+     */
+    public function test_client_can_delete_their_own_document()
+    {
+        $client = $this->createUserWithRoleAndToken('client');
+
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
+
+        // Create a document for the client
+        $document = Document::factory()->create([
+            'name' => 'Client Document to Delete',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/client-document-to-delete.pdf',
+            'uploaded_by' => $client->id,
+        ]);
+
+        // Make a DELETE request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->deleteJson("/documents/{$document->id}");
+
+        // Assert that the deletion was successful
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Document deleted successfully.',
+            ]);
+
+        // Verify that the document no longer exists in the database
+        $this->assertDatabaseMissing('documents', [
+            'id' => $document->id,
+            'name' => 'Client Document to Delete',
+            'url' => 'https://example.com/client-document-to-delete.pdf',
         ]);
     }
 
@@ -413,28 +648,76 @@ class DocumentControllerTest extends TestCase
      */
     public function test_admin_can_view_specific_document()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Confirm that the user has the 'admin' role
+        $this->assertTrue($admin->hasRole('admin'), 'User does not have admin role.');
 
         // Create a document
         $document = Document::factory()->create([
-            'title' => 'Specific Document',
+            'name' => 'Specific Document',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/specific-document.pdf',
+            'uploaded_by' => $admin->id,
         ]);
 
-        // Act as the admin and make a GET request to view the document
-        $response = $this->actingAs($admin)->getJson("/documents/{$document->id}");
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->getJson("/documents/{$document->id}");
 
         // Assert that the response is successful and contains the document data
         $response->assertStatus(200)
             ->assertJson([
                 'id' => $document->id,
-                'title' => 'Specific Document',
+                'name' => 'Specific Document',
                 'project_id' => $document->project_id,
-                'uploaded_by' => $document->uploaded_by,
+                'url' => 'https://example.com/specific-document.pdf',
+                // Adjust 'uploaded_by' assertion to check nested 'id'
+                'uploaded_by' => [
+                    'id' => $admin->id,
+                    // Optionally, include other fields if necessary
+                ],
+            ]);
+    }
+
+    /**
+     * Test that a developer can view a specific document.
+     *
+     * @return void
+     */
+    public function test_developer_can_view_specific_document()
+    {
+        $developer = $this->createUserWithRoleAndToken('developer');
+
+        // Confirm that the user has the 'developer' role
+        $this->assertTrue($developer->hasRole('developer'), 'User does not have developer role.');
+
+        // Create a document uploaded by the developer
+        $document = Document::factory()->create([
+            'name' => 'Developer Specific Document',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/developer-specific-document.pdf',
+            'uploaded_by' => $developer->id,
+        ]);
+
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->getJson("/documents/{$document->id}");
+
+        // Assert that the response is successful and contains the document data
+        $response->assertStatus(200)
+            ->assertJson([
+                'id' => $document->id,
+                'name' => 'Developer Specific Document',
+                'project_id' => $document->project_id,
+                'url' => 'https://example.com/developer-specific-document.pdf',
+                // Adjust 'uploaded_by' assertion to check nested 'id'
+                'uploaded_by' => [
+                    'id' => $developer->id,
+                    // Optionally, include other fields if necessary
+                ],
             ]);
     }
 
@@ -445,29 +728,36 @@ class DocumentControllerTest extends TestCase
      */
     public function test_client_can_view_their_own_document()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
 
         // Create a document for the client
         $document = Document::factory()->create([
-            'title' => 'Client Document to View',
+            'name' => 'Client Document to View',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/client-document-to-view.pdf',
             'uploaded_by' => $client->id,
         ]);
 
-        // Act as the client and make a GET request to view the document
-        $response = $this->actingAs($client)->getJson("/documents/{$document->id}");
+        // Make a GET request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->getJson("/documents/{$document->id}");
 
         // Assert that the response is successful and contains the document data
         $response->assertStatus(200)
             ->assertJson([
                 'id' => $document->id,
-                'title' => 'Client Document to View',
+                'name' => 'Client Document to View',
                 'project_id' => $document->project_id,
-                'uploaded_by' => $document->uploaded_by,
+                'url' => 'https://example.com/client-document-to-view.pdf',
+                // Adjust 'uploaded_by' assertion to check nested 'id'
+                'uploaded_by' => [
+                    'id' => $client->id,
+                    // Optionally, include other fields if necessary
+                ],
             ]);
     }
 
@@ -479,12 +769,102 @@ class DocumentControllerTest extends TestCase
     public function test_unauthenticated_user_cannot_access_documents()
     {
         // Create documents
-        $documents = Document::factory()->count(2)->create();
+        Document::factory()->count(2)->create();
 
         // Make a GET request without authentication
         $response = $this->getJson('/documents');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
+    }
+
+    /**
+     * Test that a client cannot update others' documents.
+     *
+     * @return void
+     */
+    public function test_client_cannot_update_others_documents()
+    {
+        $client = $this->createUserWithRoleAndToken('client');
+
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
+
+        // Create a document for another user
+        $otherUser = User::factory()->create();
+        $otherDocument = Document::factory()->create([
+            'name' => 'Other User Document',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/other-user-document.pdf',
+            'uploaded_by' => $otherUser->id,
+        ]);
+
+        // Define updated data
+        $updatedData = [
+            'name' => 'Attempted Update',
+            'project_id' => $otherDocument->project_id,
+            'url' => 'https://example.com/attempted-update.pdf',
+        ];
+
+        // Make a PUT request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->putJson("/documents/{$otherDocument->id}", $updatedData);
+
+        // Assert that the update is forbidden
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'This action is unauthorized.',
+            ]);
+
+        // Verify that the document was not updated in the database
+        $this->assertDatabaseHas('documents', [
+            'id' => $otherDocument->id,
+            'name' => 'Other User Document',
+            'url' => 'https://example.com/other-user-document.pdf',
+        ]);
+    }
+
+    /**
+     * Test that a client cannot delete others' documents.
+     *
+     * @return void
+     */
+    public function test_client_cannot_delete_others_documents()
+    {
+        $client = $this->createUserWithRoleAndToken('client');
+
+        // Confirm that the user has the 'client' role
+        $this->assertTrue($client->hasRole('client'), 'User does not have client role.');
+
+        // Create a document for another user
+        $otherUser = User::factory()->create();
+        $otherDocument = Document::factory()->create([
+            'name' => 'Other User Document to Delete',
+            'project_id' => Project::factory()->create()->id,
+            'url' => 'https://example.com/other-user-document-to-delete.pdf',
+            'uploaded_by' => $otherUser->id,
+        ]);
+
+        // Make a DELETE request with the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->deleteJson("/documents/{$otherDocument->id}");
+
+        // Assert that the deletion is forbidden
+        $response->assertStatus(403)
+            ->assertJson([
+                'message' => 'This action is unauthorized.',
+            ]);
+
+        // Verify that the document still exists in the database
+        $this->assertDatabaseHas('documents', [
+            'id' => $otherDocument->id,
+            'name' => 'Other User Document to Delete',
+            'url' => 'https://example.com/other-user-document-to-delete.pdf',
+        ]);
     }
 }

@@ -16,13 +16,25 @@ class Feedback extends Model
         'submitted_by',
     ];
 
+    /**
+     * Get the user who submitted the feedback.
+     */
+    public function submittedBy()
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    /**
+     * Get the project associated with the feedback.
+     */
     public function project()
     {
         return $this->belongsTo(Project::class);
     }
 
-    public function submittedBy()
+    public function scopeForUser($query, $userId)
     {
-        return $this->belongsTo(User::class, 'submitted_by');
+        return $query->where('submitted_by', $userId);
     }
 }
+

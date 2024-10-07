@@ -2,10 +2,10 @@
 
 namespace App\Mail;
 
-use App\Models\Message;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\Message;
 
 class NewMessageNotification extends Mailable
 {
@@ -13,25 +13,30 @@ class NewMessageNotification extends Mailable
 
     public $message;
 
+    /**
+     * Create a new message instance.
+     *
+     * @param  \App\Models\Message  $message
+     * @return void
+     */
     public function __construct(Message $message)
     {
         $this->message = $message;
     }
 
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
     public function build()
     {
-        $mail = $this->subject('New Message Received')
-            ->view('emails.new_message')
-            ->with([
-                'messageContent' => $this->message->content,
-                'senderName' => $this->message->sender->username,
-            ]);
-
-        // Attach file if present
-        if ($this->message->file_path) {
-            $mail->attachFromStorageDisk('public', $this->message->file_path, $this->message->file_name);
-        }
-
-        return $mail;
+        return $this->view('emails.new_message')
+        ->with([
+            'content' => $this->message->content,
+            'sender' => $this->message->sender->username,
+            'receiver' => $this->message->receiver->username,
+            'file_name' => $this->message->file_name ?? null, // Pass file_name to the view if available
+        ]);
     }
 }

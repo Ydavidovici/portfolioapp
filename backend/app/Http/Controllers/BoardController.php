@@ -12,13 +12,14 @@ class BoardController extends Controller
     /**
      * Instantiate a new controller instance.
      *
-     * Apply authentication middleware to all routes in this controller.
+     * Apply the authentication middleware to all routes in this controller.
      *
      * @return void
      */
     public function __construct()
     {
-        $this->middleware('auth'); // Ensure the use of regular auth middleware
+        // Apply the custom authentication middleware
+        $this->middleware(\App\Http\Middleware\AuthenticateApiToken::class);
     }
 
     /**
@@ -28,7 +29,7 @@ class BoardController extends Controller
      */
     public function index()
     {
-        // Authorization: Any authenticated user can view boards
+        // Any authenticated user can view boards
         $boards = Board::with('project')->get();
         return response()->json($boards);
     }
@@ -41,7 +42,7 @@ class BoardController extends Controller
      */
     public function store(BoardRequest $request)
     {
-        // Authorization: Only users with 'perform-crud-operations' gate can create boards
+        // Authorization: Only users with 'perform-crud-operations' ability can create boards
         Gate::authorize('perform-crud-operations');
 
         $board = Board::create($request->validated());
@@ -60,7 +61,7 @@ class BoardController extends Controller
      */
     public function show(Board $board)
     {
-        // Authorization: Any authenticated user can view a specific board
+        // Any authenticated user can view a specific board
         return response()->json($board->load('project', 'taskLists'));
     }
 
@@ -73,7 +74,7 @@ class BoardController extends Controller
      */
     public function update(BoardRequest $request, Board $board)
     {
-        // Authorization: Only users with 'perform-crud-operations' gate can update boards
+        // Authorization: Only users with 'perform-crud-operations' ability can update boards
         Gate::authorize('perform-crud-operations');
 
         $board->update($request->validated());
@@ -92,7 +93,7 @@ class BoardController extends Controller
      */
     public function destroy(Board $board)
     {
-        // Authorization: Only users with 'perform-crud-operations' gate can delete boards
+        // Authorization: Only users with 'perform-crud-operations' ability can delete boards
         Gate::authorize('perform-crud-operations');
 
         $board->delete();

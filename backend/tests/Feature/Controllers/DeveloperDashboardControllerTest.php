@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Project;
 use App\Models\Message;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class DeveloperDashboardControllerTest extends TestCase
@@ -26,6 +27,23 @@ class DeveloperDashboardControllerTest extends TestCase
     }
 
     /**
+     * Authenticate a user and return headers with the Bearer token.
+     *
+     * @param  \App\Models\User  $user
+     * @return array
+     */
+    protected function authenticate(User $user)
+    {
+        $token = Str::random(60);
+        $user->api_token = hash('sha256', $token);
+        $user->save();
+
+        return [
+            'Authorization' => 'Bearer ' . $token,
+        ];
+    }
+
+    /**
      * Test that an admin can access the developer dashboard.
      *
      * @return void
@@ -39,6 +57,9 @@ class DeveloperDashboardControllerTest extends TestCase
         $admin = User::factory()->create();
         $admin->roles()->attach($adminRole);
 
+        // Authenticate the admin and get headers
+        $headers = $this->authenticate($admin);
+
         // Create projects and messages for the admin
         $projects = Project::factory()->count(3)->create([
             'client_id' => User::factory()->create()->id,
@@ -48,8 +69,8 @@ class DeveloperDashboardControllerTest extends TestCase
             'receiver_id' => $admin->id,
         ]);
 
-        // Act as the admin and make a GET request to the developer dashboard
-        $response = $this->actingAs($admin, 'sanctum')->get('/developer/dashboard');
+        // Act: Make a GET request to the developer dashboard with the token
+        $response = $this->withHeaders($headers)->getJson('/developer/dashboard');
 
         // Assert that the response is successful and contains the expected data
         $response->assertStatus(200)
@@ -74,6 +95,9 @@ class DeveloperDashboardControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Create projects and messages for the developer
         $projects = Project::factory()->count(3)->create([
             'client_id' => User::factory()->create()->id,
@@ -83,8 +107,8 @@ class DeveloperDashboardControllerTest extends TestCase
             'receiver_id' => $developer->id,
         ]);
 
-        // Act as the developer and make a GET request to the developer dashboard
-        $response = $this->actingAs($developer, 'sanctum')->get('/developer/dashboard');
+        // Act: Make a GET request to the developer dashboard with the token
+        $response = $this->withHeaders($headers)->getJson('/developer/dashboard');
 
         // Assert that the response is successful and contains the expected data
         $response->assertStatus(200)
@@ -109,8 +133,11 @@ class DeveloperDashboardControllerTest extends TestCase
         $client = User::factory()->create();
         $client->roles()->attach($clientRole);
 
-        // Act as the client and make a GET request to the developer dashboard
-        $response = $this->actingAs($client, 'sanctum')->get('/developer/dashboard');
+        // Authenticate the client and get headers
+        $headers = $this->authenticate($client);
+
+        // Act: Make a GET request to the developer dashboard with the token
+        $response = $this->withHeaders($headers)->getJson('/developer/dashboard');
 
         // Assert that the response status is 403 Forbidden
         $response->assertStatus(403)
@@ -129,8 +156,11 @@ class DeveloperDashboardControllerTest extends TestCase
         // Create a user without any roles
         $user = User::factory()->create();
 
-        // Act as the user and make a GET request to the developer dashboard
-        $response = $this->actingAs($user, 'sanctum')->get('/developer/dashboard');
+        // Authenticate the user and get headers
+        $headers = $this->authenticate($user);
+
+        // Act: Make a GET request to the developer dashboard with the token
+        $response = $this->withHeaders($headers)->getJson('/developer/dashboard');
 
         // Assert that the response status is 403 Forbidden
         $response->assertStatus(403)
@@ -147,10 +177,13 @@ class DeveloperDashboardControllerTest extends TestCase
     public function test_unauthenticated_user_cannot_access_developer_dashboard()
     {
         // Make a GET request to the developer dashboard without authentication
-        $response = $this->get('/developer/dashboard');
+        $response = $this->getJson('/developer/dashboard');
 
         // Assert that the response status is 401 Unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 
     /**
@@ -167,6 +200,9 @@ class DeveloperDashboardControllerTest extends TestCase
         $developer = User::factory()->create();
         $developer->roles()->attach($developerRole);
 
+        // Authenticate the developer and get headers
+        $headers = $this->authenticate($developer);
+
         // Create specific projects and messages for the developer
         $projects = Project::factory()->count(3)->create([
             'client_id' => User::factory()->create()->id,
@@ -178,8 +214,8 @@ class DeveloperDashboardControllerTest extends TestCase
             'content' => 'Developer-specific message',
         ]);
 
-        // Act as the developer and make a GET request to the developer dashboard
-        $response = $this->actingAs($developer, 'sanctum')->get('/developer/dashboard');
+        // Act: Make a GET request to the developer dashboard with the token
+        $response = $this->withHeaders($headers)->getJson('/developer/dashboard');
 
         // Assert that the response contains the specific projects and messages
         $response->assertStatus(200)

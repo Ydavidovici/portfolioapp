@@ -3,11 +3,15 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Faker\Factory as FakerFactory;
 
 class DatabaseSeeder extends Seeder
 {
     public function run()
     {
+        $faker = FakerFactory::create();
+        $faker->unique(true);
+
         $this->call([
             UserSeeder::class,
             ProjectSeeder::class,

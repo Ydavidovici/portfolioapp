@@ -29,8 +29,8 @@ class DocumentController extends Controller
     {
         $user = auth()->user();
 
-        if (Gate::allows('access-admin-dashboard')) {
-            // Admins can view all documents
+        if (Gate::allows('access-admin-dashboard') || Gate::allows('access-developer-dashboard')) {
+            // Admins and Developers can view all documents
             $documents = Document::with(['project', 'uploadedBy'])->get();
         } elseif (Gate::allows('manage-client-things')) {
             // Clients can view only their own documents
@@ -84,7 +84,11 @@ class DocumentController extends Controller
     {
         $user = auth()->user();
 
-        if (Gate::allows('access-admin-dashboard') || ($document->uploaded_by === $user->id && Gate::allows('manage-client-things'))) {
+        if (
+            Gate::allows('access-admin-dashboard') ||
+            Gate::allows('access-developer-dashboard') ||
+            ($document->uploaded_by === $user->id && Gate::allows('manage-client-things'))
+        ) {
             return response()->json($document->load(['project', 'uploadedBy']));
         }
 
@@ -104,7 +108,10 @@ class DocumentController extends Controller
     {
         $user = auth()->user();
 
-        if (Gate::allows('perform-crud-operations') || ($document->uploaded_by === $user->id && Gate::allows('manage-client-things'))) {
+        if (
+            Gate::allows('perform-crud-operations') ||
+            ($document->uploaded_by === $user->id && Gate::allows('manage-client-things'))
+        ) {
             $document->update($request->validated());
 
             return response()->json([
@@ -128,7 +135,10 @@ class DocumentController extends Controller
     {
         $user = auth()->user();
 
-        if (Gate::allows('perform-crud-operations') || ($document->uploaded_by === $user->id && Gate::allows('manage-client-things'))) {
+        if (
+            Gate::allows('perform-crud-operations') ||
+            ($document->uploaded_by === $user->id && Gate::allows('manage-client-things'))
+        ) {
             $document->delete();
 
             return response()->json([
