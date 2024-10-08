@@ -13,5 +13,6 @@ class QuickBooksToken extends Model
         'access_token',
         'refresh_token',
         'expires_at',
+        'expires_in',
     ];
 }

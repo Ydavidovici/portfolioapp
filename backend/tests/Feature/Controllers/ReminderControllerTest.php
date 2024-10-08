@@ -6,7 +6,9 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Reminder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
+use Carbon\Carbon;
 
 class ReminderControllerTest extends TestCase
 {
@@ -25,40 +27,69 @@ class ReminderControllerTest extends TestCase
     }
 
     /**
+     * Helper method to create a user with a specific role and a unique API token.
+     *
+     * @param string $roleName
+     * @return User
+     */
+    protected function createUserWithRoleAndToken($roleName)
+    {
+        $role = Role::where('name', $roleName)->firstOrFail();
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+
+        // Generate a unique API token for the user
+        $plainToken = Str::random(60);
+        $user->api_token = hash('sha256', $plainToken);
+        $user->save();
+
+        // Store the plain token for use in the test
+        $user->plainApiToken = $plainToken;
+
+        return $user;
+    }
+
+    /**
      * Test that an admin can create a reminder.
      *
      * @return void
      */
     public function test_admin_can_create_reminder()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
         // Define reminder data
         $reminderData = [
-            'title' => 'Project Deadline',
-            'description' => 'Complete the project by end of the month.',
-            // Add other necessary fields as per your Reminder model
+            'name' => 'Project Reminder',
+            'content' => 'Complete the project by end of the month.',
+            'due_date' => '2024-11-30',
         ];
 
-        // Act as the admin and make a POST request to create a reminder
-        $response = $this->actingAs($admin)->postJson('/reminders', $reminderData);
+        // Act as the admin and make a POST request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->postJson('/reminders', $reminderData);
 
         // Assert that the reminder was created successfully
         $response->assertStatus(201)
             ->assertJson([
-                'title' => 'Project Deadline',
-                'description' => 'Complete the project by end of the month.',
+                'message' => 'Reminder created successfully.',
+                'reminder' => [
+                    'name' => 'Project Reminder',
+                    'content' => 'Complete the project by end of the month.',
+                    'due_date' => '2024-11-30',
+                    'user_id' => $admin->id,
+                ],
             ]);
 
         // Verify that the reminder exists in the database
         $this->assertDatabaseHas('reminders', [
-            'title' => 'Project Deadline',
-            'description' => 'Complete the project by end of the month.',
+            'name' => 'Project Reminder',
+            'content' => 'Complete the project by end of the month.',
+            'due_date' => '2024-11-30',
+            'user_id' => $admin->id,
         ]);
     }
 
@@ -69,34 +100,39 @@ class ReminderControllerTest extends TestCase
      */
     public function test_developer_can_create_reminder()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
         // Define reminder data
         $reminderData = [
-            'title' => 'Code Review',
-            'description' => 'Review the new feature implementation.',
-            // Add other necessary fields as per your Reminder model
+            'name' => 'Code Review Reminder',
+            'content' => 'Review the new feature implementation.',
+            'due_date' => '2024-12-05',
         ];
 
-        // Act as the developer and make a POST request to create a reminder
-        $response = $this->actingAs($developer)->postJson('/reminders', $reminderData);
+        // Act as the developer and make a POST request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->postJson('/reminders', $reminderData);
 
         // Assert that the reminder was created successfully
         $response->assertStatus(201)
             ->assertJson([
-                'title' => 'Code Review',
-                'description' => 'Review the new feature implementation.',
+                'message' => 'Reminder created successfully.',
+                'reminder' => [
+                    'name' => 'Code Review Reminder',
+                    'content' => 'Review the new feature implementation.',
+                    'due_date' => '2024-12-05',
+                    'user_id' => $developer->id,
+                ],
             ]);
 
         // Verify that the reminder exists in the database
         $this->assertDatabaseHas('reminders', [
-            'title' => 'Code Review',
-            'description' => 'Review the new feature implementation.',
+            'name' => 'Code Review Reminder',
+            'content' => 'Review the new feature implementation.',
+            'due_date' => '2024-12-05',
+            'user_id' => $developer->id,
         ]);
     }
 
@@ -107,22 +143,20 @@ class ReminderControllerTest extends TestCase
      */
     public function test_client_cannot_create_reminder()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Define reminder data
         $reminderData = [
-            'title' => 'Unauthorized Reminder',
-            'description' => 'Client attempting to create a reminder.',
-            // Add other necessary fields as per your Reminder model
+            'name' => 'Unauthorized Reminder',
+            'content' => 'Client attempting to create a reminder.',
+            'due_date' => '2024-12-15',
         ];
 
         // Act as the client and attempt to create a reminder
-        $response = $this->actingAs($client)->postJson('/reminders', $reminderData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->postJson('/reminders', $reminderData);
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
@@ -132,8 +166,9 @@ class ReminderControllerTest extends TestCase
 
         // Verify that the reminder does not exist in the database
         $this->assertDatabaseMissing('reminders', [
-            'title' => 'Unauthorized Reminder',
-            'description' => 'Client attempting to create a reminder.',
+            'name' => 'Unauthorized Reminder',
+            'content' => 'Client attempting to create a reminder.',
+            'due_date' => '2024-12-15',
         ]);
     }
 
@@ -144,28 +179,29 @@ class ReminderControllerTest extends TestCase
      */
     public function test_admin_can_view_all_reminders()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
         // Create reminders
         $reminders = Reminder::factory()->count(3)->create();
 
-        // Act as the admin and make a GET request to view reminders
-        $response = $this->actingAs($admin)->getJson('/reminders');
+        // Act as the admin and make a GET request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->getJson('/reminders');
 
         // Assert that the response is successful and contains all reminders
         $response->assertStatus(200)
             ->assertJsonCount(3);
 
         foreach ($reminders as $reminder) {
+            $dueDate = Carbon::parse($reminder->due_date)->format('Y-m-d');
+
             $response->assertJsonFragment([
                 'id' => $reminder->id,
-                'title' => $reminder->title,
-                'description' => $reminder->description,
+                'name' => $reminder->name,
+                'content' => $reminder->content,
+                'due_date' => $dueDate,
             ]);
         }
     }
@@ -177,28 +213,29 @@ class ReminderControllerTest extends TestCase
      */
     public function test_developer_can_view_all_reminders()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
         // Create reminders
         $reminders = Reminder::factory()->count(2)->create();
 
-        // Act as the developer and make a GET request to view reminders
-        $response = $this->actingAs($developer)->getJson('/reminders');
+        // Act as the developer and make a GET request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->getJson('/reminders');
 
         // Assert that the response is successful and contains all reminders
         $response->assertStatus(200)
             ->assertJsonCount(2);
 
         foreach ($reminders as $reminder) {
+            $dueDate = Carbon::parse($reminder->due_date)->format('Y-m-d');
+
             $response->assertJsonFragment([
                 'id' => $reminder->id,
-                'title' => $reminder->title,
-                'description' => $reminder->description,
+                'name' => $reminder->name,
+                'content' => $reminder->content,
+                'due_date' => $dueDate,
             ]);
         }
     }
@@ -210,18 +247,16 @@ class ReminderControllerTest extends TestCase
      */
     public function test_client_cannot_view_reminders()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create reminders
         $reminders = Reminder::factory()->count(2)->create();
 
         // Act as the client and attempt to view reminders
-        $response = $this->actingAs($client)->getJson('/reminders');
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->getJson('/reminders');
 
         // Assert that the response is forbidden
         $response->assertStatus(403)
@@ -237,27 +272,27 @@ class ReminderControllerTest extends TestCase
      */
     public function test_admin_can_update_reminder()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
         // Create a reminder
         $reminder = Reminder::factory()->create([
-            'title' => 'Initial Reminder',
-            'description' => 'Initial Description',
+            'name' => 'Initial Reminder',
+            'content' => 'Initial Content',
+            'due_date' => '2024-11-15',
         ]);
 
         // Define updated data
         $updatedData = [
-            'title' => 'Updated Reminder',
-            'description' => 'Updated Description',
+            'name' => 'Updated Reminder',
+            'content' => 'Updated Content',
+            'due_date' => '2024-12-01',
         ];
 
-        // Act as the admin and make a PUT request to update the reminder
-        $response = $this->actingAs($admin)->putJson("/reminders/{$reminder->id}", $updatedData);
+        // Act as the admin and make a PUT request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->putJson("/reminders/{$reminder->id}", $updatedData);
 
         // Assert that the reminder was updated successfully
         $response->assertStatus(200)
@@ -265,16 +300,18 @@ class ReminderControllerTest extends TestCase
                 'message' => 'Reminder updated successfully.',
                 'reminder' => [
                     'id' => $reminder->id,
-                    'title' => 'Updated Reminder',
-                    'description' => 'Updated Description',
+                    'name' => 'Updated Reminder',
+                    'content' => 'Updated Content',
+                    'due_date' => '2024-12-01',
                 ],
             ]);
 
         // Verify that the reminder was updated in the database
         $this->assertDatabaseHas('reminders', [
             'id' => $reminder->id,
-            'title' => 'Updated Reminder',
-            'description' => 'Updated Description',
+            'name' => 'Updated Reminder',
+            'content' => 'Updated Content',
+            'due_date' => '2024-12-01',
         ]);
     }
 
@@ -285,27 +322,27 @@ class ReminderControllerTest extends TestCase
      */
     public function test_developer_can_update_reminder()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
         // Create a reminder
         $reminder = Reminder::factory()->create([
-            'title' => 'Developer Reminder',
-            'description' => 'Developer Description',
+            'name' => 'Developer Reminder',
+            'content' => 'Developer Content',
+            'due_date' => '2024-11-20',
         ]);
 
         // Define updated data
         $updatedData = [
-            'title' => 'Developer Updated Reminder',
-            'description' => 'Developer Updated Description',
+            'name' => 'Developer Updated Reminder',
+            'content' => 'Developer Updated Content',
+            'due_date' => '2024-12-05',
         ];
 
-        // Act as the developer and make a PUT request to update the reminder
-        $response = $this->actingAs($developer)->putJson("/reminders/{$reminder->id}", $updatedData);
+        // Act as the developer and make a PUT request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->putJson("/reminders/{$reminder->id}", $updatedData);
 
         // Assert that the reminder was updated successfully
         $response->assertStatus(200)
@@ -313,16 +350,18 @@ class ReminderControllerTest extends TestCase
                 'message' => 'Reminder updated successfully.',
                 'reminder' => [
                     'id' => $reminder->id,
-                    'title' => 'Developer Updated Reminder',
-                    'description' => 'Developer Updated Description',
+                    'name' => 'Developer Updated Reminder',
+                    'content' => 'Developer Updated Content',
+                    'due_date' => '2024-12-05',
                 ],
             ]);
 
         // Verify that the reminder was updated in the database
         $this->assertDatabaseHas('reminders', [
             'id' => $reminder->id,
-            'title' => 'Developer Updated Reminder',
-            'description' => 'Developer Updated Description',
+            'name' => 'Developer Updated Reminder',
+            'content' => 'Developer Updated Content',
+            'due_date' => '2024-12-05',
         ]);
     }
 
@@ -333,27 +372,27 @@ class ReminderControllerTest extends TestCase
      */
     public function test_client_cannot_update_reminder()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a reminder
         $reminder = Reminder::factory()->create([
-            'title' => 'Client Reminder',
-            'description' => 'Client Description',
+            'name' => 'Client Reminder',
+            'content' => 'Client Content',
+            'due_date' => '2024-11-25',
         ]);
 
         // Define updated data
         $updatedData = [
-            'title' => 'Client Attempted Update',
-            'description' => 'Client Attempted Description',
+            'name' => 'Client Attempted Update',
+            'content' => 'Client Attempted Content',
+            'due_date' => '2024-12-10',
         ];
 
         // Act as the client and attempt to update the reminder
-        $response = $this->actingAs($client)->putJson("/reminders/{$reminder->id}", $updatedData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->putJson("/reminders/{$reminder->id}", $updatedData);
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
@@ -364,8 +403,9 @@ class ReminderControllerTest extends TestCase
         // Verify that the reminder was not updated in the database
         $this->assertDatabaseHas('reminders', [
             'id' => $reminder->id,
-            'title' => 'Client Reminder',
-            'description' => 'Client Description',
+            'name' => 'Client Reminder',
+            'content' => 'Client Content',
+            'due_date' => '2024-11-25',
         ]);
     }
 
@@ -376,21 +416,20 @@ class ReminderControllerTest extends TestCase
      */
     public function test_admin_can_delete_reminder()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
-
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
         // Create a reminder
         $reminder = Reminder::factory()->create([
-            'title' => 'Reminder to Delete',
-            'description' => 'Description to Delete',
+            'name' => 'Reminder to Delete',
+            'content' => 'Content to Delete',
+            'due_date' => '2024-11-30',
         ]);
 
-        // Act as the admin and make a DELETE request to delete the reminder
-        $response = $this->actingAs($admin)->deleteJson("/reminders/{$reminder->id}");
+        // Act as the admin and make a DELETE request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->deleteJson("/reminders/{$reminder->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(204); // No Content
@@ -408,21 +447,20 @@ class ReminderControllerTest extends TestCase
      */
     public function test_developer_can_delete_reminder()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
-
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
         // Create a reminder
         $reminder = Reminder::factory()->create([
-            'title' => 'Developer Reminder to Delete',
-            'description' => 'Developer Description to Delete',
+            'name' => 'Developer Reminder to Delete',
+            'content' => 'Developer Content to Delete',
+            'due_date' => '2024-12-01',
         ]);
 
-        // Act as the developer and make a DELETE request to delete the reminder
-        $response = $this->actingAs($developer)->deleteJson("/reminders/{$reminder->id}");
+        // Act as the developer and make a DELETE request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->deleteJson("/reminders/{$reminder->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(204); // No Content
@@ -440,21 +478,20 @@ class ReminderControllerTest extends TestCase
      */
     public function test_client_cannot_delete_reminder()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a reminder
         $reminder = Reminder::factory()->create([
-            'title' => 'Client Reminder to Delete',
-            'description' => 'Client Description to Delete',
+            'name' => 'Client Reminder to Delete',
+            'content' => 'Client Content to Delete',
+            'due_date' => '2024-12-05',
         ]);
 
         // Act as the client and attempt to delete the reminder
-        $response = $this->actingAs($client)->deleteJson("/reminders/{$reminder->id}");
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->deleteJson("/reminders/{$reminder->id}");
 
         // Assert that the deletion is forbidden
         $response->assertStatus(403)
@@ -465,8 +502,9 @@ class ReminderControllerTest extends TestCase
         // Verify that the reminder still exists in the database
         $this->assertDatabaseHas('reminders', [
             'id' => $reminder->id,
-            'title' => 'Client Reminder to Delete',
-            'description' => 'Client Description to Delete',
+            'name' => 'Client Reminder to Delete',
+            'content' => 'Client Content to Delete',
+            'due_date' => '2024-12-05',
         ]);
     }
 
@@ -484,6 +522,9 @@ class ReminderControllerTest extends TestCase
         $response = $this->getJson('/reminders');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

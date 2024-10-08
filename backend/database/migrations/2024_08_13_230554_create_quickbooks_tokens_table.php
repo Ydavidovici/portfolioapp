@@ -12,6 +12,7 @@ class CreateQuickBooksTokensTable extends Migration
             $table->id();
             $table->text('access_token');
             $table->text('refresh_token');
+            $table->integer('expires_in');
             $table->timestamp('expires_at');
             $table->timestamps();
         });

@@ -15,6 +15,9 @@ class ReminderRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
+            'content' => 'required|string',
+            'due_date' => 'required|date',
+            'project_id' => 'nullable|exists:projects,id',
         ];
     }
 }

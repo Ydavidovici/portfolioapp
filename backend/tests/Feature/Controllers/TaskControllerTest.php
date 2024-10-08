@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Controllers;
 
+use App\Models\Project;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Task;
+use App\Models\TaskList;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class TaskControllerTest extends TestCase
@@ -25,46 +28,82 @@ class TaskControllerTest extends TestCase
     }
 
     /**
+     * Helper method to create a user with a specific role and a unique API token.
+     *
+     * @param string $roleName
+     * @return User
+     */
+    protected function createUserWithRoleAndToken($roleName)
+    {
+        $role = Role::where('name', $roleName)->firstOrFail();
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+
+        // Generate a unique API token for the user
+        $plainToken = Str::random(60);
+        $user->api_token = hash('sha256', $plainToken);
+        $user->save();
+
+        // Store the plain token for use in the test
+        $user->plainApiToken = $plainToken;
+
+        return $user;
+    }
+
+    /**
      * Test that an admin can create a task.
      *
      * @return void
      */
     public function test_admin_can_create_task()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Ensure a task list exists
+        $taskList = TaskList::factory()->create();
 
-        // Define task data
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
+        // Define task data with valid status
         $taskData = [
             'title' => 'New Task',
             'description' => 'Task description.',
-            'task_list_id' => 1, // Ensure a task list with ID 1 exists or adjust accordingly
-            'user_id' => $admin->id, // Assign to admin or another user
-            // Add other necessary fields as per your Task model
+            'status' => 'to-do', // Valid status value
+            'task_list_id' => $taskList->id,
+            'assigned_to' => $admin->id,
+            'project_id' => $project->id, // Include the project_id
         ];
 
-        // Act as the admin and make a POST request to create a task
-        $response = $this->actingAs($admin)->postJson('/tasks', $taskData);
+        // Act as the admin and make a POST request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->postJson('/tasks', $taskData);
 
         // Assert that the task was created successfully
         $response->assertStatus(201)
             ->assertJson([
-                'title' => 'New Task',
-                'description' => 'Task description.',
-                'task_list_id' => 1,
-                'user_id' => $admin->id,
+                'message' => 'Task created successfully.',
+                'task' => [
+                    'title' => 'New Task',
+                    'description' => 'Task description.',
+                    'status' => 'to-do',
+                    'task_list_id' => $taskList->id,
+                    'assigned_to' => $admin->id,
+                    'project_id' => $project->id,
+                ],
             ]);
 
         // Verify that the task exists in the database
         $this->assertDatabaseHas('tasks', [
             'title' => 'New Task',
             'description' => 'Task description.',
-            'task_list_id' => 1,
-            'user_id' => $admin->id,
+            'status' => 'to-do',
+            'task_list_id' => $taskList->id,
+            'assigned_to' => $admin->id,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -75,40 +114,52 @@ class TaskControllerTest extends TestCase
      */
     public function test_developer_can_create_task()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a developer user with API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Ensure a task list exists
+        $taskList = TaskList::factory()->create();
 
-        // Define task data
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
+        // Define task data with valid status
         $taskData = [
             'title' => 'Developer Task',
             'description' => 'Developer task description.',
-            'task_list_id' => 2, // Ensure a task list with ID 2 exists or adjust accordingly
-            'user_id' => $developer->id,
-            // Add other necessary fields as per your Task model
+            'status' => 'in-progress', // Valid status value
+            'task_list_id' => $taskList->id,
+            'assigned_to' => $developer->id,
+            'project_id' => $project->id,
         ];
 
-        // Act as the developer and make a POST request to create a task
-        $response = $this->actingAs($developer)->postJson('/tasks', $taskData);
+        // Act as the developer and make a POST request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->postJson('/tasks', $taskData);
 
         // Assert that the task was created successfully
         $response->assertStatus(201)
             ->assertJson([
-                'title' => 'Developer Task',
-                'description' => 'Developer task description.',
-                'task_list_id' => 2,
-                'user_id' => $developer->id,
+                'message' => 'Task created successfully.',
+                'task' => [
+                    'title' => 'Developer Task',
+                    'description' => 'Developer task description.',
+                    'status' => 'in-progress',
+                    'task_list_id' => $taskList->id,
+                    'assigned_to' => $developer->id,
+                    'project_id' => $project->id,
+                ],
             ]);
 
         // Verify that the task exists in the database
         $this->assertDatabaseHas('tasks', [
             'title' => 'Developer Task',
             'description' => 'Developer task description.',
-            'task_list_id' => 2,
-            'user_id' => $developer->id,
+            'status' => 'in-progress',
+            'task_list_id' => $taskList->id,
+            'assigned_to' => $developer->id,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -119,24 +170,29 @@ class TaskControllerTest extends TestCase
      */
     public function test_client_cannot_create_task()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with API token
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Ensure a task list exists
+        $taskList = TaskList::factory()->create();
 
-        // Define task data
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
+        // Define task data with valid status
         $taskData = [
             'title' => 'Unauthorized Task',
             'description' => 'Client should not be able to create this.',
-            'task_list_id' => 3, // Ensure a task list with ID 3 exists or adjust accordingly
-            'user_id' => $client->id,
-            // Add other necessary fields as per your Task model
+            'status' => 'to-do', // Valid status value
+            'task_list_id' => $taskList->id,
+            'assigned_to' => $client->id,
+            'project_id' => $project->id,
         ];
 
         // Act as the client and attempt to create a task
-        $response = $this->actingAs($client)->postJson('/tasks', $taskData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->postJson('/tasks', $taskData);
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
@@ -148,47 +204,59 @@ class TaskControllerTest extends TestCase
         $this->assertDatabaseMissing('tasks', [
             'title' => 'Unauthorized Task',
             'description' => 'Client should not be able to create this.',
-            'task_list_id' => 3,
-            'user_id' => $client->id,
+            'status' => 'to-do',
+            'task_list_id' => $taskList->id,
+            'assigned_to' => $client->id,
+            'project_id' => $project->id,
         ]);
     }
 
-    /**
-     * Test that an admin can update any task.
-     *
-     * @return void
-     */
     public function test_admin_can_update_any_task()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
+        // Ensure a task list exists
+        $taskList = TaskList::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Initial Task',
             'description' => 'Initial description.',
-            'task_list_id' => 1,
-            'user_id' => $admin->id,
+            'status' => 'to-do',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id,
         ]);
 
-        // Define updated data
+        // Define updated data with valid status
         $updatedData = [
             'title' => 'Updated Task Title',
             'description' => 'Updated task description.',
+            'status' => 'done', // Valid status value
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id, // Include task_list_id
         ];
 
-        // Act as the admin and make a PUT request to update the task
-        $response = $this->actingAs($admin)->putJson("/tasks/{$task->id}", $updatedData);
+        // Act as the admin and make a PUT request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->putJson("/tasks/{$task->id}", $updatedData);
 
         // Assert that the task was updated successfully
         $response->assertStatus(200)
             ->assertJson([
-                'title' => 'Updated Task Title',
-                'description' => 'Updated task description.',
+                'message' => 'Task updated successfully.',
+                'task' => [
+                    'id' => $task->id,
+                    'title' => 'Updated Task Title',
+                    'description' => 'Updated task description.',
+                    'status' => 'done',
+                    'project_id' => $project->id,
+                    'task_list_id' => $taskList->id,
+                ],
             ]);
 
         // Verify that the task was updated in the database
@@ -196,45 +264,58 @@ class TaskControllerTest extends TestCase
             'id' => $task->id,
             'title' => 'Updated Task Title',
             'description' => 'Updated task description.',
+            'status' => 'done',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id,
         ]);
     }
 
-    /**
-     * Test that a developer can update any task.
-     *
-     * @return void
-     */
     public function test_developer_can_update_any_task()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a developer user with API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
+        // Ensure a task list exists
+        $taskList = TaskList::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Initial Developer Task',
             'description' => 'Initial developer description.',
-            'task_list_id' => 2,
-            'user_id' => $developer->id,
+            'status' => 'to-do',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id,
         ]);
 
-        // Define updated data
+        // Define updated data with valid status
         $updatedData = [
             'title' => 'Updated Developer Task Title',
             'description' => 'Updated developer task description.',
+            'status' => 'in-progress',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id, // Include task_list_id
         ];
 
-        // Act as the developer and make a PUT request to update the task
-        $response = $this->actingAs($developer)->putJson("/tasks/{$task->id}", $updatedData);
+        // Act as the developer and make a PUT request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->putJson("/tasks/{$task->id}", $updatedData);
 
         // Assert that the task was updated successfully
         $response->assertStatus(200)
             ->assertJson([
-                'title' => 'Updated Developer Task Title',
-                'description' => 'Updated developer task description.',
+                'message' => 'Task updated successfully.',
+                'task' => [
+                    'id' => $task->id,
+                    'title' => 'Updated Developer Task Title',
+                    'description' => 'Updated developer task description.',
+                    'status' => 'in-progress',
+                    'project_id' => $project->id,
+                    'task_list_id' => $taskList->id,
+                ],
             ]);
 
         // Verify that the task was updated in the database
@@ -242,39 +323,45 @@ class TaskControllerTest extends TestCase
             'id' => $task->id,
             'title' => 'Updated Developer Task Title',
             'description' => 'Updated developer task description.',
+            'status' => 'in-progress',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id,
         ]);
     }
 
-    /**
-     * Test that a client cannot update a task.
-     *
-     * @return void
-     */
     public function test_client_cannot_update_task()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with API token
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
+        // Ensure a task list exists
+        $taskList = TaskList::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Client Task',
             'description' => 'Client task description.',
-            'task_list_id' => 3,
-            'user_id' => $client->id,
+            'status' => 'to-do',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id,
         ]);
 
-        // Define updated data
+        // Define updated data with valid status
         $updatedData = [
             'title' => 'Attempted Update by Client',
             'description' => 'Attempted task description update.',
+            'status' => 'done',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id, // Include task_list_id
         ];
 
         // Act as the client and attempt to update the task
-        $response = $this->actingAs($client)->putJson("/tasks/{$task->id}", $updatedData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->putJson("/tasks/{$task->id}", $updatedData);
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
@@ -287,6 +374,9 @@ class TaskControllerTest extends TestCase
             'id' => $task->id,
             'title' => 'Client Task',
             'description' => 'Client task description.',
+            'status' => 'to-do',
+            'project_id' => $project->id,
+            'task_list_id' => $taskList->id,
         ]);
     }
 
@@ -297,23 +387,24 @@ class TaskControllerTest extends TestCase
      */
     public function test_admin_can_delete_any_task()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Task to Delete',
             'description' => 'Description to delete.',
-            'task_list_id' => 1,
-            'user_id' => $admin->id,
+            'status' => 'to-do',
+            'project_id' => $project->id,
         ]);
 
-        // Act as the admin and make a DELETE request to delete the task
-        $response = $this->actingAs($admin)->deleteJson("/tasks/{$task->id}");
+        // Act as the admin and make a DELETE request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->deleteJson("/tasks/{$task->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(204); // No Content
@@ -322,6 +413,7 @@ class TaskControllerTest extends TestCase
         $this->assertDatabaseMissing('tasks', [
             'id' => $task->id,
             'title' => 'Task to Delete',
+            'project_id' => $project->id,
         ]);
     }
 
@@ -332,23 +424,24 @@ class TaskControllerTest extends TestCase
      */
     public function test_developer_can_delete_any_task()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a developer user with API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Developer Task to Delete',
             'description' => 'Developer description to delete.',
-            'task_list_id' => 2,
-            'user_id' => $developer->id,
+            'status' => 'to-do',
+            'project_id' => $project->id,
         ]);
 
-        // Act as the developer and make a DELETE request to delete the task
-        $response = $this->actingAs($developer)->deleteJson("/tasks/{$task->id}");
+        // Act as the developer and make a DELETE request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->deleteJson("/tasks/{$task->id}");
 
         // Assert that the deletion was successful
         $response->assertStatus(204); // No Content
@@ -357,6 +450,7 @@ class TaskControllerTest extends TestCase
         $this->assertDatabaseMissing('tasks', [
             'id' => $task->id,
             'title' => 'Developer Task to Delete',
+            'project_id' => $project->id,
         ]);
     }
 
@@ -367,23 +461,24 @@ class TaskControllerTest extends TestCase
      */
     public function test_client_cannot_delete_task()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with API token
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Client Task to Delete',
             'description' => 'Client description to delete.',
-            'task_list_id' => 3,
-            'user_id' => $client->id,
+            'status' => 'to-do',
+            'project_id' => $project->id,
         ]);
 
         // Act as the client and attempt to delete the task
-        $response = $this->actingAs($client)->deleteJson("/tasks/{$task->id}");
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->deleteJson("/tasks/{$task->id}");
 
         // Assert that the deletion is forbidden
         $response->assertStatus(403)
@@ -395,6 +490,7 @@ class TaskControllerTest extends TestCase
         $this->assertDatabaseHas('tasks', [
             'id' => $task->id,
             'title' => 'Client Task to Delete',
+            'project_id' => $project->id,
         ]);
     }
 
@@ -405,23 +501,24 @@ class TaskControllerTest extends TestCase
      */
     public function test_admin_can_view_any_task()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Specific Admin Task',
             'description' => 'Specific admin task description.',
-            'task_list_id' => 1,
-            'user_id' => $admin->id,
+            'status' => 'in-progress',
+            'project_id' => $project->id,
         ]);
 
-        // Act as the admin and make a GET request to view the task
-        $response = $this->actingAs($admin)->getJson("/tasks/{$task->id}");
+        // Act as the admin and make a GET request with API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->getJson("/tasks/{$task->id}");
 
         // Assert that the response is successful and contains the task data
         $response->assertStatus(200)
@@ -429,8 +526,8 @@ class TaskControllerTest extends TestCase
                 'id' => $task->id,
                 'title' => 'Specific Admin Task',
                 'description' => 'Specific admin task description.',
-                'task_list_id' => 1,
-                'user_id' => $admin->id,
+                'status' => 'in-progress',
+                'project_id' => $project->id,
             ]);
     }
 
@@ -441,23 +538,24 @@ class TaskControllerTest extends TestCase
      */
     public function test_client_cannot_view_any_task()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with API token
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Ensure a project exists
+        $project = Project::factory()->create();
 
         // Create a task
         $task = Task::factory()->create([
             'title' => 'Client Attempting to View Task',
             'description' => 'Client task description.',
-            'task_list_id' => 3,
-            'user_id' => $client->id,
+            'status' => 'done',
+            'project_id' => $project->id,
         ]);
 
         // Act as the client and attempt to view the task
-        $response = $this->actingAs($client)->getJson("/tasks/{$task->id}");
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->getJson("/tasks/{$task->id}");
 
         // Assert that the response is forbidden
         $response->assertStatus(403)
@@ -473,13 +571,21 @@ class TaskControllerTest extends TestCase
      */
     public function test_unauthenticated_user_cannot_access_tasks()
     {
+        // Ensure a project exists
+        $project = Project::factory()->create();
+
         // Create tasks
-        $tasks = Task::factory()->count(2)->create();
+        $tasks = Task::factory()->count(2)->create([
+            'project_id' => $project->id,
+        ]);
 
         // Make a GET request without authentication
         $response = $this->getJson('/tasks');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

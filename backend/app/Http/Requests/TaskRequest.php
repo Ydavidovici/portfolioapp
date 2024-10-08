@@ -20,6 +20,7 @@ class TaskRequest extends FormRequest
             'due_date' => 'nullable|date',
             'task_list_id' => 'required|exists:task_lists,id',
             'assigned_to' => 'nullable|exists:users,id',
+            'project_id' => 'required|exists:projects,id'
         ];
     }
 }

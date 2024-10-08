@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class ProjectControllerTest extends TestCase
@@ -14,8 +15,6 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Set up the test environment.
-     *
-     * @return void
      */
     protected function setUp(): void
     {
@@ -25,104 +24,144 @@ class ProjectControllerTest extends TestCase
     }
 
     /**
-     * Test that an admin can create a project.
+     * Helper method to create a user with a specific role and a unique API token.
      *
-     * @return void
+     * @param string $roleName
+     * @return User
+     */
+    protected function createUserWithRoleAndToken($roleName)
+    {
+        $role = Role::where('name', $roleName)->firstOrFail();
+
+        $user = User::factory()->create();
+        $user->roles()->attach($role);
+
+        // Generate a unique API token for the user
+        $plainToken = Str::random(60);
+        $user->api_token = hash('sha256', $plainToken);
+        $user->save();
+
+        // Store the plain token for use in the test
+        $user->plainApiToken = $plainToken;
+
+        return $user;
+    }
+
+    /**
+     * Test that an admin can create a project.
      */
     public function test_admin_can_create_project()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Define project data
+        // Define project data including required fields
         $projectData = [
             'name' => 'New Project',
-            'client_id' => 1, // Ensure a client with ID 1 exists or adjust accordingly
-            // Add other necessary fields as per your Project model
+            'description' => 'Project description',
+            'status' => 'active', // or 'completed', 'archived' based on your enum
+            'start_date' => '2023-01-01',
+            'end_date' => '2023-12-31', // Optional if nullable
+            'client_id' => $client->id,
         ];
 
-        // Act as the admin and make a POST request to create a project
-        $response = $this->actingAs($admin)->postJson('/projects', $projectData);
+        // Make a POST request to create a project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->postJson('/projects', $projectData);
 
         // Assert that the project was created successfully
         $response->assertStatus(201)
             ->assertJson([
-                'name' => 'New Project',
-                'client_id' => 1,
+                'message' => 'Project created successfully.',
+                'project' => [
+                    'name' => 'New Project',
+                    'client_id' => $client->id,
+                    'status' => 'active',
+                    'start_date' => '2023-01-01',
+                ],
             ]);
 
         // Verify that the project exists in the database
         $this->assertDatabaseHas('projects', [
             'name' => 'New Project',
-            'client_id' => 1,
+            'client_id' => $client->id,
+            'status' => 'active',
+            'start_date' => '2023-01-01',
         ]);
     }
 
     /**
      * Test that a developer can create a project.
-     *
-     * @return void
      */
     public function test_developer_can_create_project()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Define project data
+        // Define project data including required fields
         $projectData = [
             'name' => 'Developer Project',
-            'client_id' => 2, // Ensure a client with ID 2 exists or adjust accordingly
-            // Add other necessary fields as per your Project model
+            'description' => 'Developer project description',
+            'status' => 'active',
+            'start_date' => '2023-02-01',
+            'client_id' => $client->id,
         ];
 
-        // Act as the developer and make a POST request to create a project
-        $response = $this->actingAs($developer)->postJson('/projects', $projectData);
+        // Make a POST request to create a project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->postJson('/projects', $projectData);
 
         // Assert that the project was created successfully
         $response->assertStatus(201)
             ->assertJson([
-                'name' => 'Developer Project',
-                'client_id' => 2,
+                'message' => 'Project created successfully.',
+                'project' => [
+                    'name' => 'Developer Project',
+                    'client_id' => $client->id,
+                    'status' => 'active',
+                    'start_date' => '2023-02-01',
+                ],
             ]);
 
         // Verify that the project exists in the database
         $this->assertDatabaseHas('projects', [
             'name' => 'Developer Project',
-            'client_id' => 2,
+            'client_id' => $client->id,
+            'status' => 'active',
+            'start_date' => '2023-02-01',
         ]);
     }
 
     /**
      * Test that a client cannot create a project.
-     *
-     * @return void
      */
     public function test_client_cannot_create_project()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
-
-        // Define project data
+        // Define project data including required fields
         $projectData = [
             'name' => 'Unauthorized Project',
+            'description' => 'Project description',
+            'status' => 'active',
+            'start_date' => '2023-01-01',
+            'end_date' => '2023-12-31', // Optional if nullable
             'client_id' => $client->id,
-            // Add other necessary fields as per your Project model
         ];
 
         // Act as the client and make a POST request to create a project
-        $response = $this->actingAs($client)->postJson('/projects', $projectData);
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->postJson('/projects', $projectData);
 
         // Assert that the creation is forbidden
         $response->assertStatus(403)
@@ -139,115 +178,142 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Test that an admin can update any project.
-     *
-     * @return void
      */
     public function test_admin_can_update_any_project()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Original Project',
-            'client_id' => 1,
+            'description' => 'Original description',
+            'status' => 'active',
+            'start_date' => '2023-01-01',
+            'client_id' => $client->id,
         ]);
 
-        // Define updated data
+        // Define updated data including required fields
         $updatedData = [
             'name' => 'Updated Project Name',
+            'description' => 'Updated description',
+            'status' => 'completed',
+            'start_date' => '2023-01-01',
+            'client_id' => $client->id,
         ];
 
-        // Act as the admin and make a PUT request to update the project
-        $response = $this->actingAs($admin)->putJson("/projects/{$project->id}", $updatedData);
+        // Make a PUT request to update the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->putJson("/projects/{$project->id}", $updatedData);
 
         // Assert that the project was updated successfully
         $response->assertStatus(200)
             ->assertJson([
-                'name' => 'Updated Project Name',
-                'client_id' => 1,
+                'message' => 'Project updated successfully.',
+                'project' => [
+                    'id' => $project->id,
+                    'name' => 'Updated Project Name',
+                    'client_id' => $client->id,
+                    'status' => 'completed',
+                ],
             ]);
 
         // Verify that the project was updated in the database
         $this->assertDatabaseHas('projects', [
             'id' => $project->id,
             'name' => 'Updated Project Name',
+            'status' => 'completed',
         ]);
     }
 
     /**
      * Test that a developer can update any project.
-     *
-     * @return void
      */
     public function test_developer_can_update_any_project()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Original Developer Project',
-            'client_id' => 2,
+            'description' => 'Original description',
+            'status' => 'active',
+            'start_date' => '2023-02-01',
+            'client_id' => $client->id,
         ]);
 
-        // Define updated data
+        // Define updated data including required fields
         $updatedData = [
             'name' => 'Updated Developer Project Name',
+            'description' => 'Updated description',
+            'status' => 'completed',
+            'start_date' => '2023-02-01',
+            'client_id' => $client->id,
         ];
 
-        // Act as the developer and make a PUT request to update the project
-        $response = $this->actingAs($developer)->putJson("/projects/{$project->id}", $updatedData);
+        // Make a PUT request to update the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->putJson("/projects/{$project->id}", $updatedData);
 
         // Assert that the project was updated successfully
         $response->assertStatus(200)
             ->assertJson([
-                'name' => 'Updated Developer Project Name',
-                'client_id' => 2,
+                'message' => 'Project updated successfully.',
+                'project' => [
+                    'id' => $project->id,
+                    'name' => 'Updated Developer Project Name',
+                    'client_id' => $client->id,
+                    'status' => 'completed',
+                ],
             ]);
 
         // Verify that the project was updated in the database
         $this->assertDatabaseHas('projects', [
             'id' => $project->id,
             'name' => 'Updated Developer Project Name',
+            'status' => 'completed',
         ]);
     }
 
     /**
      * Test that a client cannot update a project.
-     *
-     * @return void
      */
     public function test_client_cannot_update_project()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Client Project',
+            'description' => 'Original description',
+            'status' => 'active',
+            'start_date' => '2023-03-01',
             'client_id' => $client->id,
         ]);
 
-        // Define updated data
+        // Define updated data including required fields
         $updatedData = [
             'name' => 'Attempted Update by Client',
+            'description' => 'Updated description',
+            'status' => 'completed',
+            'start_date' => '2023-03-01',
+            'client_id' => $client->id,
         ];
 
-        // Act as the client and make a PUT request to update the project
-        $response = $this->actingAs($client)->putJson("/projects/{$project->id}", $updatedData);
+        // Make a PUT request to update the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->putJson("/projects/{$project->id}", $updatedData);
 
         // Assert that the update is forbidden
         $response->assertStatus(403)
@@ -259,34 +325,40 @@ class ProjectControllerTest extends TestCase
         $this->assertDatabaseHas('projects', [
             'id' => $project->id,
             'name' => 'Client Project',
+            'status' => 'active',
         ]);
     }
 
     /**
      * Test that an admin can delete any project.
-     *
-     * @return void
      */
     public function test_admin_can_delete_any_project()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Project to Delete',
-            'client_id' => 1,
+            'description' => 'Project to delete',
+            'status' => 'active',
+            'start_date' => '2023-01-01',
+            'client_id' => $client->id,
         ]);
 
-        // Act as the admin and make a DELETE request to delete the project
-        $response = $this->actingAs($admin)->deleteJson("/projects/{$project->id}");
+        // Make a DELETE request to delete the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->deleteJson("/projects/{$project->id}");
 
         // Assert that the deletion was successful
-        $response->assertStatus(204); // No Content
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Project deleted successfully.',
+            ]);
 
         // Verify that the project no longer exists in the database
         $this->assertDatabaseMissing('projects', [
@@ -296,29 +368,34 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Test that a developer can delete any project.
-     *
-     * @return void
      */
     public function test_developer_can_delete_any_project()
     {
-        // Retrieve the 'developer' role
-        $developerRole = Role::where('name', 'developer')->first();
+        // Create a developer user with an API token
+        $developer = $this->createUserWithRoleAndToken('developer');
 
-        // Create a developer user and assign the 'developer' role
-        $developer = User::factory()->create();
-        $developer->roles()->attach($developerRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Developer Project to Delete',
-            'client_id' => 2,
+            'description' => 'Project to delete',
+            'status' => 'active',
+            'start_date' => '2023-02-01',
+            'client_id' => $client->id,
         ]);
 
-        // Act as the developer and make a DELETE request to delete the project
-        $response = $this->actingAs($developer)->deleteJson("/projects/{$project->id}");
+        // Make a DELETE request to delete the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $developer->plainApiToken,
+        ])->deleteJson("/projects/{$project->id}");
 
         // Assert that the deletion was successful
-        $response->assertStatus(204); // No Content
+        $response->assertStatus(200)
+            ->assertJson([
+                'message' => 'Project deleted successfully.',
+            ]);
 
         // Verify that the project no longer exists in the database
         $this->assertDatabaseMissing('projects', [
@@ -328,26 +405,25 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Test that a client cannot delete a project.
-     *
-     * @return void
      */
     public function test_client_cannot_delete_project()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create a client user and assign the 'client' role
-        $client = User::factory()->create();
-        $client->roles()->attach($clientRole);
+        // Create a client user with an API token
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Client Project to Delete',
+            'description' => 'Project description',
+            'status' => 'active',
+            'start_date' => '2023-03-01',
             'client_id' => $client->id,
         ]);
 
-        // Act as the client and make a DELETE request to delete the project
-        $response = $this->actingAs($client)->deleteJson("/projects/{$project->id}");
+        // Make a DELETE request to delete the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client->plainApiToken,
+        ])->deleteJson("/projects/{$project->id}");
 
         // Assert that the deletion is forbidden
         $response->assertStatus(403)
@@ -364,20 +440,12 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Test that a client can view their own projects.
-     *
-     * @return void
      */
     public function test_client_can_view_their_projects()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create two client users
-        $client1 = User::factory()->create();
-        $client1->roles()->attach($clientRole);
-
-        $client2 = User::factory()->create();
-        $client2->roles()->attach($clientRole);
+        // Create two client users with API tokens
+        $client1 = $this->createUserWithRoleAndToken('client');
+        $client2 = $this->createUserWithRoleAndToken('client');
 
         // Create projects for client1
         $client1Projects = Project::factory()->count(2)->create([
@@ -389,8 +457,10 @@ class ProjectControllerTest extends TestCase
             'client_id' => $client2->id,
         ]);
 
-        // Act as client1 and make a GET request to view projects
-        $response = $this->actingAs($client1)->getJson('/projects');
+        // Make a GET request to view projects, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client1->plainApiToken,
+        ])->getJson('/projects');
 
         // Assert that the response contains only client1's projects
         $response->assertStatus(200)
@@ -415,61 +485,60 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Test that an admin can view any project.
-     *
-     * @return void
      */
     public function test_admin_can_view_any_project()
     {
-        // Retrieve the 'admin' role
-        $adminRole = Role::where('name', 'admin')->first();
+        // Create an admin user with an API token
+        $admin = $this->createUserWithRoleAndToken('admin');
 
-        // Create an admin user and assign the 'admin' role
-        $admin = User::factory()->create();
-        $admin->roles()->attach($adminRole);
+        // Create a client to associate with the project
+        $client = $this->createUserWithRoleAndToken('client');
 
         // Create a project
         $project = Project::factory()->create([
             'name' => 'Specific Admin Project',
-            'client_id' => 1,
+            'description' => 'Project description',
+            'status' => 'active',
+            'start_date' => '2023-01-01',
+            'client_id' => $client->id,
         ]);
 
-        // Act as the admin and make a GET request to view the project
-        $response = $this->actingAs($admin)->getJson("/projects/{$project->id}");
+        // Make a GET request to view the project, including the API token
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $admin->plainApiToken,
+        ])->getJson("/projects/{$project->id}");
 
         // Assert that the response is successful and contains the project data
         $response->assertStatus(200)
             ->assertJson([
                 'id' => $project->id,
                 'name' => 'Specific Admin Project',
-                'client_id' => 1,
+                'client_id' => $client->id,
             ]);
     }
 
     /**
      * Test that a client cannot view another client's project.
-     *
-     * @return void
      */
     public function test_client_cannot_view_others_project()
     {
-        // Retrieve the 'client' role
-        $clientRole = Role::where('name', 'client')->first();
-
-        // Create two client users
-        $client1 = User::factory()->create();
-        $client1->roles()->attach($clientRole);
-
-        $client2 = User::factory()->create();
-        $client2->roles()->attach($clientRole);
+        // Create two client users with API tokens
+        $client1 = $this->createUserWithRoleAndToken('client');
+        $client2 = $this->createUserWithRoleAndToken('client');
 
         // Create a project for client2
         $project = Project::factory()->create([
             'name' => 'Client2 Project',
+            'description' => 'Project description',
+            'status' => 'active',
+            'start_date' => '2023-01-01',
             'client_id' => $client2->id,
         ]);
 
         // Act as client1 and attempt to view client2's project
-        $response = $this->actingAs($client1)->getJson("/projects/{$project->id}");
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $client1->plainApiToken,
+        ])->getJson("/projects/{$project->id}");
 
         // Assert that the response is forbidden
         $response->assertStatus(403)
@@ -480,8 +549,6 @@ class ProjectControllerTest extends TestCase
 
     /**
      * Test that an unauthenticated user cannot access projects.
-     *
-     * @return void
      */
     public function test_unauthenticated_user_cannot_access_projects()
     {
@@ -492,6 +559,9 @@ class ProjectControllerTest extends TestCase
         $response = $this->getJson('/projects');
 
         // Assert that the response is unauthorized
-        $response->assertStatus(401);
+        $response->assertStatus(401)
+            ->assertJson([
+                'message' => 'Unauthenticated.',
+            ]);
     }
 }

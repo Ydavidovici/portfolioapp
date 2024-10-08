@@ -76,7 +76,7 @@ Route::middleware([AuthenticateApiToken::class, 'throttle:api'])->group(function
     Route::apiResource('payments', PaymentController::class);
     Route::apiResource('quickbooks-tokens', QuickBooksTokenController::class);
     Route::apiResource('reminders', ReminderController::class);
-    Route::apiResource('tasklists', TaskListController::class);
+    Route::apiResource('task-lists', TaskListController::class);
     Route::apiResource('messages', MessageController::class);
 });
 

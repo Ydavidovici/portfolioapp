@@ -12,6 +12,7 @@ class ReminderFactory extends Factory
     public function definition()
     {
         return [
+            'name' => $this->faker->sentence(3),
             'content' => $this->faker->paragraph,
             'due_date' => $this->faker->date,
             'user_id' => \App\Models\User::factory(),

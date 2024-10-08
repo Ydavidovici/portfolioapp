@@ -16,6 +16,7 @@ class Task extends Model
         'due_date',
         'task_list_id',
         'assigned_to',
+        'project_id',
     ];
 
     public function taskList()
