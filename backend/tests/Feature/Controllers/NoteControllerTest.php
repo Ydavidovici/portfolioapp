@@ -5,6 +5,7 @@ namespace Tests\Feature\Controllers;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\Note;
+use App\Models\Project;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -36,7 +37,8 @@ class NoteControllerTest extends TestCase
     {
         // Generate a unique API token
         $apiToken = Str::random(60);
-        $user->api_token = $apiToken;
+        $hashedToken = hash('sha256', $apiToken);
+        $user->api_token = $hashedToken;
         $user->save();
 
         return [
@@ -61,10 +63,13 @@ class NoteControllerTest extends TestCase
         ]);
         $admin->roles()->attach($adminRole);
 
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
         // Define note data
         $noteData = [
             'content' => 'Important admin note.',
-            'project_id' => 1, // Ensure a project with ID 1 exists or adjust accordingly
+            'project_id' => $project->id, // Use the created project's ID
             // Add other necessary fields as per your Note model
         ];
 
@@ -80,14 +85,14 @@ class NoteControllerTest extends TestCase
                 'message' => 'Note created successfully.',
                 'note' => [
                     'content' => 'Important admin note.',
-                    'project_id' => 1,
+                    'project_id' => $project->id,
                 ],
             ]);
 
         // Verify that the note exists in the database
         $this->assertDatabaseHas('notes', [
             'content' => 'Important admin note.',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -107,10 +112,13 @@ class NoteControllerTest extends TestCase
         ]);
         $developer->roles()->attach($developerRole);
 
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
         // Define note data
         $noteData = [
             'content' => 'Developer note regarding project.',
-            'project_id' => 2, // Ensure a project with ID 2 exists or adjust accordingly
+            'project_id' => $project->id, // Use the created project's ID
             // Add other necessary fields as per your Note model
         ];
 
@@ -126,14 +134,14 @@ class NoteControllerTest extends TestCase
                 'message' => 'Note created successfully.',
                 'note' => [
                     'content' => 'Developer note regarding project.',
-                    'project_id' => 2,
+                    'project_id' => $project->id,
                 ],
             ]);
 
         // Verify that the note exists in the database
         $this->assertDatabaseHas('notes', [
             'content' => 'Developer note regarding project.',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -153,10 +161,13 @@ class NoteControllerTest extends TestCase
         ]);
         $client->roles()->attach($clientRole);
 
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
         // Define note data
         $noteData = [
             'content' => 'Client attempting to create a note.',
-            'project_id' => 3, // Ensure a project with ID 3 exists or adjust accordingly
+            'project_id' => $project->id, // Use the created project's ID
             // Add other necessary fields as per your Note model
         ];
 
@@ -175,7 +186,7 @@ class NoteControllerTest extends TestCase
         // Assert that the note was not created in the database
         $this->assertDatabaseMissing('notes', [
             'content' => 'Client attempting to create a note.',
-            'project_id' => 3,
+            'project_id' => $project->id,
         ]);
     }
 
@@ -195,10 +206,13 @@ class NoteControllerTest extends TestCase
         ]);
         $admin->roles()->attach($adminRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Original Note Content',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
 
         // Define updated data
@@ -245,10 +259,13 @@ class NoteControllerTest extends TestCase
         ]);
         $developer->roles()->attach($developerRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Original Developer Note',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ]);
 
         // Define updated data
@@ -295,10 +312,13 @@ class NoteControllerTest extends TestCase
         ]);
         $client->roles()->attach($clientRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Client Note',
-            'project_id' => 3,
+            'project_id' => $project->id,
         ]);
 
         // Define updated data
@@ -341,10 +361,13 @@ class NoteControllerTest extends TestCase
         ]);
         $admin->roles()->attach($adminRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Note to Delete',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
 
         // Assign an API token to the admin and get headers
@@ -381,10 +404,13 @@ class NoteControllerTest extends TestCase
         ]);
         $developer->roles()->attach($developerRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Developer Note to Delete',
-            'project_id' => 2,
+            'project_id' => $project->id,
         ]);
 
         // Assign an API token to the developer and get headers
@@ -421,11 +447,19 @@ class NoteControllerTest extends TestCase
         ]);
         $client->roles()->attach($clientRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Client Attempting to Delete Note',
-            'project_id' => 3,
+            'project_id' => $project->id,
         ]);
+
+        // Define updated data (optional, since we're deleting)
+        // $updatedData = [
+        //     'content' => 'Attempted Update by Client',
+        // ];
 
         // Assign an API token to the client and get headers
         $headers = $this->getAuthHeaders($client);
@@ -462,10 +496,13 @@ class NoteControllerTest extends TestCase
         ]);
         $admin->roles()->attach($adminRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Specific Admin Note',
-            'project_id' => 1,
+            'project_id' => $project->id,
         ]);
 
         // Assign an API token to the admin and get headers
@@ -479,7 +516,7 @@ class NoteControllerTest extends TestCase
             ->assertJson([
                 'id' => $note->id,
                 'content' => 'Specific Admin Note',
-                'project_id' => 1,
+                'project_id' => $project->id,
             ]);
     }
 
@@ -499,10 +536,13 @@ class NoteControllerTest extends TestCase
         ]);
         $client->roles()->attach($clientRole);
 
-        // Create a note
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create a note associated with the project
         $note = Note::factory()->create([
             'content' => 'Client Attempting to View Note',
-            'project_id' => 3,
+            'project_id' => $project->id,
         ]);
 
         // Assign an API token to the client and get headers
@@ -525,8 +565,13 @@ class NoteControllerTest extends TestCase
      */
     public function test_unauthenticated_user_cannot_access_notes()
     {
-        // Create notes
-        $notes = Note::factory()->count(2)->create();
+        // Create a project and get its ID
+        $project = Project::factory()->create();
+
+        // Create notes associated with the project
+        $notes = Note::factory()->count(2)->create([
+            'project_id' => $project->id,
+        ]);
 
         // Make a GET request without authentication
         $response = $this->getJson('/notes');

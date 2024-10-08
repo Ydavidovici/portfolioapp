@@ -15,7 +15,6 @@ class NoteRequest extends FormRequest
     {
         return [
             'content' => 'required|string',
-            'user_id' => 'required|exists:users,id',
             'project_id' => 'nullable|exists:projects,id',
         ];
     }

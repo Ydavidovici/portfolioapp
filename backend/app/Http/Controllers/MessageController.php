@@ -5,13 +5,37 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Message;
 use App\Models\User;
-use App\Mail\NewMessageNotification;
+use App\Notifications\NewMessageNotification; // Correct namespace
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
+
+    /**
+     * Display a listing of the messages (Read all).
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function index()
+    {
+        $user = auth()->user();
+
+        if (Gate::allows('perform-crud-operations')) {
+            $messages = Message::with(['sender', 'receiver'])->get();
+        } elseif (Gate::allows('manage-client-things')) {
+            $messages = Message::with(['sender', 'receiver'])
+                ->where('sender_id', $user->id)
+                ->orWhere('receiver_id', $user->id)
+                ->get();
+        } else {
+            return response()->json(['message' => 'This action is unauthorized.'], 403);
+        }
+
+        return response()->json($messages);
+    }
+
     /**
      * Store a newly created message in storage (Create).
      *
@@ -56,32 +80,9 @@ class MessageController extends Controller
 
         // Send notification to the receiver
         $receiver = User::find($validated['receiver_id']);
-        Notification::send($receiver, new NewMessageNotification($message));
+        $receiver->notify(new NewMessageNotification($message)); // Use notify() method
 
         return response()->json($message, 201);
-    }
-
-    /**
-     * Display a listing of the messages (Read all).
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function index()
-    {
-        $user = auth()->user();
-
-        if (Gate::allows('perform-crud-operations')) {
-            $messages = Message::with(['sender', 'receiver'])->get();
-        } elseif (Gate::allows('manage-client-things')) {
-            $messages = Message::with(['sender', 'receiver'])
-                ->where('sender_id', $user->id)
-                ->orWhere('receiver_id', $user->id)
-                ->get();
-        } else {
-            return response()->json(['message' => 'This action is unauthorized.'], 403);
-        }
-
-        return response()->json($messages);
     }
 
     /**

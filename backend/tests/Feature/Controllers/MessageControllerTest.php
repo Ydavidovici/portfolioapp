@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
-use App\Mail\NewMessageNotification;  // Correct mail reference
+use App\Notifications\NewMessageNotification;  // Correct notification reference
 
 class MessageControllerTest extends TestCase
 {
@@ -108,7 +108,10 @@ class MessageControllerTest extends TestCase
 
     public function test_can_update_message()
     {
-        $admin = User::factory()->create();
+        $adminRole = Role::where('name', 'admin')->first(); // Ensure admin role is fetched
+        $admin = User::factory()->create(['password' => Hash::make('adminpassword')]);
+        $admin->roles()->attach($adminRole); // Attach admin role to user
+
         $message = Message::factory()->create();
 
         $headers = $this->getAuthHeaders($admin);
@@ -129,7 +132,10 @@ class MessageControllerTest extends TestCase
 
     public function test_can_delete_message()
     {
-        $admin = User::factory()->create();
+        $adminRole = Role::where('name', 'admin')->first(); // Ensure admin role is fetched
+        $admin = User::factory()->create(['password' => Hash::make('adminpassword')]);
+        $admin->roles()->attach($adminRole); // Attach admin role to user
+
         $message = Message::factory()->create();
 
         $headers = $this->getAuthHeaders($admin);

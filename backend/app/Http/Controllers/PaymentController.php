@@ -5,20 +5,23 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PaymentRequest;
 use App\Models\Payment;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Auth\Access\AuthorizationException;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
 
 class PaymentController extends Controller
 {
     /**
      * Instantiate a new controller instance.
      *
-     * Apply authentication middleware to all routes in this controller.
+     * Applies authentication middleware to all methods.
      *
      * @return void
      */
     public function __construct()
     {
-        $this->middleware('auth');
+        $this->middleware('auth:api');
     }
 
     /**
@@ -26,7 +29,7 @@ class PaymentController extends Controller
      *
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(): JsonResponse
     {
         $user = auth()->user();
 
@@ -40,25 +43,87 @@ class PaymentController extends Controller
                 ->get();
         }
 
-        return response()->json($payments);
+        return response()->json(['payments' => $payments]);
     }
 
     /**
      * Store a newly created payment in storage.
      *
-     * Any authenticated user can create a payment.
+     * Any authenticated user (Admins, Developers, Clients) can create a payment.
      *
      * @param  \App\Http\Requests\PaymentRequest  $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function store(PaymentRequest $request)
+    public function store(PaymentRequest $request): JsonResponse
     {
-        $payment = Payment::create($request->validated());
+        $user = auth()->user();
 
-        return response()->json([
-            'message' => 'Payment created successfully.',
-            'payment' => $payment,
-        ], 201);
+        // Authorize using existing gates
+        if (!Gate::allows('perform-crud-operations') && !Gate::allows('manage-client-things')) {
+            return response()->json([
+                'message' => 'This action is unauthorized.',
+            ], 403);
+        }
+
+        $validated = $request->validated();
+
+        try {
+            // Set Stripe API key
+            Stripe::setApiKey(config('services.stripe.secret'));
+
+            // Create a PaymentIntent directly
+            $paymentIntent = PaymentIntent::create([
+                'amount' => intval($validated['amount'] * 100), // Amount in cents
+                'currency' => config('services.stripe.currency'), // Use configured currency
+                'payment_method' => $validated['payment_method'], // Payment method ID from frontend
+                'confirmation_method' => 'manual',
+                'confirm' => true,
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'invoice_id' => $validated['invoice_id'],
+                ],
+            ]);
+
+            // Handle different payment statuses
+            if (
+                $paymentIntent->status === 'requires_action' &&
+                isset($paymentIntent->next_action->type) &&
+                $paymentIntent->next_action->type === 'use_stripe_sdk'
+            ) {
+                // Payment requires additional actions (e.g., 3D Secure)
+                return response()->json([
+                    'message' => 'Payment requires additional action.',
+                    'requires_action' => true,
+                    'payment_intent_client_secret' => $paymentIntent->client_secret,
+                ]);
+            } elseif ($paymentIntent->status === 'succeeded') {
+                // Payment succeeded, create a Payment record
+                $payment = Payment::create([
+                    'user_id' => $user->id,
+                    'invoice_id' => $validated['invoice_id'],
+                    'amount' => $validated['amount'],
+                    'payment_date' => now(),
+                    'payment_method' => $validated['payment_method'],
+                    'stripe_payment_intent_id' => $paymentIntent->id,
+                    'status' => 'succeeded',
+                ]);
+
+                return response()->json([
+                    'message' => 'Payment successful.',
+                    'payment' => $payment,
+                ], 201);
+            } else {
+                // Invalid status
+                return response()->json([
+                    'message' => 'Invalid PaymentIntent status.',
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            // Handle exceptions and return appropriate responses
+            return response()->json([
+                'message' => 'Payment failed: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -67,14 +132,14 @@ class PaymentController extends Controller
      * @param  \App\Models\Payment  $payment
      * @return \Illuminate\Http\JsonResponse
      */
-    public function show(Payment $payment)
+    public function show(Payment $payment): JsonResponse
     {
         $user = auth()->user();
 
         if (Gate::allows('perform-crud-operations') || $payment->user_id === $user->id) {
             // Admins and Developers can view any payment
             // Clients can view their own payments
-            return response()->json($payment->load(['user', 'invoice']));
+            return response()->json(['payment' => $payment->load(['user', 'invoice'])]);
         }
 
         // Unauthorized access
@@ -92,12 +157,23 @@ class PaymentController extends Controller
      * @param  \App\Models\Payment  $payment
      * @return \Illuminate\Http\JsonResponse
      */
-    public function update(PaymentRequest $request, Payment $payment)
+    public function update(PaymentRequest $request, Payment $payment): JsonResponse
     {
-        // Only Admins and Developers can update payments
-        Gate::authorize('perform-crud-operations');
+        try {
+            // Only Admins and Developers can update payments
+            Gate::authorize('perform-crud-operations');
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'message' => 'This action is unauthorized.',
+            ], 403);
+        }
 
-        $payment->update($request->validated());
+        $validated = $request->validated();
+
+        // Optionally, handle updating Stripe PaymentIntent if necessary
+        // For simplicity, assuming only local record is updated
+
+        $payment->update($validated);
 
         return response()->json([
             'message' => 'Payment updated successfully.',
@@ -113,10 +189,19 @@ class PaymentController extends Controller
      * @param  \App\Models\Payment  $payment
      * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy(Payment $payment)
+    public function destroy(Payment $payment): JsonResponse
     {
-        // Only Admins and Developers can delete payments
-        Gate::authorize('perform-crud-operations');
+        try {
+            // Only Admins and Developers can delete payments
+            Gate::authorize('perform-crud-operations');
+        } catch (AuthorizationException $e) {
+            return response()->json([
+                'message' => 'This action is unauthorized.',
+            ], 403);
+        }
+
+        // Optionally, handle refunds via Stripe before deleting
+        // ...
 
         $payment->delete();
 

@@ -13,11 +13,22 @@ class PaymentRequest extends FormRequest
 
     public function rules()
     {
-        return [
-            'invoice_id' => 'required|exists:invoices,id',
+        // Common rules for both create and update
+        $rules = [
             'amount' => 'required|numeric',
-            'payment_date' => 'required|date',
             'payment_method' => 'required|string|max:255',
         ];
+
+        // Additional rules for create (POST) requests
+        if ($this->isMethod('post')) {
+            $rules['invoice_id'] = 'required|exists:invoices,id';
+        }
+
+        // Additional rules for update (PUT/PATCH) requests
+        if ($this->isMethod('put') || $this->isMethod('patch')) {
+            $rules['invoice_id'] = 'sometimes|exists:invoices,id';
+        }
+
+        return $rules;
     }
 }

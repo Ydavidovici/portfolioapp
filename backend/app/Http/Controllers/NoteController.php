@@ -11,20 +11,20 @@ class NoteController extends Controller
     /**
      * Instantiate a new controller instance.
      *
-     * Apply authentication middleware to all routes in this controller.
+     * Authentication is handled by the route middleware.
      *
      * @return void
      */
     public function __construct()
     {
-        $this->middleware('auth');
+        // Removed the 'auth' middleware to prevent conflicts
     }
 
     /**
      * Display a listing of the notes.
      *
      * Admins and Developers can view all notes.
-     * Clients may have access to view notes if required.
+     * Clients do not have access to view notes.
      *
      * @return \Illuminate\Http\JsonResponse
      */
@@ -58,7 +58,10 @@ class NoteController extends Controller
         // Only Admins and Developers can create notes
         Gate::authorize('perform-crud-operations');
 
-        $note = Note::create($request->validated());
+        $validatedData = $request->validated();
+        $validatedData['user_id'] = auth()->user()->id;
+
+        $note = Note::create($validatedData);
 
         return response()->json([
             'message' => 'Note created successfully.',
