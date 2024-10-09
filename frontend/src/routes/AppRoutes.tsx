@@ -4,10 +4,14 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from '@/features/home/pages/HomePage';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
-import AdminDashboard from '@/features/dashboard/admin/pages/AdminDashboard';
-import ClientDashboard from '@/features/dashboard/client/pages/ClientDashboard';
-import DeveloperDashboard from '@/features/dashboard/developer/pages/DeveloperDashboard';
+import AdminDashboard from '@/features/admin/pages/AdminDashboard';
+import UserForm from '@/features/admin/components/UserForm';
+import RoleForm from '@/features/admin/components/RoleForm';
 import ProtectedRoute from '@/components/common/ProtectedRoute';
+
+// Import other dashboard components
+import ClientDashboard from '@/features/client/pages/ClientDashboard';
+import DeveloperDashboard from '@/features/developer/pages/DeveloperDashboard';
 
 const AppRoutes: React.FC = () => {
   return (
@@ -20,7 +24,7 @@ const AppRoutes: React.FC = () => {
       {/* Redirect unknown routes to Home */}
       <Route path="*" element={<Navigate to="/" replace />} />
 
-      {/* Protected Routes */}
+      {/* Admin Routes */}
       <Route
         path="/admin/dashboard"
         element={
@@ -30,6 +34,40 @@ const AppRoutes: React.FC = () => {
         }
       />
       <Route
+        path="/admin/users/create"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <UserForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/users/edit/:id"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <UserForm existingUser />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/roles/create"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <RoleForm />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/roles/edit/:id"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <RoleForm existingRole />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Client Dashboard */}
+      <Route
         path="/client/dashboard"
         element={
           <ProtectedRoute roles={['client']}>
@@ -37,6 +75,8 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* Developer Dashboard */}
       <Route
         path="/developer/dashboard"
         element={
