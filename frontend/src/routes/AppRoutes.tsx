@@ -9,41 +9,41 @@ import DeveloperDashboard from '@/features/dashboard/developer/pages/DeveloperDa
 import ProtectedRoute from '@/components/common/ProtectedRoute';
 
 const AppRoutes: React.FC = () => {
-    return (
-        <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            {/* Add other public routes here */}
+  return (
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      {/* Add other public routes here */}
 
-            {/* Protected Routes */}
-            <Route
-                path="/admin/dashboard"
-                element={
-                    <ProtectedRoute roles={['admin']}>
-                        <AdminDashboard />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/client/dashboard"
-                element={
-                    <ProtectedRoute roles={['client']}>
-                        <ClientDashboard />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/developer/dashboard"
-                element={
-                    <ProtectedRoute roles={['developer']}>
-                        <DeveloperDashboard />
-                    </ProtectedRoute>
-                }
-            />
-            {/* Add other protected routes here */}
-        </Routes>
-    );
+      {/* Protected Routes */}
+      <Route
+        path="/admin/dashboard"
+        element={
+          <ProtectedRoute roles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/client/dashboard"
+        element={
+          <ProtectedRoute roles={['client']}>
+            <ClientDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/developer/dashboard"
+        element={
+          <ProtectedRoute roles={['developer']}>
+            <DeveloperDashboard />
+          </ProtectedRoute>
+        }
+      />
+      {/* Add other protected routes here */}
+    </Routes>
+  );
 };
 
 export default AppRoutes;

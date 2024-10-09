@@ -5,24 +5,24 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 
 interface ProtectedRouteProps {
-    roles: string[];
-    children: React.ReactElement;
+  roles: string[];
+  children: React.ReactElement;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ roles, children }) => {
-    const auth = useSelector((state: RootState) => state.auth);
-    const isAuthenticated = !!auth.token;
-    const userRole = auth.user?.role || '';
+  const auth = useSelector((state: RootState) => state.auth);
+  const isAuthenticated = !!auth.token;
+  const userRole = auth.user?.role || '';
 
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
-    if (!roles.includes(userRole)) {
-        return <Navigate to="/login" replace />;
-    }
+  if (!roles.includes(userRole)) {
+    return <Navigate to="/login" replace />;
+  }
 
-    return children;
+  return children;
 };
 
 export default ProtectedRoute;
