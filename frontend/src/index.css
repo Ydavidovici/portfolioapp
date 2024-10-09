@@ -1,0 +1,8 @@
+/* src/index.css */
+@import './styles/tailwind.css';
+
+/* You can add global styles here */
+body {
+    margin: 0;
+    font-family: 'Inter', sans-serif;
+}
