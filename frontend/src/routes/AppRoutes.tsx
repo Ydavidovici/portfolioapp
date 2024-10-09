@@ -1,6 +1,7 @@
 // src/routes/AppRoutes.tsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import HomePage from '@/features/home/pages/HomePage';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
 import AdminDashboard from '@/features/dashboard/admin/pages/AdminDashboard';
@@ -12,9 +13,12 @@ const AppRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      {/* Add other public routes here */}
+
+      {/* Redirect unknown routes to Home */}
+      <Route path="*" element={<Navigate to="/" replace />} />
 
       {/* Protected Routes */}
       <Route
@@ -41,7 +45,6 @@ const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         }
       />
-      {/* Add other protected routes here */}
     </Routes>
   );
 };
