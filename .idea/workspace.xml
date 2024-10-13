@@ -5,29 +5,42 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ed5348da-b53d-4df8-a037-b195c000d06b" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/public/vite.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/App.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/App.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Components/Footer.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Components/Header.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Components/Navbar.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Components/Sidebar.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Features/Auth/AuthSlice.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Features/Auth/Login.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Features/Auth/Register.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Hooks/UseAuth.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Pages/Dashboard.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Pages/Home.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Pages/Login.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Pages/Projects.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Pages/Register.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Services/api.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/Store/store.ts" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/assets/react.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/index.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/index.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/main.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/main.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/vite-env.d.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/forms/LoginForm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/components/forms/RegisterForm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/AdminNavbar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/AdminSidebar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/CreateUserModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/EditUserModal.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/UserTable.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/roleForm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/roleList.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/userForm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/components/userList.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/pages/AdminDashboard.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/services/.gitkeep" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/services/adminService.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/admin/types/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/client/components/projectForm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/client/components/taskForm.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/client/components/taskList.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/client/pages/ClientDashboard.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/client/services/.gitkeep" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/client/services/clientService.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/components/.gitkeep" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/components/DeveloperNavbar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/components/DeveloperSidebar.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/pages/DeveloperDashboard.tsx" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/services/.gitkeep" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/services/developerService.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/features/dashboard/developer/types/index.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/hooks/useAuth.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/slices/authSlice.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/slices/projectSlice.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/slices/roleSlice.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/slices/rootReducer.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/slices/taskSlice.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/src/store/slices/userSlice.ts" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,6 +52,13 @@
     <execution>
       <executable path="composer" />
     </execution>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="TypeScript File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -165,27 +185,32 @@
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="2jJiActtL6809MGg6YZ6MGj8j2Y" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;dev&quot;,
-    &quot;ignore_missing_gitignore&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/Users/yaakovdavidovici/Coding/Websites/Davidovici-Software&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;php.test.frameworks.configurable&quot;,
-    &quot;ts.external.directory.path&quot;: &quot;/Users/yaakovdavidovici/Coding/Websites/Davidovici-Software/node_modules/typescript/lib&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "dev",
+    "ignore_missing_gitignore": "true",
+    "last_opened_file_path": "/Users/yaakovdavidovici/Coding/Websites/Davidovici-Software",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "settings.editor.selected.configurable": "php.test.frameworks.configurable",
+    "ts.external.directory.path": "/Users/yaakovdavidovici/Coding/Websites/Davidovici-Software/frontend/node_modules/typescript/lib",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/docs" />
@@ -218,7 +243,7 @@
       <workItem from="1727115763400" duration="3236000" />
       <workItem from="1727303150106" duration="36950000" />
       <workItem from="1728243918544" duration="10265000" />
-      <workItem from="1728490266939" duration="827000" />
+      <workItem from="1728490266939" duration="10329000" />
     </task>
     <servers />
   </component>
