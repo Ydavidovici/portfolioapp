@@ -1,33 +1,41 @@
 // src/features/auth/services/authService.ts
 
-import axios from 'axios';
-import { LoginCredentials, RegisterCredentials } from '../types';
+import apiClient from '../../../api/apiClient';
+import {
+  LoginCredentials,
+  RegisterCredentials,
+  ResetPasswordPayload,
+  VerifyEmailPayload,
+} from '../types';
 
-// Base URL for auth APIs
-const API_URL = 'https://your-backend-api.com/api/auth'; // Replace with your actual API URL
-
-// Login
+// Login User
 export const login = async (credentials: LoginCredentials) => {
-  const response = await axios.post(`${API_URL}/login`, credentials);
+  const response = await apiClient.post('/auth/login', credentials);
   return response.data;
 };
 
-// Register
+// Register User
 export const register = async (credentials: RegisterCredentials) => {
-  const response = await axios.post(`${API_URL}/register`, credentials);
+  const response = await apiClient.post('/auth/register', credentials);
   return response.data;
 };
 
-// Logout
-export const logout = async () => {
-  const token = localStorage.getItem('token');
-  await axios.post(
-    `${API_URL}/logout`,
-    {},
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  );
+// Request Password Reset
+export const requestPasswordReset = async (email: string) => {
+  const response = await apiClient.post('/auth/password-reset', { email });
+  return response.data;
+};
+
+// Reset Password
+export const resetPassword = async (payload: ResetPasswordPayload) => {
+  const { token, newPassword } = payload;
+  const response = await apiClient.post('/auth/password-reset/confirm', { token, newPassword });
+  return response.data;
+};
+
+// Verify Email
+export const verifyEmail = async (payload: VerifyEmailPayload) => {
+  const { token } = payload;
+  const response = await apiClient.get(`/auth/verify-email`, { params: { token } });
+  return response.data;
 };
