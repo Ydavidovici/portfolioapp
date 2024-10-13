@@ -5,11 +5,11 @@ import HomePage from '@/features/home/pages/HomePage';
 import LoginPage from '@/features/auth/pages/LoginPage';
 import RegisterPage from '@/features/auth/pages/RegisterPage';
 import AdminDashboard from '@/features/admin/pages/AdminDashboard';
-import UserForm from '@/features/admin/components/UserForm';
-import RoleForm from '@/features/admin/components/RoleForm';
-import ProtectedRoute from '@/components/common/ProtectedRoute';
+import UserForm from '@/features/admin/commonComponents/UserForm';
+import RoleForm from '@/features/admin/commonComponents/RoleForm';
+import ProtectedRoute from '@/commonComponents/common/ProtectedRoute';
 
-// Import other dashboard components
+// Import other dashboard commonComponents
 import ClientDashboard from '@/features/client/pages/ClientDashboard';
 import DeveloperDashboard from '@/features/developer/pages/DeveloperDashboard';
 

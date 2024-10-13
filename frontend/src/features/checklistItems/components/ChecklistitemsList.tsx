@@ -1,4 +1,4 @@
-// src/features/checklistItems/components/ChecklistItemsList.tsx
+// src/features/checklistItems/commonComponents/ChecklistItemsList.tsx
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchChecklistItems } from '../checklistItemsSlice';

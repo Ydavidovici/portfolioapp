@@ -1,4 +1,4 @@
-// src/features/auth/components/LoginForm.tsx
+// src/features/auth/commonComponents/LoginForm.tsx
 
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';

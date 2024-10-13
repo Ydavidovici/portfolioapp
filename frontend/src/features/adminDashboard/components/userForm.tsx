@@ -1,4 +1,4 @@
-// src/features/admin/components/UserForm.tsx
+// src/features/admin/commonComponents/UserForm.tsx
 import React, { useEffect, useState } from 'react';
 import { User, createUser, updateUser } from '@/store/slices/userSlice';
 import { useDispatch, useSelector } from 'react-redux';

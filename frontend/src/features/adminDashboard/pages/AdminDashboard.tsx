@@ -1,48 +1,67 @@
-// src/features/admin/pages/AdminDashboard.tsx
+// src/features/adminDashboard/pages/AdminDashboard.tsx
+
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchUsers } from '@/store/slices/userSlice';
-import { fetchRoles } from '@/store/slices/roleSlice';
-import { RootState } from '@/store';
-import UserList from '../components/UserList';
-import RoleList from '../components/RoleList';
+import AdminNavbar from '../components/AdminNavbar';
+import DataTable from '../components/DataTable';
+import Footer from '../../../commonComponents/Footer';
+import { getUsers } from '../userSlice';
+import { getRoles } from '../roleSlice';
+import { RootState } from '../../../store/store';
+import ErrorBoundary from '../../../commonComponents/ErrorBoundary';
+import LoadingSpinner from '../../../commonComponents/LoadingSpinner';
 
 const AdminDashboard: React.FC = () => {
   const dispatch = useDispatch();
-  const { users, isLoading: usersLoading, error: usersError } = useSelector((state: RootState) => state.users);
-  const { roles, isLoading: rolesLoading, error: rolesError } = useSelector((state: RootState) => state.roles);
+  const users = useSelector((state: RootState) => state.users.users);
+  const roles = useSelector((state: RootState) => state.roles.roles);
+  const usersLoading = useSelector((state: RootState) => state.users.loading);
+  const rolesLoading = useSelector((state: RootState) => state.roles.loading);
+  const usersError = useSelector((state: RootState) => state.users.error);
+  const rolesError = useSelector((state: RootState) => state.roles.error);
 
   useEffect(() => {
-    dispatch(fetchUsers());
-    dispatch(fetchRoles());
+    dispatch(getUsers());
+    dispatch(getRoles());
   }, [dispatch]);
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-4">Admin Dashboard</h1>
+    <ErrorBoundary>
+      <div className="flex flex-col min-h-screen">
+        <AdminNavbar />
+        <div className="flex flex-1">
+          <AdminSidebar />
+          <main className="flex-1 p-8 bg-gray-100">
+            <section className="mb-12">
+              <h1 className="text-3xl font-semibold mb-6">Users</h1>
+              {usersLoading ? (
+                <div className="flex justify-center items-center py-10">
+                  <LoadingSpinner size="lg" color="text-blue-500" />
+                </div>
+              ) : usersError ? (
+                <div className="text-red-500 text-center py-10">{usersError}</div>
+              ) : (
+                <DataTable data={users} type="user" />
+              )}
+            </section>
 
-      <section className="mb-8">
-        <h2 className="text-2xl font-semibold mb-2">Users</h2>
-        {usersLoading ? (
-          <p>Loading users...</p>
-        ) : usersError ? (
-          <p className="text-red-500">{usersError}</p>
-        ) : (
-          <UserList users={users} />
-        )}
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-2">Roles</h2>
-        {rolesLoading ? (
-          <p>Loading roles...</p>
-        ) : rolesError ? (
-          <p className="text-red-500">{rolesError}</p>
-        ) : (
-          <RoleList roles={roles} />
-        )}
-      </section>
-    </div>
+            <section>
+              <h1 className="text-3xl font-semibold mb-6">Roles</h1>
+              {rolesLoading ? (
+                <div className="flex justify-center items-center py-10">
+                  <LoadingSpinner size="lg" color="text-blue-500" />
+                </div>
+              ) : rolesError ? (
+                <div className="text-red-500 text-center py-10">{rolesError}</div>
+              ) : (
+                <DataTable data={roles} type="role" />
+              )}
+            </section>
+          </main>
+        </div>
+        <Footer />
+      </div>
+    </ErrorBoundary>
   );
 };
 

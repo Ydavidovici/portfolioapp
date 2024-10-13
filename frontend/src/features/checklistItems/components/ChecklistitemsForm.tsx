@@ -1,4 +1,4 @@
-// src/features/checklistItems/components/ChecklistItemsForm.tsx
+// src/features/checklistItems/commonComponents/ChecklistItemsForm.tsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { createChecklistItem } from '../checklistItemsSlice';

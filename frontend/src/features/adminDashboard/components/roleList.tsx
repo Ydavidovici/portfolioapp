@@ -1,4 +1,4 @@
-// src/features/admin/components/RoleList.tsx
+// src/features/admin/commonComponents/RoleList.tsx
 import React from 'react';
 import { Role } from '@/store/slices/roleSlice';
 import { Link } from 'react-router-dom';

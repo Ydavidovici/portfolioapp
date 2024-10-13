@@ -1,4 +1,4 @@
-// src/features/calendarEntries/components/CalendarEntriesList.tsx
+// src/features/calendarEntries/commonComponents/CalendarEntriesList.tsx
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchCalendarEntries } from '../calendarEntriesSlice';

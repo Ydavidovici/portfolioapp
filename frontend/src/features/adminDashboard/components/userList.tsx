@@ -1,4 +1,4 @@
-// src/features/admin/components/UserList.tsx
+// src/features/admin/commonComponents/UserList.tsx
 import React, { useState } from 'react';
 import { User, deleteUser } from '@/store/slices/userSlice';
 import { useDispatch } from 'react-redux';

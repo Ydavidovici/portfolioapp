@@ -1,4 +1,4 @@
-// src/features/auth/components/RegisterForm.tsx
+// src/features/auth/commonComponents/RegisterForm.tsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '@/store/slices/authSlice';

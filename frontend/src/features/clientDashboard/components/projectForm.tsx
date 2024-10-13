@@ -1,4 +1,4 @@
-// src/features/client/components/ProjectForm.tsx
+// src/features/client/commonComponents/ProjectForm.tsx
 import React, { useEffect, useState } from 'react';
 import { Project, createProject, updateProject } from '@/store/slices/projectSlice';
 import { useDispatch } from 'react-redux';

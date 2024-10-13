@@ -1,4 +1,4 @@
-// src/features/admin/components/RoleForm.tsx
+// src/features/admin/commonComponents/RoleForm.tsx
 import React, { useState } from 'react';
 import { Role } from '@/store/slices/roleSlice';
 import { useDispatch, useSelector } from 'react-redux';

@@ -2,8 +2,8 @@
 import React from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import AppRoutes from './routes/AppRoutes';
-import Navbar from './components/common/Navbar';
-import Footer from './components/common/Footer';
+import Navbar from './commonComponents/common/Header.tsx';
+import Footer from './commonComponents/common/Footer';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 

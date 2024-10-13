@@ -1,4 +1,4 @@
-// src/features/calendarEntries/components/CalendarEntriesForm.tsx
+// src/features/calendarEntries/commonComponents/CalendarEntriesForm.tsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { createCalendarEntry } from '../calendarEntriesSlice';
