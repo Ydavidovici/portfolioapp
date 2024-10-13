@@ -1,7 +1,7 @@
 // src/features/adminDashboard/components/DataTable.tsx
 
 import React, { useState } from 'react';
-import { User, Role } from '../types';
+import { User, Role } from '../types.ts';
 import { useDispatch, useSelector } from 'react-redux';
 import { removeUser } from '../userSlice';
 import { removeRole } from '../roleSlice';

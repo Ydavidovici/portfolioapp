@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import { Role } from '../types';
+import { Role } from '../types.ts';
 import { useDispatch } from 'react-redux';
 import { addRole, editRole } from '../userSlice';
 import Button from '../../common/Button';

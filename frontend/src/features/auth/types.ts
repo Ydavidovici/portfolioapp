@@ -1,4 +1,4 @@
-// src/features/auth/types/index.ts
+// src/features/auth/types/types.ts
 
 // Existing Types
 export interface User {

@@ -1,7 +1,7 @@
 // src/features/adminDashboard/userSlice.ts
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { AdminState, User, Role } from './types';
+import { AdminState, User, Role } from './types.ts';
 import * as adminService from './services/adminService';
 
 // Initial state

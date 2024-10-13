@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import { User } from '../types';
+import { User } from '../types.ts';
 import { useDispatch } from 'react-redux';
 import { addUser, editUser } from '../userSlice';
 import Button from '../../common/Button';

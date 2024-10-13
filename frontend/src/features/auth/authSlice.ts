@@ -8,7 +8,7 @@ import {
   ResetPasswordPayload,
   VerifyEmailPayload,
   User,
-} from './types';
+} from './types.ts';
 import * as authService from './services/authService';
 import { RootState } from '../../store/store';
 

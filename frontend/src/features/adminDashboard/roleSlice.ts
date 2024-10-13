@@ -1,7 +1,7 @@
 // src/features/adminDashboard/roleSlice.ts
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { Role } from './types';
+import { Role } from './types.ts';
 import * as adminService from './services/adminService';
 
 // Initial state
