@@ -1,4 +1,4 @@
-// src/features/calendarEntries/types/index.ts
+// src/features/calendarEntries/types/store.ts
 export interface CalendarEntry {
   id: number;
   title: string;

@@ -1,4 +1,4 @@
-// src/features/checklists/types/index.ts
+// src/features/checklists/types/store.ts
 export interface Checklist {
   id: number;
   title: string;

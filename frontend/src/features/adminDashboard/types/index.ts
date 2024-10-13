@@ -1,4 +1,4 @@
-// src/features/adminDashboard/types/index.ts
+// src/features/adminDashboard/types/store.ts
 
 export interface User {
   id: number;

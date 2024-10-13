@@ -14,15 +14,15 @@ fi
 FEATURE_PASCAL=$(echo "$FEATURE_NAME" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')
 
 # Create feature directories
-mkdir -p src/features/$FEATURE_NAME/{components,pages,services,types}
+mkdir -p src/features/$FEATURE_NAME/{commonComponents,pages,services,types}
 
 # Create slice file
 touch src/features/$FEATURE_NAME/${FEATURE_NAME}Slice.ts
 
-# Create initial components
-touch src/features/$FEATURE_NAME/components/${FEATURE_PASCAL}List.tsx
-touch src/features/$FEATURE_NAME/components/${FEATURE_PASCAL}Form.tsx
-touch src/features/$FEATURE_NAME/components/${FEATURE_PASCAL}Details.tsx
+# Create initial commonComponents
+touch src/features/$FEATURE_NAME/commonComponents/${FEATURE_PASCAL}List.tsx
+touch src/features/$FEATURE_NAME/commonComponents/${FEATURE_PASCAL}Form.tsx
+touch src/features/$FEATURE_NAME/commonComponents/${FEATURE_PASCAL}Details.tsx
 
 # Create initial pages
 touch src/features/$FEATURE_NAME/pages/${FEATURE_PASCAL}Page.tsx
@@ -46,7 +46,7 @@ const ${FEATURE_PASCAL}List: React.FC = () => {
   );
 };
 
-export default ${FEATURE_PASCAL}List;" > src/features/$FEATURE_NAME/components/${FEATURE_PASCAL}List.tsx
+export default ${FEATURE_PASCAL}List;" > src/features/$FEATURE_NAME/commonComponents/${FEATURE_PASCAL}List.tsx
 
 echo "import React from 'react';
 
@@ -58,7 +58,7 @@ const ${FEATURE_PASCAL}Form: React.FC = () => {
   );
 };
 
-export default ${FEATURE_PASCAL}Form;" > src/features/$FEATURE_NAME/components/${FEATURE_PASCAL}Form.tsx
+export default ${FEATURE_PASCAL}Form;" > src/features/$FEATURE_NAME/commonComponents/${FEATURE_PASCAL}Form.tsx
 
 echo "import React from 'react';
 
@@ -70,7 +70,7 @@ const ${FEATURE_PASCAL}Details: React.FC = () => {
   );
 };
 
-export default ${FEATURE_PASCAL}Details;" > src/features/$FEATURE_NAME/components/${FEATURE_PASCAL}Details.tsx
+export default ${FEATURE_PASCAL}Details;" > src/features/$FEATURE_NAME/commonComponents/${FEATURE_PASCAL}Details.tsx
 
 # Initialize pages with boilerplate code
 echo "import React from 'react';

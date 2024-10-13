@@ -1,15 +1,26 @@
 // src/features/auth/pages/RegisterPage.tsx
+
 import React from 'react';
 import RegisterForm from '../components/RegisterForm';
+import { Link } from 'react-router-dom';
+import ErrorBoundary from '../../../commonComponents/ErrorBoundary';
 
 const RegisterPage: React.FC = () => {
   return (
-    <div className="flex justify-center items-center h-full">
-      <div className="w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-4">Register</h2>
-        <RegisterForm />
+    <ErrorBoundary>
+      <div className="flex items-center justify-center min-h-screen bg-gray-200 p-4">
+        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-6 text-center">Register</h2>
+          <RegisterForm />
+          <p className="mt-4 text-center">
+            Already have an account?{' '}
+            <Link to="/login" className="text-blue-500 hover:underline">
+              Login here
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 };
 
