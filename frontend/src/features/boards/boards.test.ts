@@ -1,213 +1,111 @@
-// src/features/boards/services/boards.test.ts
+// src/features/boards/boards.test.js
 
-import axios from 'axios';
-import {
-  fetchBoards,
-  fetchBoardDetails,
-  createBoard,
-  updateBoard,
-  deleteBoard,
-} from './services/boardsService.ts';
-import { Board, CreateBoardPayload, UpdateBoardPayload, FetchBoardsResponse, FetchBoardDetailsResponse } from './types.ts';
+import React from 'react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+import boardsReducer from './boardsSlice';
+import BoardList from './components/BoardList';
+import BoardForm from './components/BoardForm';
+import BoardDetails from './components/BoardDetails';
+import BoardsPage from './pages/BoardsPage';
+import CreateBoardPage from './pages/CreateBoardPage';
+import EditBoardPage from './pages/EditBoardPage';
+import { BrowserRouter, Route, MemoryRouter } from 'react-router-dom';
 
-// Mock axios
-jest.mock('axios');
-const mockedAxios = axios as jest.Mocked<typeof axios>;
+// Utility function to render components with Redux and Router
+const renderWithProviders = (
+  ui,
+  {
+    preloadedState = {},
+    store = configureStore({
+      reducer: { boards: boardsReducer },
+      preloadedState,
+    }),
+    route = '/',
+    path = '/',
+  } = {}
+) => {
+  window.history.pushState({}, 'Test page', route);
 
-describe('Boards Service', () => {
-  afterEach(() => {
-    jest.resetAllMocks();
+  return render(
+    <Provider store={store}>
+    <BrowserRouter>
+      <Route path={path}>{ui}</Route>
+      </BrowserRouter>
+      </Provider>
+  );
+};
+
+describe('Boards Feature - Render and CRUD Tests', () => {
+  let newBoardId;
+
+  // Check that each page renders without errors
+  it('renders BoardsPage without errors', () => {
+    renderWithProviders(<BoardsPage />);
+    expect(screen.getByText(/Boards/i)).toBeInTheDocument();
   });
 
-  // Fetch All Boards
-  describe('fetchBoards', () => {
-    const API_ENDPOINT = '/boards';
-
-    it('should fetch all boards successfully', async () => {
-      const mockBoards: Board[] = [
-        {
-          id: 1,
-          title: 'Board One',
-          description: 'Description for Board One',
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
-        },
-        {
-          id: 2,
-          title: 'Board Two',
-          description: 'Description for Board Two',
-          createdAt: '2024-02-01T00:00:00Z',
-          updatedAt: '2024-02-01T00:00:00Z',
-        },
-      ];
-
-      const mockResponse: FetchBoardsResponse = { data: mockBoards };
-
-      mockedAxios.get.mockResolvedValueOnce({ data: mockResponse });
-
-      const data = await fetchBoards();
-
-      expect(mockedAxios.get).toHaveBeenCalledWith(API_ENDPOINT);
-      expect(data).toEqual(mockResponse);
-    });
-
-    it('should handle fetchBoards failure', async () => {
-      const errorMessage = 'Failed to fetch boards';
-      mockedAxios.get.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(fetchBoards()).rejects.toThrow(errorMessage);
-      expect(mockedAxios.get).toHaveBeenCalledWith(API_ENDPOINT);
-    });
+  it('renders CreateBoardPage without errors', () => {
+    renderWithProviders(<CreateBoardPage />);
+    expect(screen.getByText(/Create New Board/i)).toBeInTheDocument();
   });
 
-  // Fetch Board Details
-  describe('fetchBoardDetails', () => {
-    const API_ENDPOINT = '/boards';
+  it('renders EditBoardPage without errors', async () => {
+    renderWithProviders(<EditBoardPage />, { route: '/boards/edit/1', path: '/boards/edit/:id' });
+    await waitFor(() => expect(screen.getByText(/Edit Board/i)).toBeInTheDocument());
+  });
 
-    it('should fetch board details successfully', async () => {
-      const boardId = 1;
-      const mockBoard: Board = {
-        id: boardId,
-        title: 'Board One',
-        description: 'Description for Board One',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      };
+  // Test CRUD Operations
 
-      const mockResponse: FetchBoardDetailsResponse = { data: mockBoard };
+  // Create
+  it('creates a new board successfully', async () => {
+    renderWithProviders(<BoardForm />);
+    fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: 'Test Board' } });
+    fireEvent.change(screen.getByLabelText(/Description/i), { target: { value: 'Description of Test Board' } });
+    fireEvent.click(screen.getByText('Create Board'));
 
-      mockedAxios.get.mockResolvedValueOnce({ data: mockResponse });
-
-      const data = await fetchBoardDetails(boardId);
-
-      expect(mockedAxios.get).toHaveBeenCalledWith(`${API_ENDPOINT}/${boardId}`);
-      expect(data).toEqual(mockResponse);
+    // Check creation was successful
+    await waitFor(() => {
+      expect(screen.getByText('Test Board')).toBeInTheDocument();
     });
 
-    it('should handle fetchBoardDetails failure', async () => {
-      const boardId = 999; // Non-existent board
-      const errorMessage = 'Board not found';
+    const createdBoard = screen.getByText('Test Board');
+    newBoardId = createdBoard ? parseInt(createdBoard.getAttribute('data-id')) : null;
+    expect(newBoardId).not.toBeNull();
+  });
 
-      mockedAxios.get.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(fetchBoardDetails(boardId)).rejects.toThrow(errorMessage);
-      expect(mockedAxios.get).toHaveBeenCalledWith(`${API_ENDPOINT}/${boardId}`);
+  // Read
+  it('displays a list of boards', async () => {
+    renderWithProviders(<BoardList />);
+    await waitFor(() => {
+      expect(screen.getByText('Test Board')).toBeInTheDocument();
     });
   });
 
-  // Create Board
-  describe('createBoard', () => {
-    const API_ENDPOINT = '/boards';
+  // Update
+  it('updates an existing board successfully', async () => {
+    renderWithProviders(<BoardDetails />, { route: `/boards/${newBoardId}`, path: '/boards/:id' });
+    fireEvent.click(screen.getByText('Edit'));
+    fireEvent.change(screen.getByLabelText(/Title/i), { target: { value: 'Updated Test Board' } });
+    fireEvent.click(screen.getByText('Save Changes'));
 
-    it('should create a new board successfully', async () => {
-      const newBoardPayload: CreateBoardPayload = {
-        title: 'Board Three',
-        description: 'Description for Board Three',
-      };
-
-      const createdBoard: Board = {
-        id: 3,
-        ...newBoardPayload,
-        createdAt: '2024-03-01T00:00:00Z',
-        updatedAt: '2024-03-01T00:00:00Z',
-      };
-
-      mockedAxios.post.mockResolvedValueOnce({ data: createdBoard });
-
-      const data = await createBoard(newBoardPayload);
-
-      expect(mockedAxios.post).toHaveBeenCalledWith(API_ENDPOINT, newBoardPayload);
-      expect(data).toEqual(createdBoard);
-    });
-
-    it('should handle createBoard failure', async () => {
-      const newBoardPayload: CreateBoardPayload = {
-        title: '', // Invalid payload
-        description: 'Description for Board Four',
-      };
-
-      const errorMessage = 'Title is required';
-
-      mockedAxios.post.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(createBoard(newBoardPayload)).rejects.toThrow(errorMessage);
-      expect(mockedAxios.post).toHaveBeenCalledWith(API_ENDPOINT, newBoardPayload);
+    // Verify update
+    await waitFor(() => {
+      expect(screen.getByText('Updated Test Board')).toBeInTheDocument();
     });
   });
 
-  // Update Board
-  describe('updateBoard', () => {
-    const API_ENDPOINT = '/boards';
+  // Delete
+  it('deletes a board successfully', async () => {
+    renderWithProviders(<BoardList />);
+    const deleteButton = screen.getByTestId(`delete-button-${newBoardId}`);
+    fireEvent.click(deleteButton);
+    fireEvent.click(screen.getByText('Confirm'));
 
-    it('should update an existing board successfully', async () => {
-      const updateBoardPayload: UpdateBoardPayload = {
-        id: 1,
-        title: 'Updated Board One',
-        description: 'Updated Description for Board One',
-      };
-
-      const updatedBoard: Board = {
-        id: updateBoardPayload.id,
-        title: updateBoardPayload.title,
-        description: updateBoardPayload.description,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-04-01T00:00:00Z',
-      };
-
-      mockedAxios.put.mockResolvedValueOnce({ data: updatedBoard });
-
-      const data = await updateBoard(updateBoardPayload);
-
-      expect(mockedAxios.put).toHaveBeenCalledWith(`${API_ENDPOINT}/${updateBoardPayload.id}`, {
-        title: updateBoardPayload.title,
-        description: updateBoardPayload.description,
-      });
-      expect(data).toEqual(updatedBoard);
-    });
-
-    it('should handle updateBoard failure', async () => {
-      const updateBoardPayload: UpdateBoardPayload = {
-        id: 999, // Non-existent board
-        title: 'Non-existent Board',
-        description: 'Description',
-      };
-
-      const errorMessage = 'Board not found';
-
-      mockedAxios.put.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(updateBoard(updateBoardPayload)).rejects.toThrow(errorMessage);
-      expect(mockedAxios.put).toHaveBeenCalledWith(`${API_ENDPOINT}/${updateBoardPayload.id}`, {
-        title: updateBoardPayload.title,
-        description: updateBoardPayload.description,
-      });
-    });
-  });
-
-  // Delete Board
-  describe('deleteBoard', () => {
-    const API_ENDPOINT = '/boards';
-
-    it('should delete a board successfully', async () => {
-      const boardId = 1;
-      const mockResponse = { message: 'Board deleted successfully' };
-
-      mockedAxios.delete.mockResolvedValueOnce({ data: mockResponse });
-
-      const data = await deleteBoard(boardId);
-
-      expect(mockedAxios.delete).toHaveBeenCalledWith(`${API_ENDPOINT}/${boardId}`);
-      expect(data).toEqual(mockResponse);
-    });
-
-    it('should handle deleteBoard failure', async () => {
-      const boardId = 999; // Non-existent board
-      const errorMessage = 'Board not found';
-
-      mockedAxios.delete.mockRejectedValueOnce(new Error(errorMessage));
-
-      await expect(deleteBoard(boardId)).rejects.toThrow(errorMessage);
-      expect(mockedAxios.delete).toHaveBeenCalledWith(`${API_ENDPOINT}/${boardId}`);
+    // Verify deletion
+    await waitFor(() => {
+      expect(screen.queryByText('Updated Test Board')).not.toBeInTheDocument();
     });
   });
 });
