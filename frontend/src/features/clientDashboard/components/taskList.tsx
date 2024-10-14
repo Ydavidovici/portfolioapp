@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Task, deleteTask } from '@/store/slices/taskSlice';
 import { useDispatch } from 'react-redux';
-import TaskForm from './taskForm.tsx';
+import DocumentList from './documentList.tsx';
 import { toast } from 'react-toastify';
 
 interface TaskListProps {
@@ -26,7 +26,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
 
   return (
     <div>
-      <TaskForm />
+      <DocumentList />
       <table className="min-w-full bg-white mt-4">
         <thead>
         <tr>
@@ -70,7 +70,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks }) => {
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded shadow-lg w-1/3">
             <h2 className="text-2xl font-bold mb-4">Edit Task</h2>
-            <TaskForm task={editingTask} onClose={() => setEditingTask(null)} />
+            <DocumentList task={editingTask} onClose={() => setEditingTask(null)} />
           </div>
         </div>
       )}

@@ -16,6 +16,7 @@ import remindersReducer from '../features/reminders/remindersSlice';
 import taskListsReducer from '../features/taskLists/taskListsSlice';
 import checklistItemsReducer from '../features/checklistItems/checklistItemsSlice'; // Add this line
 import calendarEntriesReducer from '../features/calendarEntries/calendarEntriesSlice';
+import clientDashboardReducer from '../features/clientDashboard/clientDashboardSlice';
 
 
 const store = configureStore({
@@ -36,6 +37,7 @@ const store = configureStore({
     taskLists: taskListsReducer,
     checklistItems: checklistItemsReducer,
     calendarEntries: calendarEntriesReducer,
+    clientDashboard: clientDashboardReducer,
   },
 });
 
