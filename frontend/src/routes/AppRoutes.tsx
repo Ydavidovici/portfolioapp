@@ -1,91 +1,46 @@
 // src/routes/AppRoutes.tsx
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import HomePage from '@/features/home/pages/HomePage';
-import LoginPage from '@/features/auth/pages/LoginPage';
-import RegisterPage from '@/features/auth/pages/RegisterPage';
-import AdminDashboard from '@/features/admin/pages/AdminDashboard';
-import UserForm from '@/features/admin/commonComponents/UserForm';
-import RoleForm from '@/features/admin/commonComponents/RoleForm';
-import ProtectedRoute from '@/commonComponents/common/ProtectedRoute';
 
-// Import other dashboard commonComponents
-import ClientDashboard from '@/features/client/pages/ClientDashboard';
-import DeveloperDashboard from '@/features/developer/pages/DeveloperDashboard';
+import React from 'react';
+import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import AdminDashboard from '../features/adminDashboard/pages/AdminDashboard';
+import DeveloperDashboard from '../features/developerDashboard/pages/DeveloperDashboard';
+import ClientDashboard from '../features/clientdashboard/pages/ClientDashboard';
+import LoginPage from '../features/auth/pages/LoginPage';
+import NotFoundPage from '../features/auth/pages/NotFoundPage'; // Optional: 404 Page
+import PrivateRoute from '../components/PrivateRoute';
 
 const AppRoutes: React.FC = () => {
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    <Router>
+      <Switch>
+        {/* Public Routes */}
+        <Route exact path="/login" component={LoginPage} />
+        <Route exact path="/" component={LoginPage} /> {/* Redirect root to Login */}
 
-      {/* Redirect unknown routes to Home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Private Routes */}
+        <PrivateRoute
+          path="/admin-dashboard"
+          component={AdminDashboard}
+          roles={['admin']}
+        />
+        <PrivateRoute
+          path="/developer-dashboard"
+          component={DeveloperDashboard}
+          roles={['developer', 'admin']}
+        />
+        <PrivateRoute
+          path="/client-dashboard"
+          component={ClientDashboard}
+          roles={['client']}
+        />
 
-      {/* Admin Routes */}
-      <Route
-        path="/admin/dashboard"
-        element={
-          <ProtectedRoute roles={['admin']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/users/create"
-        element={
-          <ProtectedRoute roles={['admin']}>
-            <UserForm />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/users/edit/:id"
-        element={
-          <ProtectedRoute roles={['admin']}>
-            <UserForm existingUser />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/roles/create"
-        element={
-          <ProtectedRoute roles={['admin']}>
-            <RoleForm />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin/roles/edit/:id"
-        element={
-          <ProtectedRoute roles={['admin']}>
-            <RoleForm existingRole />
-          </ProtectedRoute>
-        }
-      />
+        {/* 404 Not Found */}
+        <Route component={NotFoundPage} />
 
-      {/* Client Dashboard */}
-      <Route
-        path="/client/dashboard"
-        element={
-          <ProtectedRoute roles={['client']}>
-            <ClientDashboard />
-          </ProtectedRoute>
-        }
-      />
-
-      {/* Developer Dashboard */}
-      <Route
-        path="/developer/dashboard"
-        element={
-          <ProtectedRoute roles={['developer']}>
-            <DeveloperDashboard />
-          </ProtectedRoute>
-        }
-      />
-    </Routes>
+        {/* Redirect any unknown routes to Login */}
+        <Redirect to="/login" />
+      </Switch>
+    </Router>
   );
 };
 
