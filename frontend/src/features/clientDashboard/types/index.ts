@@ -1,22 +1,19 @@
-// src/features/clientDashboard/types/index.ts
+// src/features/clientdashboard/types/index.ts
 
 export interface Message {
     id: string;
-    senderName: string;
-    content: string;
-    createdAt: string;
+    subject: string;
+    body: string;
+    created_at: string;
+    // Add other fields as necessary
 }
 
 export interface Document {
     id: string;
     title: string;
-    url: string;
-    uploadedAt: string;
+    description: string;
+    file_url: string;
+    created_at: string;
+    // Add other fields as necessary
 }
 
-export interface ClientDashboardState {
-    messages: Message[];
-    documents: Document[];
-    loading: boolean;
-    error: string | null;
-}

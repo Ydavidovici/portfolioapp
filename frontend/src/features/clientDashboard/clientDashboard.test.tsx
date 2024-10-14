@@ -1,115 +1,144 @@
-// src/features/clientDashboard/clientDashboard.test.tsx
+// src/features/clientdashboard/clientDashboard.test.tsx
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import ClientDashboard from './pages/ClientDashboard';
 import { Provider } from 'react-redux';
-import store from '../../store';
+import configureStore from 'redux-mock-store';
 import { BrowserRouter as Router } from 'react-router-dom';
-import { ClientDashboard } from './';
-import axios from 'axios';
-import MockAdapter from 'axios-mock-adapter';
-import userEvent from '@testing-library/user-event';
+import { ClientDashboardState } from './types';
+import '@testing-library/jest-dom/extend-expect';
 
-const mock = new MockAdapter(axios);
-const API_URL = '/api/client-dashboard';
-
-// Helper to render with Provider and Router
-const renderWithProviders = (ui: React.ReactElement) => {
-    return render(
-        <Provider store={store}>
-            <Router>{ui}</Router>
-        </Provider>
-    );
+// Create a mock store
+const mockStore = configureStore([]);
+const initialState: { clientdashboard: ClientDashboardState; auth: { user: { role: string } | null } } = {
+    clientdashboard: {
+        messages: [],
+        documents: [],
+        loading: false,
+        error: null,
+    },
+    auth: {
+        user: {
+            role: 'client',
+        },
+    },
 };
 
-describe('ClientDashboard Module', () => {
+describe('ClientDashboard Component', () => {
+    let store: any;
+
     beforeEach(() => {
-        mock.reset();
+        store = mockStore(initialState);
     });
 
-    test('renders ClientDashboard and loads messages and documents', async () => {
-        const messages = [
-            {
-                id: '1',
-                senderName: 'Admin',
-                content: 'Welcome to your dashboard!',
-                createdAt: '2024-04-01T10:00:00Z',
-            },
-            {
-                id: '2',
-                senderName: 'Support',
-                content: 'Your document has been uploaded.',
-                createdAt: '2024-04-02T12:30:00Z',
-            },
-        ];
+    test('renders ClientNavbar and ClientSidebar', () => {
+        render(
+          <Provider store={store}>
+              <Router>
+                  <ClientDashboard />
+              </Router>
+          </Provider>
+        );
 
-        const documents = [
-            {
-                id: '1',
-                title: 'User Guide',
-                url: 'https://example.com/user-guide.pdf',
-                uploadedAt: '2024-04-01T09:00:00Z',
-            },
-            {
-                id: '2',
-                title: 'Invoice April',
-                url: 'https://example.com/invoice-april.pdf',
-                uploadedAt: '2024-04-02T11:15:00Z',
-            },
-        ];
+        // Check for ClientNavbar
+        expect(screen.getByText(/client dashboard/i)).toBeInTheDocument();
 
-        mock.onGet(`${API_URL}/messages`).reply(200, messages);
-        mock.onGet(`${API_URL}/documents`).reply(200, documents);
-
-        renderWithProviders(<ClientDashboard />);
-
-        expect(screen.getByText(/Client Dashboard/i)).toBeInTheDocument();
-        expect(screen.getByText(/Recent Messages/i)).toBeInTheDocument();
-        expect(screen.getByText(/Recent Documents/i)).toBeInTheDocument();
-
-        // Wait for messages to load
-        await waitFor(() => {
-            expect(screen.getByText(/Welcome to your dashboard!/i)).toBeInTheDocument();
-            expect(screen.getByText(/Your document has been uploaded./i)).toBeInTheDocument();
-        });
-
-        // Wait for documents to load
-        await waitFor(() => {
-            expect(screen.getByText(/User Guide/i)).toBeInTheDocument();
-            expect(screen.getByText(/Invoice April/i)).toBeInTheDocument();
-        });
+        // Check for ClientSidebar
+        expect(screen.getByText(/messages/i)).toBeInTheDocument();
+        expect(screen.getByText(/documents/i)).toBeInTheDocument();
     });
 
-    test('handles loading state and errors', async () => {
-        mock.onGet(`${API_URL}/messages`).reply(500);
-        mock.onGet(`${API_URL}/documents`).reply(500);
+    test('renders MessageList component', () => {
+        render(
+          <Provider store={store}>
+              <Router>
+                  <ClientDashboard />
+              </Router>
+          </Provider>
+        );
 
-        renderWithProviders(<ClientDashboard />);
-
-        expect(screen.getByText(/Loading messages.../i)).toBeInTheDocument();
-        expect(screen.getByText(/Loading documents.../i)).toBeInTheDocument();
-
-        // Wait for error messages
-        await waitFor(() => {
-            expect(screen.getByText(/Error: Failed to fetch messages/i)).toBeInTheDocument();
-            expect(screen.getByText(/Error: Failed to fetch documents/i)).toBeInTheDocument();
-        });
+        // Assuming MessageList has a heading
+        expect(screen.getByText(/your messages/i)).toBeInTheDocument();
     });
 
-    test('displays no messages or documents when none are available', async () => {
-        mock.onGet(`${API_URL}/messages`).reply(200, []);
-        mock.onGet(`${API_URL}/documents`).reply(200, []);
+    test('renders DocumentList component', () => {
+        render(
+          <Provider store={store}>
+              <Router>
+                  <ClientDashboard />
+              </Router>
+          </Provider>
+        );
 
-        renderWithProviders(<ClientDashboard />);
+        // Assuming DocumentList has a heading
+        expect(screen.getByText(/your documents/i)).toBeInTheDocument();
+    });
 
-        // Wait for messages to load
-        await waitFor(() => {
-            expect(screen.getByText(/No messages found./i)).toBeInTheDocument();
+    test('does not render client-specific components for unauthorized roles', () => {
+        // Update the mock store with a non-client user
+        store = mockStore({
+            clientdashboard: initialState.clientdashboard,
+            auth: { user: { role: 'developer' } },
         });
 
-        // Wait for documents to load
-        await waitFor(() => {
-            expect(screen.getByText(/No documents found./i)).toBeInTheDocument();
+        render(
+          <Provider store={store}>
+              <Router>
+                  <ClientDashboard />
+              </Router>
+          </Provider>
+        );
+
+        // Since the user is not a client, components should not be visible
+        expect(screen.queryByText(/your messages/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/your documents/i)).not.toBeInTheDocument();
+    });
+
+    test('displays error message when there is an error', () => {
+        // Update the mock store with an error
+        const errorState: ClientDashboardState = {
+            ...initialState.clientdashboard,
+            error: 'Failed to fetch data',
+        };
+
+        store = mockStore({
+            clientdashboard: errorState,
+            auth: { user: { role: 'client' } },
         });
+
+        render(
+          <Provider store={store}>
+              <Router>
+                  <ClientDashboard />
+              </Router>
+          </Provider>
+        );
+
+        expect(screen.getByText(/failed to fetch data/i)).toBeInTheDocument();
+    });
+
+    test('renders loading state when data is being fetched', () => {
+        // Update the mock store with loading state
+        const loadingState: ClientDashboardState = {
+            ...initialState.clientdashboard,
+            loading: true,
+        };
+
+        store = mockStore({
+            clientdashboard: loadingState,
+            auth: { user: { role: 'client' } },
+        });
+
+        render(
+          <Provider store={store}>
+              <Router>
+                  <ClientDashboard />
+              </Router>
+          </Provider>
+        );
+
+        expect(screen.getByText(/loading messages/i)).toBeInTheDocument();
+        expect(screen.getByText(/loading documents/i)).toBeInTheDocument();
     });
 });

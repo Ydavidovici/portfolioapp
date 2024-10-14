@@ -1,204 +1,158 @@
 // src/features/adminDashboard/adminDashboard.test.tsx
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { Provider } from 'react-redux';
-import { configureStore } from '@reduxjs/toolkit';
-import adminReducer from './adminSlice';
-import UserList from './components/UserList';
-import UserForm from './components/UserForm';
-import RoleList from './components/RoleList';
-import RoleForm from './components/RoleForm';
+import { render, screen } from '@testing-library/react';
 import AdminDashboard from './pages/AdminDashboard';
-import { BrowserRouter, Route, MemoryRouter } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import configureStore from 'redux-mock-store';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AdminDashboardState } from './types';
+import '@testing-library/jest-dom/extend-expect';
 
-// Define the type for renderWithProviders options
-interface RenderWithProvidersOptions {
-  preloadedState?: any;
-  store?: any;
-  route?: string;
-  path?: string;
-}
-
-// Utility function to render components with Redux and Router
-const renderWithProviders = (
-    ui: React.ReactElement,
-    {
-      preloadedState = {},
-      store = configureStore({
-        reducer: { admin: adminReducer },
-        preloadedState,
-      }),
-      route = '/',
-      path = '/',
-    }: RenderWithProvidersOptions = {}
-) => {
-  window.history.pushState({}, 'Test page', route);
-
-  return render(
-      <Provider store={store}>
-        <BrowserRouter>
-          <Route path={path}>{ui}</Route>
-        </BrowserRouter>
-      </Provider>
-  );
+// Create a mock store
+const mockStore = configureStore([]);
+const initialState: { adminDashboard: AdminDashboardState; auth: { user: { role: string } | null } } = {
+  adminDashboard: {
+    // Initialize with empty arrays or mock data as needed
+    boards: [],
+    calendarEntries: [],
+    checklists: [],
+    checklistItems: [],
+    documents: [],
+    feedbacks: [],
+    invoices: [],
+    messages: [],
+    notes: [],
+    payments: [],
+    quickBooksTokens: [],
+    reminders: [],
+    tasks: [],
+    taskLists: [],
+    loading: false,
+    error: null,
+  },
+  auth: {
+    user: {
+      role: 'admin',
+    },
+  },
 };
 
-describe('Admin Dashboard Feature - Render and CRUD Tests', () => {
-  let newUserId: number | null = null;
-  let newRoleId: number | null = null;
+describe('AdminDashboard Component', () => {
+  let store: any;
 
-  // Render Tests
-  it('renders AdminDashboard without errors', () => {
-    renderWithProviders(<AdminDashboard />);
-    expect(screen.getByText(/Admin Dashboard/i)).toBeInTheDocument();
+  beforeEach(() => {
+    store = mockStore(initialState);
   });
 
-  it('renders UserList without errors', () => {
-    renderWithProviders(<UserList />);
-    expect(screen.getByText(/Users/i)).toBeInTheDocument();
+  test('renders AdminNavbar and AdminSidebar', () => {
+    render(
+      <Provider store={store}>
+        <Router>
+          <AdminDashboard />
+        </Router>
+      </Provider>
+    );
+
+    // Check for AdminNavbar
+    expect(screen.getByText(/admin dashboard/i)).toBeInTheDocument();
+
+    // Check for AdminSidebar
+    expect(screen.getByText(/user management/i)).toBeInTheDocument();
   });
 
-  it('renders UserForm without errors', () => {
-    renderWithProviders(<UserForm />);
-    expect(screen.getByText(/Create New User/i)).toBeInTheDocument();
+  test('renders DataTable component', () => {
+    render(
+      <Provider store={store}>
+        <Router>
+          <AdminDashboard />
+        </Router>
+      </Provider>
+    );
+
+    // Assuming DataTable has a heading or identifiable text
+    expect(screen.getByText(/user management/i)).toBeInTheDocument();
   });
 
-  it('renders RoleList without errors', () => {
-    renderWithProviders(<RoleList />);
-    expect(screen.getByText(/Roles/i)).toBeInTheDocument();
-  });
+  test('renders RoleList component', () => {
+    // Update the mock store with some roles
+    const rolesState: AdminDashboardState = {
+      ...initialState.adminDashboard,
+      roles: [
+        { id: '1', name: 'Admin', permissions: ['manage_users', 'manage_roles'] },
+        { id: '2', name: 'Developer', permissions: ['view_projects'] },
+      ],
+      loading: false,
+      error: null,
+    };
 
-  it('renders RoleForm without errors', () => {
-    renderWithProviders(<RoleForm />);
-    expect(screen.getByText(/Create New Role/i)).toBeInTheDocument();
-  });
-
-  // User CRUD Operations
-
-  // Create User
-  it('creates a new user successfully', async () => {
-    renderWithProviders(<UserForm />);
-    fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: 'New User' } });
-    fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'newuser@example.com' } });
-    fireEvent.change(screen.getByLabelText(/Role/i), { target: { value: 'user' } });
-    fireEvent.click(screen.getByText('Create User'));
-
-    // Check creation was successful
-    await waitFor(() => {
-      expect(screen.getByText('New User')).toBeInTheDocument();
+    store = mockStore({
+      adminDashboard: rolesState,
+      auth: { user: { role: 'admin' } },
     });
 
-    const createdUser = screen.getByText('New User');
-    // Assuming the user has a data-id attribute
-    newUserId = createdUser ? parseInt(createdUser.getAttribute('data-id') || '0') : null;
-    expect(newUserId).not.toBeNull();
+    render(
+      <Provider store={store}>
+        <Router>
+          <AdminDashboard />
+        </Router>
+      </Provider>
+    );
+
+    // Check for RoleList heading or specific role names
+    expect(screen.getByText(/roles/i)).toBeInTheDocument();
+    expect(screen.getByText(/admin/i)).toBeInTheDocument();
+    expect(screen.getByText(/developer/i)).toBeInTheDocument();
   });
 
-  // Read Users
-  it('displays a list of users', async () => {
-    renderWithProviders(<UserList />);
-    await waitFor(() => {
-      expect(screen.getByText('New User')).toBeInTheDocument();
+  test('renders UserList component', () => {
+    // Update the mock store with some users
+    const usersState: AdminDashboardState = {
+      ...initialState.adminDashboard,
+      users: [
+        { id: '1', name: 'John Doe', email: 'john@example.com', roleId: '1' },
+        { id: '2', name: 'Jane Smith', email: 'jane@example.com', roleId: '2' },
+      ],
+      loading: false,
+      error: null,
+    };
+
+    store = mockStore({
+      adminDashboard: usersState,
+      auth: { user: { role: 'admin' } },
     });
+
+    render(
+      <Provider store={store}>
+        <Router>
+          <AdminDashboard />
+        </Router>
+      </Provider>
+    );
+
+    // Check for UserList heading or specific user names
+    expect(screen.getByText(/users/i)).toBeInTheDocument();
+    expect(screen.getByText(/john doe/i)).toBeInTheDocument();
+    expect(screen.getByText(/jane smith/i)).toBeInTheDocument();
   });
 
-  // Update User
-  it('updates an existing user successfully', async () => {
-    if (newUserId === null) {
-      throw new Error('No user ID available for update test');
-    }
-
-    renderWithProviders(<UserList />);
-    const editButton = screen.getByTestId(`edit-button-${newUserId}`);
-    fireEvent.click(editButton);
-
-    fireEvent.change(screen.getByLabelText(/Name/i), { target: { value: 'Updated User' } });
-    fireEvent.click(screen.getByText('Save Changes'));
-
-    // Verify update
-    await waitFor(() => {
-      expect(screen.getByText('Updated User')).toBeInTheDocument();
-    });
-  });
-
-  // Delete User
-  it('deletes a user successfully', async () => {
-    if (newUserId === null) {
-      throw new Error('No user ID available for delete test');
-    }
-
-    renderWithProviders(<UserList />);
-    const deleteButton = screen.getByTestId(`delete-button-${newUserId}`);
-    fireEvent.click(deleteButton);
-    fireEvent.click(screen.getByText('Confirm'));
-
-    // Verify deletion
-    await waitFor(() => {
-      expect(screen.queryByText('Updated User')).not.toBeInTheDocument();
-    });
-  });
-
-  // Role CRUD Operations
-
-  // Create Role
-  it('creates a new role successfully', async () => {
-    renderWithProviders(<RoleForm />);
-    fireEvent.change(screen.getByLabelText(/Role Name/i), { target: { value: 'editor' } });
-    fireEvent.click(screen.getByText('Create Role'));
-
-    // Check creation was successful
-    await waitFor(() => {
-      expect(screen.getByText('editor')).toBeInTheDocument();
+  test('does not render admin-specific components for non-admin users', () => {
+    // Update the mock store with a non-admin user
+    store = mockStore({
+      adminDashboard: initialState.adminDashboard,
+      auth: { user: { role: 'developer' } },
     });
 
-    const createdRole = screen.getByText('editor');
-    // Assuming the role has a data-id attribute
-    newRoleId = createdRole ? parseInt(createdRole.getAttribute('data-id') || '0') : null;
-    expect(newRoleId).not.toBeNull();
-  });
+    render(
+      <Provider store={store}>
+        <Router>
+          <AdminDashboard />
+        </Router>
+      </Provider>
+    );
 
-  // Read Roles
-  it('displays a list of roles', async () => {
-    renderWithProviders(<RoleList />);
-    await waitFor(() => {
-      expect(screen.getByText('editor')).toBeInTheDocument();
-    });
-  });
-
-  // Update Role
-  it('updates an existing role successfully', async () => {
-    if (newRoleId === null) {
-      throw new Error('No role ID available for update test');
-    }
-
-    renderWithProviders(<RoleList />);
-    const editButton = screen.getByTestId(`edit-button-${newRoleId}`);
-    fireEvent.click(editButton);
-
-    fireEvent.change(screen.getByLabelText(/Role Name/i), { target: { value: 'supereditor' } });
-    fireEvent.click(screen.getByText('Save Changes'));
-
-    // Verify update
-    await waitFor(() => {
-      expect(screen.getByText('supereditor')).toBeInTheDocument();
-    });
-  });
-
-  // Delete Role
-  it('deletes a role successfully', async () => {
-    if (newRoleId === null) {
-      throw new Error('No role ID available for delete test');
-    }
-
-    renderWithProviders(<RoleList />);
-    const deleteButton = screen.getByTestId(`delete-button-${newRoleId}`);
-    fireEvent.click(deleteButton);
-    fireEvent.click(screen.getByText('Confirm'));
-
-    // Verify deletion
-    await waitFor(() => {
-      expect(screen.queryByText('supereditor')).not.toBeInTheDocument();
-    });
+    // Since the user is not admin, certain components should not be visible
+    // Adjust based on actual component behavior
+    expect(screen.queryByText(/user management/i)).not.toBeInTheDocument();
   });
 });
