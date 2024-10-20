@@ -1,5 +1,7 @@
 // src/features/adminDashboard/types/store.ts
 
+import {Board} from "../developerDashboard/types";
+
 export interface User {
   id: number;
   name: string;
@@ -12,9 +14,23 @@ export interface Role {
   name: string;
 }
 
-export interface AdminState {
+export interface AdminDashboardState {
   users: User[];
   roles: Role[];
+  boards: Board[],
+  calendarEntries: calendarEntries[],
+  checklists: [],
+  checklistItems: [],
+  documents: [],
+  feedbacks: [],
+  invoices: [],
+  messages: [],
+  notes: [],
+  payments: [],
+  quickBooksTokens: [],
+  reminders: [],
+  tasks: [],
+  taskLists: [],
   loading: boolean;
   error: string | null;
 }
