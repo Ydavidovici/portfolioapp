@@ -8,7 +8,6 @@ import PasswordResetPage from './pages/PasswordResetPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import EmailVerificationPage from './pages/EmailVerificationPage';
 import { MemoryRouter, Route } from 'react-router-dom';
-import '@testing-library/jest-dom/extend-expect';
 
 // Utility function to render components with Redux Provider and Router
 const renderWithProviders = (

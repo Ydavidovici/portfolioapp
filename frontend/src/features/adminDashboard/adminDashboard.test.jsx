@@ -4,7 +4,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminDashboard from './pages/AdminDashboard';
 import { BrowserRouter as Router } from 'react-router-dom';
-import '@testing-library/jest-dom/extend-expect';
 
 // Utility function to render components with Router
 const renderWithRouter = (ui) => {

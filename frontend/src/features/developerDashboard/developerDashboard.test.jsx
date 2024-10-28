@@ -4,7 +4,6 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DeveloperDashboard from './pages/DeveloperDashboard';
 import { BrowserRouter as Router } from 'react-router-dom';
-import '@testing-library/jest-dom/extend-expect';
 
 // Mock the global fetch API
 global.fetch = jest.fn();
