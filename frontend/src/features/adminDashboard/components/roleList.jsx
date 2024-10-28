@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import './RoleList.css'; // Optional: For styling
+// import './RoleList.css'; // Optional: For styling
 
 const RoleList = ({ roles, onDelete }) => {
   return (

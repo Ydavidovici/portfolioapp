@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import './DeveloperSidebar.css'; // Optional: For styling
+// import './DeveloperSidebar.css'; // Optional: For styling
 
 const DeveloperSidebar = () => {
   return (

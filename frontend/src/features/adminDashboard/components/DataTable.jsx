@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import Button from '../../common/Button';
+import Button from '../../../Components/Button';
 import UserModal from './UserModal';
 import RoleModal from './RoleModal';
-import LoadingSpinner from '../../common/LoadingSpinner';
-import ConfirmationPrompt from '../../common/ConfirmationPrompt';
-import './DataTable.css'; // Optional: For styling
+import LoadingSpinner from '../../../Components/LoadingSpinner';
+import ConfirmationPrompt from '../../../Components/ConfirmationPrompt';
+// import './DataTable.css'; // Optional: For styling
 
 const DataTable = ({ data, type, onEdit, onDelete, loading, error }) => {
   const [editItem, setEditItem] = useState(null);

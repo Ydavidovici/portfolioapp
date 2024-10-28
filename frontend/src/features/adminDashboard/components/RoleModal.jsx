@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Modal from 'react-modal';
-import Button from '../../common/Button';
-import FormField from '../../common/FormField';
-import './RoleModal.css'; // Optional: For styling
+import Button from '../../../Components/Button';
+import FormField from '../../../Components/FormField';
+// import './RoleModal.css'; // Optional: For styling
 
 const RoleModal = ({ isOpen, onRequestClose, existingRole, onSubmit }) => {
   const [name, setName] = useState(existingRole ? existingRole.name : '');

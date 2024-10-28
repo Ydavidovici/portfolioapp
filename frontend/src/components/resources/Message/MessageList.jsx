@@ -2,8 +2,8 @@
 
 import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { UserContext } from '../../../../context/UserContext';
-import useFetch from '../../../../hooks/useFetch';
+import { UserContext } from '../../../context/UserContext';
+import useFetch from '../../../hooks/useFetch';
 import PropTypes from 'prop-types';
 // import './MessageList.css'; // Optional: For styling
 

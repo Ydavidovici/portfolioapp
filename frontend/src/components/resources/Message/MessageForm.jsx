@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { UserContext } from '../../../../context/UserContext';
+import { UserContext } from '../../../context/UserContext';
 import PropTypes from 'prop-types';
 // import './MessageForm.css'; // Optional: For styling
 
