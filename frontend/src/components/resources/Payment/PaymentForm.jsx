@@ -1,74 +1,152 @@
-// src/components/resources/Payment/PaymentForm.tsx
+// src/components/resources/Payment/PaymentForm.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addPayment, editPayment, getPayments } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Payment } from '../../../features/developerDashboard/types';
-import { useHistory, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './PaymentForm.css'; // Optional: For styling
 
-interface RouteParams {
-  id?: string;
-}
+const PaymentForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const PaymentForm: React.FC = () => {
-  const { id } = useParams<RouteParams>();
-  const dispatch = useDispatch<AppDispatch>();
-  const history = useHistory();
-  const { payments, error } = useSelector((state: RootState) => state.developerDashboard);
-  const existingPayment = payments.find((payment) => payment.id === id);
+  const [payment, setPayment] = useState(null);
+  const [amount, setAmount] = useState('');
+  const [date, setDate] = useState('');
+  const [payerName, setPayerName] = useState('');
+  const [loading, setLoading] = useState(!!id); // Only loading if editing
+  const [error, setError] = useState(null);
 
-  const [amount, setAmount] = useState(existingPayment ? existingPayment.amount : '');
-  const [date, setDate] = useState(existingPayment ? existingPayment.date : '');
+  const userRole = user?.role;
 
+  // Fetch existing payment details if editing
   useEffect(() => {
-    if (!existingPayment && id) {
-      dispatch(getPayments());
-    }
-  }, [dispatch, existingPayment, id]);
+    if (id) {
+      const fetchPayment = async () => {
+        try {
+          const response = await fetch(`/api/payments/${id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch payment details');
+          }
+          const data = await response.json();
+          setPayment(data);
+          setAmount(data.amount);
+          setDate(data.date);
+          setPayerName(data.payerName);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (id && existingPayment) {
-      await dispatch(editPayment({ ...existingPayment, amount, date }));
-    } else {
-      await dispatch(addPayment({ amount, date }));
+      fetchPayment();
     }
-    history.push('/developer-dashboard/payments');
+  }, [id]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let response;
+      const payload = {
+        amount: parseFloat(amount),
+        date,
+        payerName,
+      };
+
+      if (id) {
+        // Editing existing payment
+        response = await fetch(`/api/payments/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Creating new payment
+        response = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            createdAt: new Date().toISOString(),
+          }),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to save payment');
+      }
+
+      // Redirect to payments list after successful operation
+      navigate('/developer-dashboard/payments');
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
+  if (loading || userLoading) return <p>Loading form...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (id && !payment) return <p>Payment not found.</p>;
+
   return (
-    <div>
+    <div className="payment-form">
       <h2>{id ? 'Edit Payment' : 'Create Payment'}</h2>
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Amount:</label>
+        <div className="form-group">
+          <label htmlFor="payment-amount">Amount:</label>
           <input
+            id="payment-amount"
             type="number"
+            step="0.01"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             required
           />
         </div>
-        <div>
-          <label>Date:</label>
+        <div className="form-group">
+          <label htmlFor="payment-date">Date:</label>
           <input
+            id="payment-date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
           />
         </div>
-        <div>
+        <div className="form-group">
+          <label htmlFor="payment-payer">Payer Name:</label>
+          <input
+            id="payment-payer"
+            type="text"
+            value={payerName}
+            onChange={(e) => setPayerName(e.target.value)}
+            required
+          />
+        </div>
+        {/* Add more form fields as necessary */}
+        <div className="form-actions">
           <button type="submit">{id ? 'Update' : 'Create'}</button>
-          <button type="button" onClick={() => history.push('/developer-dashboard/payments')}>
+          <button
+            type="button"
+            onClick={() => navigate('/developer-dashboard/payments')}
+          >
             Cancel
           </button>
         </div>
-        {error && <p>{error}</p>}
+        {error && <p className="error">{error}</p>}
       </form>
     </div>
   );
+};
+
+PaymentForm.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default PaymentForm;

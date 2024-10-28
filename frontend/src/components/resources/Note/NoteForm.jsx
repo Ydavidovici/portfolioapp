@@ -1,95 +1,150 @@
-// src/components/resources/Note/NoteForm.tsx
+// src/components/resources/Note/NoteForm.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addNote, editNote, getNotes } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Note } from '../../../features/developerDashboard/types';
-import { useHistory, useParams } from 'react-router-dom';
-import './NoteForm.css'; // Optional: For styling
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './NoteForm.css'; // Optional: For styling
 
-interface RouteParams {
-    id?: string;
-}
+const NoteForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const NoteForm: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const history = useHistory();
-    const { notes, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role); // Assuming auth slice exists
+  const [note, setNote] = useState(null);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [author, setAuthor] = useState('');
+  const [loading, setLoading] = useState(!!id); // Only loading if editing
+  const [error, setError] = useState(null);
 
-    const existingNote = notes.find((note) => note.id === id);
+  const userRole = user?.role;
 
-    const [title, setTitle] = useState(existingNote ? existingNote.title : '');
-    const [content, setContent] = useState(existingNote ? existingNote.content : '');
-    const [author, setAuthor] = useState(existingNote ? existingNote.author : '');
-
-    useEffect(() => {
-        if (!existingNote && id) {
-            dispatch(getNotes());
+  // Fetch existing note details if editing
+  useEffect(() => {
+    if (id) {
+      const fetchNote = async () => {
+        try {
+          const response = await fetch(`/api/notes/${id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch note details');
+          }
+          const data = await response.json();
+          setNote(data);
+          setTitle(data.title);
+          setContent(data.content);
+          setAuthor(data.author);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
         }
-    }, [dispatch, existingNote, id]);
+      };
 
-    useEffect(() => {
-        if (existingNote) {
-            setTitle(existingNote.title);
-            setContent(existingNote.content);
-            setAuthor(existingNote.author);
-        }
-    }, [existingNote]);
+      fetchNote();
+    }
+  }, [id]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (id && existingNote) {
-            await dispatch(
-                editNote({
-                    ...existingNote,
-                    title,
-                    content,
-                    author,
-                })
-            );
-        } else {
-            await dispatch(
-                addNote({
-                    title,
-                    content,
-                    author,
-                    createdAt: new Date().toISOString(), // Assuming backend handles this, adjust as necessary
-                })
-            );
-        }
-        history.push('/developer-dashboard/notes');
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let response;
+      const payload = {
+        title,
+        content,
+        author,
+      };
 
-    return (
-        <div className="note-form">
-            <h2>{id ? 'Edit Note' : 'Create Note'}</h2>
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>Title:</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                    <label>Content:</label>
-                    <textarea value={content} onChange={(e) => setContent(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                    <label>Author:</label>
-                    <input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} required />
-                </div>
-                {/* Add more form fields as necessary */}
-                <div className="form-actions">
-                    <button type="submit">{id ? 'Update' : 'Create'}</button>
-                    <button type="button" onClick={() => history.push('/developer-dashboard/notes')}>
-                        Cancel
-                    </button>
-                </div>
-                {error && <p className="error">{error}</p>}
-            </form>
+      if (id) {
+        // Editing existing note
+        response = await fetch(`/api/notes/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Creating new note
+        response = await fetch('/api/notes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            createdAt: new Date().toISOString(),
+          }),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to save note');
+      }
+
+      // Redirect to notes list after successful operation
+      navigate('/developer-dashboard/notes');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (loading || userLoading) return <p>Loading form...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (id && !note) return <p>Note not found.</p>;
+
+  return (
+    <div className="note-form">
+      <h2>{id ? 'Edit Note' : 'Create Note'}</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="note-title">Title:</label>
+          <input
+            id="note-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
         </div>
-    );
+        <div className="form-group">
+          <label htmlFor="note-content">Content:</label>
+          <textarea
+            id="note-content"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="note-author">Author:</label>
+          <input
+            id="note-author"
+            type="text"
+            value={author}
+            onChange={(e) => setAuthor(e.target.value)}
+            required
+          />
+        </div>
+        {/* Add more form fields as necessary */}
+        <div className="form-actions">
+          <button type="submit">{id ? 'Update' : 'Create'}</button>
+          <button
+            type="button"
+            onClick={() => navigate('/developer-dashboard/notes')}
+          >
+            Cancel
+          </button>
+        </div>
+        {error && <p className="error">{error}</p>}
+      </form>
+    </div>
+  );
+};
+
+NoteForm.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default NoteForm;

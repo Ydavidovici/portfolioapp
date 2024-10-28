@@ -6,13 +6,13 @@
 
 /* Custom Global Styles */
 body {
-    @apply bg-white text-black font-sans;
+  @apply bg-white text-black font-sans;
 }
 
 a {
-    @apply text-primary hover:underline;
+  @apply text-primary hover:underline;
 }
 
 button {
-    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
 }

@@ -1,62 +1,102 @@
-// src/features/developerDashboard/components/Message/MessageDetails.tsx
+// src/features/developerDashboard/components/Message/MessageDetails.jsx
 
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../../../store';
-import { getMessages } from '../../developerDashboardSlice';
-import { Message } from '../../types';
-import { useParams, Link } from 'react-router-dom';
-import './MessageDetails.css'; // Optional: For styling
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { UserContext } from '../../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './MessageDetails.css'; // Optional: For styling
 
-interface RouteParams {
-    id: string;
-}
+const MessageDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const MessageDetails: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const { messages, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role); // Assuming auth slice exists
+  const [message, setMessage] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    const message: Message | undefined = messages.find((msg) => msg.id === id);
-
-    useEffect(() => {
-        if (!message) {
-            dispatch(getMessages());
+  // Fetch message details
+  useEffect(() => {
+    const fetchMessage = async () => {
+      try {
+        const response = await fetch(`/api/messages/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch message details');
         }
-    }, [dispatch, message]);
+        const data = await response.json();
+        setMessage(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading) return <p>Loading message details...</p>;
-    if (error) return <p>Error: {error}</p>;
-    if (!message) return <p>Message not found.</p>;
+    fetchMessage();
+  }, [id]);
 
-    return (
-        <div className="message-details">
-            <h2>Message Details</h2>
-            <p>
-                <strong>Sender:</strong> {message.senderName}
-            </p>
-            <p>
-                <strong>Content:</strong> {message.content}
-            </p>
-            <p>
-                <strong>Received At:</strong> {new Date(message.createdAt).toLocaleString()}
-            </p>
-            <div className="message-actions">
-                {(userRole === 'admin' || userRole === 'developer') && (
-                    <>
-                        <Link to={`/developer-dashboard/messages/edit/${message.id}`}>
-                            <button>Edit Message</button>
-                        </Link>
-                        {/* Add more admin/developer-specific actions if needed */}
-                    </>
-                )}
-                <Link to="/developer-dashboard/messages">
-                    <button>Back to Messages</button>
-                </Link>
-            </div>
-        </div>
-    );
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this message?')) {
+      try {
+        const response = await fetch(`/api/messages/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete message');
+        }
+        // Redirect to messages list after deletion
+        navigate('/developer-dashboard/messages');
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
+  if (loading || userLoading) return <p>Loading message details...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (!message) return <p>Message not found.</p>;
+
+  const { senderName, content, createdAt } = message;
+  const userRole = user?.role;
+
+  return (
+    <div className="message-details">
+      <h2>Message Details</h2>
+      <p>
+        <strong>Sender:</strong> {senderName}
+      </p>
+      <p>
+        <strong>Content:</strong> {content}
+      </p>
+      <p>
+        <strong>Received At:</strong> {new Date(createdAt).toLocaleString()}
+      </p>
+      {/* Display other message details as necessary */}
+
+      <div className="message-actions">
+        {(userRole === 'admin' || userRole === 'developer') && (
+          <>
+            <Link to={`/developer-dashboard/messages/edit/${message.id}`}>
+              <button>Edit Message</button>
+            </Link>
+            <button onClick={handleDelete}>Delete Message</button>
+          </>
+        )}
+        <Link to="/developer-dashboard/messages">
+          <button>Back to Messages</button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+MessageDetails.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default MessageDetails;

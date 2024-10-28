@@ -1,9 +1,8 @@
-// src/features/clientdashboard/components/ClientNavbar.tsx
-
 import React from 'react';
 import { Link } from 'react-router-dom';
+// import './ClientNavbar.css'; // Optional: For styling
 
-const ClientNavbar: React.FC = () => {
+const ClientNavbar = () => {
   return (
     <nav className="navbar">
       <h1>Client Dashboard</h1>

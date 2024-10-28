@@ -1,72 +1,121 @@
-// src/components/resources/Board/BoardDetails.tsx
+// src/components/resources/Board/BoardDetails.jsx
 
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { getBoards } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Board } from '../../../features/developerDashboard/types';
-import { useParams, Link } from 'react-router-dom';
-import './BoardDetails.css'; // Optional: For styling
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './BoardDetails.css'; // Optional: For styling
 
-interface RouteParams {
-    id: string;
-}
+const BoardDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const BoardDetails: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const { boards, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role);
+  const [board, setBoard] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    const board: Board | undefined = boards.find((b) => b.id === id);
-
-    useEffect(() => {
-        if (!board) {
-            dispatch(getBoards());
+  // Fetch board details
+  useEffect(() => {
+    const fetchBoard = async () => {
+      try {
+        const response = await fetch(`/api/boards/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch board details');
         }
-    }, [dispatch, board]);
+        const data = await response.json();
+        setBoard(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading) return <p>Loading board details...</p>;
-    if (error) return <p className="error">Error: {error}</p>;
-    if (!board) return <p>Board not found.</p>;
+    fetchBoard();
+  }, [id]);
 
-    return (
-        <div className="board-details">
-            <h2>{board.name}</h2>
-            <p><strong>Description:</strong> {board.description || 'No description provided.'}</p>
-            <p><strong>Status:</strong> {board.status}</p>
-            {/* Display other board details as necessary */}
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this board?')) {
+      try {
+        const response = await fetch(`/api/boards/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete board');
+        }
+        // Redirect to boards list after deletion
+        navigate('/developer-dashboard/boards');
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
 
-            {/* Example: Display associated tasks or members */}
-            <h3>Tasks</h3>
-            {board.tasks.length === 0 ? (
-                <p>No tasks assigned.</p>
-            ) : (
-                <ul>
-                    {board.tasks.map((task) => (
-                        <li key={task.id}>
-                            <span>{task.title}</span> - {task.completed ? 'Completed' : 'Pending'}
-                            {task.dueDate && <span> - Due: {new Date(task.dueDate).toLocaleDateString()}</span>}
-                        </li>
-                    ))}
-                </ul>
-            )}
+  if (loading || userLoading) return <p>Loading board details...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (!board) return <p>Board not found.</p>;
 
-            <div className="board-actions">
-                {(userRole === 'admin' || userRole === 'developer') && (
-                    <>
-                        <Link to={`/developer-dashboard/boards/edit/${board.id}`}>
-                            <button>Edit Board</button>
-                        </Link>
-                        {/* Add more admin/developer-specific actions if needed */}
-                    </>
-                )}
-                <Link to="/developer-dashboard/boards">
-                    <button>Back to Boards</button>
-                </Link>
-            </div>
-        </div>
-    );
+  const { name, description, status, tasks } = board;
+  const userRole = user?.role;
+
+  return (
+    <div className="board-details">
+      <h2>{name}</h2>
+      <p>
+        <strong>Description:</strong>{' '}
+        {description || 'No description provided.'}
+      </p>
+      <p>
+        <strong>Status:</strong> {status}
+      </p>
+      {/* Display other board details as necessary */}
+
+      {/* Example: Display associated tasks */}
+      <h3>Tasks</h3>
+      {tasks && tasks.length > 0 ? (
+        <ul>
+          {tasks.map((task) => (
+            <li key={task.id}>
+              <span>{task.title}</span> -{' '}
+              {task.completed ? 'Completed' : 'Pending'}
+              {task.dueDate && (
+                <span>
+                  {' '}
+                  - Due: {new Date(task.dueDate).toLocaleDateString()}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No tasks assigned.</p>
+      )}
+
+      <div className="board-actions">
+        {(userRole === 'admin' || userRole === 'developer') && (
+          <>
+            <Link to={`/developer-dashboard/boards/edit/${board.id}`}>
+              <button>Edit Board</button>
+            </Link>
+            <button onClick={handleDelete}>Delete Board</button>
+          </>
+        )}
+        <Link to="/developer-dashboard/boards">
+          <button>Back to Boards</button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+BoardDetails.propTypes = {
+  // No props are passed directly to this component
 };
 
 export default BoardDetails;

@@ -1,18 +1,13 @@
-// src/commonComponents/common/LoadingSpinner.tsx
+// src/components/common/LoadingSpinner.jsx
 
 import React from 'react';
+import PropTypes from 'prop-types';
 
-interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg';
-  color?: string;
-  ariaLabel?: string;
-}
-
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-                                                         size = 'md',
-                                                         color = 'text-gray-500',
-                                                         ariaLabel = 'Loading',
-                                                       }) => {
+const LoadingSpinner = ({
+  size = 'md',
+  color = 'text-gray-500',
+  ariaLabel = 'Loading',
+}) => {
   let spinnerSizeClasses = '';
   switch (size) {
     case 'sm':
@@ -53,6 +48,12 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       <span className="sr-only">{ariaLabel}</span>
     </div>
   );
+};
+
+LoadingSpinner.propTypes = {
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+  color: PropTypes.string,
+  ariaLabel: PropTypes.string,
 };
 
 export default LoadingSpinner;

@@ -1,44 +1,26 @@
-// src/features/auth/pages/LoginPage.tsx
+// src/features/auth/pages/LoginPage.jsx
 
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { loginUser } from '../authSlice';
-import { RootState } from '../../../store/store';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../../../context/AuthContext';
 import { Redirect, useHistory } from 'react-router-dom';
+import ErrorBoundary from '../../../Components/ErrorBoundary';
+import LoadingSpinner from '../../../Components/LoadingSpinner';
 
-const LoginPage: React.FC = () => {
-  const dispatch = useDispatch();
+const LoginPage = () => {
+  const { user, loginUser, loading, error } = useContext(AuthContext);
   const history = useHistory();
-  const auth = useSelector((state: RootState) => state.auth);
-  const { user, loading, error } = auth;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    await dispatch(loginUser({ email, password }));
-
-    // After successful login, redirect based on role
-    if (auth.user) {
-      switch (auth.user.role) {
-        case 'admin':
-          history.push('/admin-dashboard');
-          break;
-        case 'developer':
-          history.push('/developer-dashboard');
-          break;
-        case 'client':
-          history.push('/client-dashboard');
-          break;
-        default:
-          history.push('/');
-      }
-    }
+    await loginUser({ email, password });
+    // Redirection is handled in AuthContext after successful login
   };
 
   if (user) {
-    // If already logged in, redirect to respective dashboard
+    // If already logged in, redirect based on role
     switch (user.role) {
       case 'admin':
         return <Redirect to="/admin-dashboard" />;
@@ -52,37 +34,65 @@ const LoginPage: React.FC = () => {
   }
 
   return (
-    <div className="login-page">
-      <h2>Login</h2>
-      {error && <p className="error">{error}</p>}
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            autoComplete="username"
-          />
+    <ErrorBoundary>
+      <div className="login-page flex items-center justify-center min-h-screen bg-gray-200 p-4">
+        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-6 text-center">Login</h2>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="email" className="block mb-1 font-medium">
+                Email:
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="username"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder="Enter your email"
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="password" className="block mb-1 font-medium">
+                Password:
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                placeholder="Enter your password"
+              />
+            </div>
+            <div className="mb-4">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition"
+              >
+                {loading ? (
+                  <LoadingSpinner size="sm" color="text-white" />
+                ) : (
+                  'Login'
+                )}
+              </button>
+            </div>
+          </form>
+          <p className="text-center">
+            Don't have an account?{' '}
+            <a href="/register" className="text-blue-500 hover:underline">
+              Register here
+            </a>
+          </p>
         </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </div>
-        <div>
-          <button type="submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </div>
-      </form>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 

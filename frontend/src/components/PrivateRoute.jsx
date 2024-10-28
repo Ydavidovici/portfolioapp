@@ -1,45 +1,51 @@
-// src/commonComponents/PrivateRoute.tsx
+// src/Components/PrivateRoute.jsx
 
-import React from 'react';
-import { Route, Redirect, RouteProps } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import React, { useContext } from 'react';
+import { Route, Redirect } from 'react-router-dom';
+import PropTypes from 'prop-types';
+import { UserContext } from '../context/UserContext';
 
-interface PrivateRouteProps extends RouteProps {
-  component: React.ComponentType<any>;
-  requiredRole?: string; // Optional: Specify required role
-}
-
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ component: Component, requiredRole, ...rest }) => {
-  const auth = useSelector((state: RootState) => state.auth);
-  const isAuthenticated = !!auth.token;
-  const userRole = auth.user?.role;
+const PrivateRoute = ({ component: Component, requiredRole, ...rest }) => {
+  const { user, loading, error } = useContext(UserContext);
 
   return (
     <Route
       {...rest}
-      render={(props) =>
-        isAuthenticated ? (
-          requiredRole ? (
-            userRole === requiredRole ? (
-              <Component {...props} />
-            ) : (
-              <Redirect to="/unauthorized" />
-            )
-          ) : (
-            <Component {...props} />
-          )
-        ) : (
-          <Redirect
-            to={{
-              pathname: '/login',
-              state: { from: props.location },
-            }}
-          />
-        )
-      }
+      render={(props) => {
+        if (loading) {
+          // Optionally, render a loading indicator
+          return <p>Loading...</p>;
+        }
+
+        if (error) {
+          // Optionally, handle errors (you might want to redirect or display an error)
+          return <p className="error">Error: {error}</p>;
+        }
+
+        if (!user) {
+          // User is not authenticated
+          return <Redirect to="/login" />;
+        }
+
+        if (requiredRole && user.role !== requiredRole) {
+          // User does not have the required role
+          return <Redirect to="/login" />;
+        }
+
+        // User is authenticated and has the required role (if any)
+        return <Component {...props} />;
+      }}
     />
   );
+};
+
+PrivateRoute.propTypes = {
+  component: PropTypes.elementType.isRequired,
+  requiredRole: PropTypes.string,
+};
+
+PrivateRoute.defaultProps = {
+  requiredRole: null,
 };
 
 export default PrivateRoute;

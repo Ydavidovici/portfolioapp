@@ -1,60 +1,43 @@
-// src/features/admin/commonComponents/UserForm.tsx
 import React, { useEffect, useState } from 'react';
-import { User, createUser, updateUser } from '@/store/slices/userSlice';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store';
-import { fetchRoles } from '@/store/slices/roleSlice';
 import { toast } from 'react-toastify';
+import './UserForm.css'; // Optional: For styling
 
-interface UserFormProps {
-  user?: User;
-  onClose?: () => void;
-}
-
-const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
-  const dispatch = useDispatch();
-  const { roles, isLoading: rolesLoading } = useSelector((state: RootState) => state.roles);
-
+const UserForm = ({ user, roles, onSubmit, isLoading }) => {
   const [name, setName] = useState(user ? user.name : '');
   const [email, setEmail] = useState(user ? user.email : '');
   const [role, setRole] = useState(user ? user.role : '');
 
-  useEffect(() => {
-    if (roles.length === 0) {
-      dispatch(fetchRoles());
-    }
-  }, [dispatch, roles.length]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!name || !email || !role) {
       toast.error('Please fill in all fields');
       return;
     }
 
-    try {
-      if (user) {
-        // Update existing user
-        await dispatch(updateUser({ id: user.id, data: { name, email, role } })).unwrap();
-        toast.success('User updated successfully');
-        if (onClose) onClose();
-      } else {
-        // Create new user
-        await dispatch(createUser({ name, email, role })).unwrap();
-        toast.success('User created successfully');
-        setName('');
-        setEmail('');
-        setRole('');
-      }
-    } catch (error: any) {
-      toast.error(error || 'Failed to submit form');
-    }
+    onSubmit({ id: user ? user.id : undefined, name, email, role })
+      .then(() => {
+        toast.success(`User ${user ? 'updated' : 'created'} successfully`);
+        if (!user) {
+          setName('');
+          setEmail('');
+          setRole('');
+        }
+      })
+      .catch((error) => {
+        toast.error(error.message || 'Failed to submit form');
+      });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+    <form
+      onSubmit={handleSubmit}
+      className="user-form bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+    >
       <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="name"
+        >
           Name
         </label>
         <input
@@ -68,7 +51,10 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
         />
       </div>
       <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="email"
+        >
           Email
         </label>
         <input
@@ -82,7 +68,10 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
         />
       </div>
       <div className="mb-6">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">
+        <label
+          className="block text-gray-700 text-sm font-bold mb-2"
+          htmlFor="role"
+        >
           Role
         </label>
         <select
@@ -103,15 +92,17 @@ const UserForm: React.FC<UserFormProps> = ({ user, onClose }) => {
       <div className="flex items-center justify-between">
         <button
           type="submit"
-          disabled={rolesLoading}
+          disabled={isLoading}
           className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
         >
           {user ? 'Update User' : 'Create User'}
         </button>
-        {user && onClose && (
+        {user && (
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              // Implement cancel logic if needed
+            }}
             className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
           >
             Cancel

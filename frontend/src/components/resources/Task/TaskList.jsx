@@ -1,55 +1,87 @@
-// src/components/resources/Task/TaskList.tsx
+// src/components/resources/Task/TaskList.jsx
 
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { getTasks, removeTask } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Task } from '../../../features/developerDashboard/types';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import useFetch from '../../../hooks/useFetch';
+import PropTypes from 'prop-types';
+// import './TaskList.css'; // Optional: For styling
 
-const TaskList: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { tasks, loading, error } = useSelector((state: RootState) => state.developerDashboard);
+const TaskList = () => {
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
+  const userRole = user?.role;
 
+  const { data: tasks, loading, error } = useFetch('/api/tasks');
+  const [taskList, setTaskList] = useState([]);
+
+  // Update taskList when tasks data changes
   useEffect(() => {
-    dispatch(getTasks());
-  }, [dispatch]);
+    if (tasks) {
+      setTaskList(tasks);
+    }
+  }, [tasks]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
-      dispatch(removeTask(id));
+      try {
+        const response = await fetch(`/api/tasks/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete task');
+        }
+        // Remove the deleted task from local state to update UI
+        setTaskList((prevTasks) => prevTasks.filter((task) => task.id !== id));
+      } catch (err) {
+        alert(err.message);
+      }
     }
   };
 
-  if (loading) return <p>Loading tasks...</p>;
-  if (error) return <p>Error: {error}</p>;
-  if (tasks.length === 0) return <p>No tasks found.</p>;
+  if (loading || userLoading) return <p>Loading tasks...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (!taskList || taskList.length === 0) return <p>No tasks found.</p>;
 
   return (
-    <div>
+    <div className="task-list">
       <h2>Tasks</h2>
-      <Link to="/developer-dashboard/tasks/create">
-        <button>Add New Task</button>
-      </Link>
+      {(userRole === 'admin' || userRole === 'developer') && (
+        <Link to="/developer-dashboard/tasks/create">
+          <button className="create-button">Add New Task</button>
+        </Link>
+      )}
       <ul>
-        {tasks.map((task: Task) => (
-          <li key={task.id}>
+        {taskList.map((task) => (
+          <li key={task.id} className="task-item">
             <h3>{task.title}</h3>
             <p>{task.description}</p>
-            <div>
+            <div className="task-actions">
               <Link to={`/developer-dashboard/tasks/${task.id}`}>
                 <button>View Details</button>
               </Link>
-              <Link to={`/developer-dashboard/tasks/edit/${task.id}`}>
-                <button>Edit</button>
-              </Link>
-              <button onClick={() => handleDelete(task.id)}>Delete</button>
+              {(userRole === 'admin' || userRole === 'developer') && (
+                <>
+                  <Link to={`/developer-dashboard/tasks/edit/${task.id}`}>
+                    <button>Edit</button>
+                  </Link>
+                  <button onClick={() => handleDelete(task.id)}>Delete</button>
+                </>
+              )}
             </div>
           </li>
         ))}
       </ul>
     </div>
   );
+};
+
+TaskList.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default TaskList;

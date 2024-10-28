@@ -1,10 +1,17 @@
 // src/commonComponents/FormField.jsx
 import React from 'react';
 
-const FormField = ({ label, type = 'text', placeholder = '', required = false }) => {
+const FormField = ({
+  label,
+  type = 'text',
+  placeholder = '',
+  required = false,
+}) => {
   return (
     <div className="flex flex-col gap-1">
-      <label className="text-black text-base font-normal font-sans">{label}</label>
+      <label className="text-black text-base font-normal font-sans">
+        {label}
+      </label>
       {type !== 'textarea' ? (
         <input
           type={type}

@@ -1,45 +1,56 @@
-// src/routes/AppRoutes.tsx
+// src/routes/AppRoutes.jsx
 
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import AdminDashboard from '../features/adminDashboard/pages/AdminDashboard';
 import DeveloperDashboard from '../features/developerDashboard/pages/DeveloperDashboard';
-import ClientDashboard from '../features/clientdashboard/pages/ClientDashboard';
+import ClientDashboard from '../features/clientDashboard/pages/ClientDashboard';
 import LoginPage from '../features/auth/pages/LoginPage';
 import NotFoundPage from '../features/auth/pages/NotFoundPage'; // Optional: 404 Page
 import PrivateRoute from '../components/PrivateRoute';
 
-const AppRoutes: React.FC = () => {
+const AppRoutes = () => {
   return (
     <Router>
-      <Switch>
+      <Routes>
         {/* Public Routes */}
-        <Route exact path="/login" component={LoginPage} />
-        <Route exact path="/" component={LoginPage} /> {/* Redirect root to Login */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Private Routes */}
-        <PrivateRoute
-          path="/admin-dashboard"
-          component={AdminDashboard}
-          roles={['admin']}
+        <Route
+          path="/admin-dashboard/*"
+          element={
+            <PrivateRoute roles={['admin']}>
+              <AdminDashboard />
+            </PrivateRoute>
+          }
         />
-        <PrivateRoute
-          path="/developer-dashboard"
-          component={DeveloperDashboard}
-          roles={['developer', 'admin']}
+        <Route
+          path="/developer-dashboard/*"
+          element={
+            <PrivateRoute roles={['developer', 'admin']}>
+              <DeveloperDashboard />
+            </PrivateRoute>
+          }
         />
-        <PrivateRoute
-          path="/client-dashboard"
-          component={ClientDashboard}
-          roles={['client']}
+        <Route
+          path="/client-dashboard/*"
+          element={
+            <PrivateRoute roles={['client']}>
+              <ClientDashboard />
+            </PrivateRoute>
+          }
         />
 
         {/* 404 Not Found */}
-        <Route component={NotFoundPage} />
-
-        {/* Redirect any unknown routes to Login */}
-        <Redirect to="/login" />
-      </Switch>
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </Router>
   );
 };

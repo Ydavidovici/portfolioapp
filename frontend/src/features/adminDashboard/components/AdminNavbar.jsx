@@ -1,24 +1,14 @@
-// src/features/adminDashboard/commonComponents/AdminNavbar.tsx
-
 import React from 'react';
-import Header from '../../../commonComponents/common/Header';
-import { useDispatch } from 'react-redux';
-import { logout } from '../userSlice'; // Ensure you have a logout action defined
+import Header from '../../../Components/Header';
+// import './AdminNavbar.css'; // Optional: For styling
 
-const AdminNavbar: React.FC = () => {
-  const dispatch = useDispatch();
-
+const AdminNavbar = ({ handleLogout }) => {
   const adminNavLinks = [
     { text: 'Dashboard', href: '/admin/dashboard' },
     { text: 'Users', href: '/admin/users' },
     { text: 'Roles', href: '/admin/roles' },
     { text: 'Settings', href: '/admin/settings' },
   ];
-
-  const handleLogout = () => {
-    dispatch(logout());
-    // Additional logout logic (e.g., redirecting to login page)
-  };
 
   return (
     <Header

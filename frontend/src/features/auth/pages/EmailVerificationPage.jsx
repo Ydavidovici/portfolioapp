@@ -1,10 +1,10 @@
-// src/features/auth/pages/EmailVerificationPage.tsx
+// src/features/auth/pages/EmailVerificationPage.jsx
 
 import React from 'react';
 import EmailVerificationForm from '../components/EmailVerificationForm';
-import ErrorBoundary from '../../../commonComponents/ErrorBoundary';
+import ErrorBoundary from '../../../Components/ErrorBoundary';
 
-const EmailVerificationPage: React.FC = () => {
+const EmailVerificationPage = () => {
   return (
     <ErrorBoundary>
       <div className="flex items-center justify-center min-h-screen bg-gray-200 p-4">

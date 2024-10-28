@@ -1,51 +1,28 @@
-// src/features/adminDashboard/components/DataTable.tsx
-
 import React, { useState } from 'react';
-import { User, Role } from '../types.ts';
-import { useDispatch, useSelector } from 'react-redux';
-import { removeUser } from '../userSlice';
-import { removeRole } from '../roleSlice';
 import Button from '../../common/Button';
 import UserModal from './UserModal';
 import RoleModal from './RoleModal';
 import LoadingSpinner from '../../common/LoadingSpinner';
 import ConfirmationPrompt from '../../common/ConfirmationPrompt';
+import './DataTable.css'; // Optional: For styling
 
-interface DataTableProps<T> {
-  data: T[];
-  type: 'user' | 'role';
-}
-
-const DataTable = <T extends { id: number }>({ data, type }: DataTableProps<T>) => {
-  const dispatch = useDispatch();
-  const [editItem, setEditItem] = useState<T | null>(null);
+const DataTable = ({ data, type, onEdit, onDelete, loading, error }) => {
+  const [editItem, setEditItem] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  const loading = useSelector((state: any) => {
-    return type === 'user' ? state.users.loading : state.roles.loading;
-  });
-
-  const error = useSelector((state: any) => {
-    return type === 'user' ? state.users.error : state.roles.error;
-  });
-
-  const handleEdit = (item: T) => {
+  const handleEdit = (item) => {
     setEditItem(item);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id) => {
     setPendingDeleteId(id);
   };
 
   const confirmDelete = () => {
     if (pendingDeleteId !== null) {
-      if (type === 'user') {
-        dispatch(removeUser(pendingDeleteId));
-      } else if (type === 'role') {
-        dispatch(removeRole(pendingDeleteId));
-      }
+      onDelete(pendingDeleteId);
       setPendingDeleteId(null);
     }
   };
@@ -70,31 +47,42 @@ const DataTable = <T extends { id: number }>({ data, type }: DataTableProps<T>) 
       ) : (
         <table className="min-w-full bg-white shadow rounded-lg">
           <thead>
-          <tr>
-            <th className="py-2 px-4 border-b">ID</th>
-            {type === 'user' && <th className="py-2 px-4 border-b">Name</th>}
-            {type === 'user' && <th className="py-2 px-4 border-b">Email</th>}
-            <th className="py-2 px-4 border-b">{type === 'user' ? 'Role' : 'Role Name'}</th>
-            <th className="py-2 px-4 border-b">Actions</th>
-          </tr>
+            <tr>
+              <th className="py-2 px-4 border-b">ID</th>
+              {type === 'user' && <th className="py-2 px-4 border-b">Name</th>}
+              {type === 'user' && <th className="py-2 px-4 border-b">Email</th>}
+              <th className="py-2 px-4 border-b">
+                {type === 'user' ? 'Role' : 'Role Name'}
+              </th>
+              <th className="py-2 px-4 border-b">Actions</th>
+            </tr>
           </thead>
           <tbody>
-          {data.map((item: T) => (
-            <tr key={item.id} className="text-center">
-              <td className="py-2 px-4 border-b">{item.id}</td>
-              {type === 'user' && 'name' in item && <td className="py-2 px-4 border-b">{(item as User).name}</td>}
-              {type === 'user' && 'email' in item && <td className="py-2 px-4 border-b">{(item as User).email}</td>}
-              <td className="py-2 px-4 border-b">{type === 'user' ? (item as User).role : (item as Role).name}</td>
-              <td className="py-2 px-4 border-b flex justify-center gap-2">
-                <Button variant="secondary" onClick={() => handleEdit(item)}>
-                  Edit
-                </Button>
-                <Button variant="danger" onClick={() => handleDelete(item.id)}>
-                  Delete
-                </Button>
-              </td>
-            </tr>
-          ))}
+            {data.map((item) => (
+              <tr key={item.id} className="text-center">
+                <td className="py-2 px-4 border-b">{item.id}</td>
+                {type === 'user' && item.name && (
+                  <td className="py-2 px-4 border-b">{item.name}</td>
+                )}
+                {type === 'user' && item.email && (
+                  <td className="py-2 px-4 border-b">{item.email}</td>
+                )}
+                <td className="py-2 px-4 border-b">
+                  {type === 'user' ? item.role : item.name}
+                </td>
+                <td className="py-2 px-4 border-b flex justify-center gap-2">
+                  <Button variant="secondary" onClick={() => handleEdit(item)}>
+                    Edit
+                  </Button>
+                  <Button
+                    variant="danger"
+                    onClick={() => handleDelete(item.id)}
+                  >
+                    Delete
+                  </Button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       )}
@@ -109,11 +97,21 @@ const DataTable = <T extends { id: number }>({ data, type }: DataTableProps<T>) 
       )}
 
       {/* Conditionally render UserModal or RoleModal */}
-      {type === 'user' && editItem && 'name' in editItem && (
-        <UserModal isOpen={isModalOpen} onRequestClose={closeModal} existingUser={editItem as User} />
+      {type === 'user' && editItem && (
+        <UserModal
+          isOpen={isModalOpen}
+          onRequestClose={closeModal}
+          existingUser={editItem}
+          onEdit={onEdit}
+        />
       )}
-      {type === 'role' && editItem && 'name' in editItem && (
-        <RoleModal isOpen={isModalOpen} onRequestClose={closeModal} existingRole={editItem as Role} />
+      {type === 'role' && editItem && (
+        <RoleModal
+          isOpen={isModalOpen}
+          onRequestClose={closeModal}
+          existingRole={editItem}
+          onEdit={onEdit}
+        />
       )}
     </div>
   );

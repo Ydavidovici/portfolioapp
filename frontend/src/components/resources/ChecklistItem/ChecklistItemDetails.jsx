@@ -1,57 +1,109 @@
-// src/components/resources/ChecklistItem/ChecklistItemDetails.tsx
+// src/components/resources/ChecklistItem/ChecklistItemDetails.jsx
 
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { getChecklistItems } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { ChecklistItem } from '../../../features/developerDashboard/types';
-import { useParams, Link } from 'react-router-dom';
-import './ChecklistItemDetails.css'; // Optional: For styling
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './ChecklistItemDetails.css'; // Optional: For styling
 
-interface RouteParams {
-    id: string;
-}
+const ChecklistItemDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const ChecklistItemDetails: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const { checklistItems, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role);
+  const [checklistItem, setChecklistItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    const checklistItem: ChecklistItem | undefined = checklistItems.find((item) => item.id === id);
-
-    useEffect(() => {
-        if (!checklistItem) {
-            dispatch(getChecklistItems());
+  // Fetch checklist item details
+  useEffect(() => {
+    const fetchChecklistItem = async () => {
+      try {
+        const response = await fetch(`/api/checklist-items/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch checklist item details');
         }
-    }, [dispatch, checklistItem]);
+        const data = await response.json();
+        setChecklistItem(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading) return <p>Loading checklist item details...</p>;
-    if (error) return <p className="error">Error: {error}</p>;
-    if (!checklistItem) return <p>Checklist item not found.</p>;
+    fetchChecklistItem();
+  }, [id]);
 
-    return (
-        <div className="checklistitem-details">
-            <h2>{checklistItem.title}</h2>
-            <p><strong>Description:</strong> {checklistItem.description || 'No description provided.'}</p>
-            <p><strong>Status:</strong> {checklistItem.status}</p>
-            {/* Display other checklist item details as necessary */}
+  const handleDelete = async () => {
+    if (
+      window.confirm('Are you sure you want to delete this checklist item?')
+    ) {
+      try {
+        const response = await fetch(`/api/checklist-items/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete checklist item');
+        }
+        // Redirect to checklist items list after deletion
+        navigate('/developer-dashboard/checklist-items');
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
 
-            <div className="checklistitem-actions">
-                {(userRole === 'admin' || userRole === 'developer') && (
-                    <>
-                        <Link to={`/developer-dashboard/checklist-items/edit/${checklistItem.id}`}>
-                            <button>Edit Checklist Item</button>
-                        </Link>
-                        {/* Add more admin/developer-specific actions if needed */}
-                    </>
-                )}
-                <Link to="/developer-dashboard/checklist-items">
-                    <button>Back to Checklist Items</button>
-                </Link>
-            </div>
-        </div>
-    );
+  if (loading || userLoading) return <p>Loading checklist item details...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (!checklistItem) return <p>Checklist item not found.</p>;
+
+  const { title, description, status, dueDate } = checklistItem;
+  const userRole = user?.role;
+
+  return (
+    <div className="checklistitem-details">
+      <h2>{title}</h2>
+      <p>
+        <strong>Description:</strong>{' '}
+        {description || 'No description provided.'}
+      </p>
+      <p>
+        <strong>Status:</strong> {status}
+      </p>
+      {dueDate && (
+        <p>
+          <strong>Due Date:</strong> {new Date(dueDate).toLocaleDateString()}
+        </p>
+      )}
+      {/* Display other checklist item details as necessary */}
+
+      <div className="checklistitem-actions">
+        {(userRole === 'admin' || userRole === 'developer') && (
+          <>
+            <Link
+              to={`/developer-dashboard/checklist-items/edit/${checklistItem.id}`}
+            >
+              <button>Edit Checklist Item</button>
+            </Link>
+            <button onClick={handleDelete}>Delete Checklist Item</button>
+          </>
+        )}
+        <Link to="/developer-dashboard/checklist-items">
+          <button>Back to Checklist Items</button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+ChecklistItemDetails.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default ChecklistItemDetails;

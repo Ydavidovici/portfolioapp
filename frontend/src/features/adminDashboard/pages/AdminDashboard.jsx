@@ -1,8 +1,8 @@
-// src/features/adminDashboard/pages/AdminDashboard.tsx
+// src/features/adminDashboard/pages/AdminDashboard.jsx
 
 import React from 'react';
 import AdminNavbar from '../components/AdminNavbar';
-import AdminSidebar from '../components/AdminSidebar';
+// import AdminSidebar from '../components/AdminSidebar';
 import {
   BoardList,
   CalendarEntryList,
@@ -22,7 +22,7 @@ import {
 import DataTable from '../components/DataTable';
 import './AdminDashboard.css'; // Optional: For layout styling
 
-const AdminDashboard: React.FC = () => {
+const AdminDashboard = () => {
   return (
     <div className="admin-dashboard">
       <AdminNavbar />

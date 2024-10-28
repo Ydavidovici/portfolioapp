@@ -1,65 +1,105 @@
-// src/components/resources/Document/DocumentList.tsx
+// src/components/resources/Document/DocumentList.jsx
 
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { getDocuments, removeDocument } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Document } from '../../../features/developerDashboard/types';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import './DocumentList.css'; // Optional: For styling
+import { UserContext } from '../../../context/UserContext';
+import useFetch from '../../../hooks/useFetch';
+import PropTypes from 'prop-types';
+// import './DocumentList.css'; // Optional: For styling
 
-const DocumentList: React.FC = () => {
-    const dispatch = useDispatch<AppDispatch>();
-    const { documents, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role);
+const DocumentList = () => {
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
+  const userRole = user?.role;
 
-    useEffect(() => {
-        dispatch(getDocuments());
-    }, [dispatch]);
+  const { data: documents, loading, error } = useFetch('/api/documents');
+  const [documentList, setDocumentList] = useState([]);
 
-    const handleDelete = (id: string) => {
-        if (window.confirm('Are you sure you want to delete this document?')) {
-            dispatch(removeDocument(id));
+  // Update documentList when documents data changes
+  useEffect(() => {
+    if (documents) {
+      setDocumentList(documents);
+    }
+  }, [documents]);
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Are you sure you want to delete this document?')) {
+      try {
+        const response = await fetch(`/api/documents/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete document');
         }
-    };
+        // Remove the deleted document from local state to update UI
+        setDocumentList((prevDocuments) =>
+          prevDocuments.filter((doc) => doc.id !== id)
+        );
+      } catch (err) {
+        alert(err.message);
+      }
+    }
+  };
 
-    if (loading) return <p>Loading documents...</p>;
-    if (error) return <p className="error">Error: {error}</p>;
-    if (documents.length === 0) return <p>No documents found.</p>;
+  if (loading || userLoading) return <p>Loading documents...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (!documentList || documentList.length === 0)
+    return <p>No documents found.</p>;
 
-    return (
-        <div className="document-list">
-            <h2>Documents</h2>
-            {(userRole === 'admin' || userRole === 'developer') && (
-                <Link to="/developer-dashboard/documents/create">
-                    <button className="create-button">Add New Document</button>
-                </Link>
+  return (
+    <div className="document-list">
+      <h2>Documents</h2>
+      {(userRole === 'admin' || userRole === 'developer') && (
+        <Link to="/developer-dashboard/documents/create">
+          <button className="create-button">Add New Document</button>
+        </Link>
+      )}
+      <ul>
+        {documentList.map((doc) => (
+          <li key={doc.id} className="document-item">
+            <h3>{doc.title}</h3>
+            <p>{doc.description}</p>
+            <p>Author: {doc.author}</p>
+            <p>Created At: {new Date(doc.createdAt).toLocaleDateString()}</p>
+            {doc.contentUrl && (
+              <p>
+                <strong>Content:</strong>{' '}
+                <a
+                  href={doc.contentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View Document
+                </a>
+              </p>
             )}
-            <ul>
-                {documents.map((doc: Document) => (
-                    <li key={doc.id} className="document-item">
-                        <h3>{doc.title}</h3>
-                        <p>{doc.description}</p>
-                        <p>Author: {doc.author}</p>
-                        <p>Created At: {new Date(doc.createdAt).toLocaleDateString()}</p>
-                        <div className="document-actions">
-                            <Link to={`/developer-dashboard/documents/${doc.id}`}>
-                                <button>View Details</button>
-                            </Link>
-                            {(userRole === 'admin' || userRole === 'developer') && (
-                                <>
-                                    <Link to={`/developer-dashboard/documents/edit/${doc.id}`}>
-                                        <button>Edit</button>
-                                    </Link>
-                                    <button onClick={() => handleDelete(doc.id)}>Delete</button>
-                                </>
-                            )}
-                        </div>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
+            {/* Display other document details as necessary */}
+            <div className="document-actions">
+              <Link to={`/developer-dashboard/documents/${doc.id}`}>
+                <button>View Details</button>
+              </Link>
+              {(userRole === 'admin' || userRole === 'developer') && (
+                <>
+                  <Link to={`/developer-dashboard/documents/edit/${doc.id}`}>
+                    <button>Edit</button>
+                  </Link>
+                  <button onClick={() => handleDelete(doc.id)}>Delete</button>
+                </>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+DocumentList.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default DocumentList;

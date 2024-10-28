@@ -1,13 +1,10 @@
-// src/features/clientdashboard/pages/ClientDashboard.tsx
+// src/features/clientdashboard/pages/ClientDashboard.jsx
 
 import React from 'react';
 import ClientNavbar from '../components/ClientNavbar';
-import ClientSidebar from '../components/ClientSidebar';
-import MessageList from '../components/MessageList';
-import DocumentList from '../components/DocumentList';
-import './ClientDashboard.css'; // Optional: For layout styling
+// import './ClientDashboard.css'; // Optional: For layout styling
 
-const ClientDashboard: React.FC = () => {
+const ClientDashboard = () => {
   return (
     <div className="client-dashboard">
       <ClientNavbar />

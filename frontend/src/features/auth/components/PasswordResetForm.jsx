@@ -1,35 +1,30 @@
-// src/features/auth/components/PasswordResetForm.tsx
+// src/features/auth/components/PasswordResetForm.jsx
 
-import React, { useState, FormEvent } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { requestPasswordReset } from '../authSlice';
-import { RootState } from '../../store/store';
-import LoadingSpinner from '../../../commonComponents/LoadingSpinner';
-import ConfirmationPrompt from '../../../commonComponents/ConfirmationPrompt'; // If using custom confirmation
+import React, { useState, FormEvent, useContext } from 'react';
+import { AuthContext } from '../../../context/AuthContext';
+import LoadingSpinner from '../../../Components/LoadingSpinner';
+import ConfirmationPrompt from '../../../Components/ConfirmationPrompt'; // If using custom confirmation
 
-const PasswordResetForm: React.FC = () => {
-  const dispatch = useDispatch();
-  const auth = useSelector((state: RootState) => state.auth);
-
+const PasswordResetForm = () => {
+  const { requestPasswordReset, loading, error, success } =
+    useContext(AuthContext);
   const [email, setEmail] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(requestPasswordReset(email))
-      .unwrap()
-      .then((res) => {
-        setSuccessMessage(res.message); // Assuming backend returns a message
-      })
-      .catch((err) => {
-        // Error is already handled by auth.error
-      });
+    try {
+      await requestPasswordReset({ email });
+      setSuccessMessage('Password reset link sent to your email.');
+    } catch (err) {
+      // Error is handled by AuthContext
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {auth.error && <div className="text-red-500">{auth.error}</div>}
-      {successMessage && <div className="text-green-500">{successMessage}</div>}
+      {error && <div className="text-red-500">{error}</div>}
+      {success && <div className="text-green-500">{successMessage}</div>}
       <div className="flex flex-col">
         <label htmlFor="email" className="mb-1 font-medium">
           Registered Email
@@ -41,14 +36,19 @@ const PasswordResetForm: React.FC = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          placeholder="Enter your registered email"
         />
       </div>
       <button
         type="submit"
         className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-        disabled={auth.loading}
+        disabled={loading}
       >
-        {auth.loading ? <LoadingSpinner size="sm" color="text-white" /> : 'Reset Password'}
+        {loading ? (
+          <LoadingSpinner size="sm" color="text-white" />
+        ) : (
+          'Reset Password'
+        )}
       </button>
     </form>
   );

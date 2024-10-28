@@ -1,57 +1,109 @@
-// src/components/resources/CalendarEntry/CalendarEntryDetails.tsx
+// src/components/resources/CalendarEntry/CalendarEntryDetails.jsx
 
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { getCalendarEntries } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { CalendarEntry } from '../../../features/developerDashboard/types';
-import { useParams, Link } from 'react-router-dom';
-import './CalendarEntryDetails.css'; // Optional: For styling
+import React, { useEffect, useState, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './CalendarEntryDetails.css'; // Optional: For styling
 
-interface RouteParams {
-    id: string;
-}
+const CalendarEntryDetails = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const CalendarEntryDetails: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const { calendarEntries, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role);
+  const [calendarEntry, setCalendarEntry] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    const calendarEntry: CalendarEntry | undefined = calendarEntries.find((entry) => entry.id === id);
-
-    useEffect(() => {
-        if (!calendarEntry) {
-            dispatch(getCalendarEntries());
+  // Fetch calendar entry details
+  useEffect(() => {
+    const fetchCalendarEntry = async () => {
+      try {
+        const response = await fetch(`/api/calendar-entries/${id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch calendar entry details');
         }
-    }, [dispatch, calendarEntry]);
+        const data = await response.json();
+        setCalendarEntry(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (loading) return <p>Loading calendar entry details...</p>;
-    if (error) return <p className="error">Error: {error}</p>;
-    if (!calendarEntry) return <p>Calendar entry not found.</p>;
+    fetchCalendarEntry();
+  }, [id]);
 
-    return (
-        <div className="calendarentry-details">
-            <h2>{calendarEntry.title}</h2>
-            <p><strong>Description:</strong> {calendarEntry.description || 'No description provided.'}</p>
-            <p><strong>Date:</strong> {new Date(calendarEntry.date).toLocaleDateString()}</p>
-            {/* Display other calendar entry details as necessary */}
+  const handleDelete = async () => {
+    if (
+      window.confirm('Are you sure you want to delete this calendar entry?')
+    ) {
+      try {
+        const response = await fetch(`/api/calendar-entries/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error('Failed to delete calendar entry');
+        }
+        // Redirect to calendar entries list after deletion
+        navigate('/developer-dashboard/calendar-entries');
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
 
-            <div className="calendarentry-actions">
-                {(userRole === 'admin' || userRole === 'developer') && (
-                    <>
-                        <Link to={`/developer-dashboard/calendar-entries/edit/${calendarEntry.id}`}>
-                            <button>Edit Calendar Entry</button>
-                        </Link>
-                        {/* Add more admin/developer-specific actions if needed */}
-                    </>
-                )}
-                <Link to="/developer-dashboard/calendar-entries">
-                    <button>Back to Calendar Entries</button>
-                </Link>
-            </div>
-        </div>
-    );
+  if (loading || userLoading) return <p>Loading calendar entry details...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (!calendarEntry) return <p>Calendar entry not found.</p>;
+
+  const { title, description, date, location } = calendarEntry;
+  const userRole = user?.role;
+
+  return (
+    <div className="calendarentry-details">
+      <h2>{title}</h2>
+      <p>
+        <strong>Description:</strong>{' '}
+        {description || 'No description provided.'}
+      </p>
+      <p>
+        <strong>Date:</strong> {new Date(date).toLocaleDateString()}
+      </p>
+      {location && (
+        <p>
+          <strong>Location:</strong> {location}
+        </p>
+      )}
+      {/* Display other calendar entry details as necessary */}
+
+      <div className="calendarentry-actions">
+        {(userRole === 'admin' || userRole === 'developer') && (
+          <>
+            <Link
+              to={`/developer-dashboard/calendar-entries/edit/${calendarEntry.id}`}
+            >
+              <button>Edit Calendar Entry</button>
+            </Link>
+            <button onClick={handleDelete}>Delete Calendar Entry</button>
+          </>
+        )}
+        <Link to="/developer-dashboard/calendar-entries">
+          <button>Back to Calendar Entries</button>
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+CalendarEntryDetails.propTypes = {
+  // No props are passed directly to this component
 };
 
 export default CalendarEntryDetails;

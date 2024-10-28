@@ -1,38 +1,40 @@
-// src/features/auth/pages/ChangePasswordPage.tsx
+// src/features/auth/pages/ChangePasswordPage.jsx
 
-import React, { useState, FormEvent } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { changePassword } from '../authSlice'; // Implement changePassword thunk
-import { RootState } from '../../store/store';
-import LoadingSpinner from '../../../commonComponents/LoadingSpinner';
-import ErrorBoundary from '../../../commonComponents/ErrorBoundary';
+import React, { useState, FormEvent, useContext } from 'react';
+import { AuthContext } from '../../../context/AuthContext';
+import LoadingSpinner from '../../../Components/LoadingSpinner';
+import ErrorBoundary from '../../../Components/ErrorBoundary';
 
-const ChangePasswordPage: React.FC = () => {
-  const dispatch = useDispatch();
-  const auth = useSelector((state: RootState) => state.auth);
+const ChangePasswordPage = () => {
+  const { changePassword, loading, error } = useContext(AuthContext);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
       alert('New passwords do not match');
       return;
     }
-    dispatch(changePassword({ currentPassword, newPassword }));
+    await changePassword({ currentPassword, newPassword });
+    // Optionally, handle success message or redirect
   };
 
   return (
     <ErrorBoundary>
       <div className="flex items-center justify-center min-h-screen bg-gray-200 p-4">
         <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-6 text-center">Change Password</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-center">
+            Change Password
+          </h2>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {auth.error && <div className="text-red-500">{auth.error}</div>}
+            {error && <div className="text-red-500">{error}</div>}
             <div className="flex flex-col">
-              <label htmlFor="currentPassword" className="mb-1 font-medium">Current Password</label>
+              <label htmlFor="currentPassword" className="mb-1 font-medium">
+                Current Password
+              </label>
               <input
                 type="password"
                 id="currentPassword"
@@ -43,7 +45,9 @@ const ChangePasswordPage: React.FC = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label htmlFor="newPassword" className="mb-1 font-medium">New Password</label>
+              <label htmlFor="newPassword" className="mb-1 font-medium">
+                New Password
+              </label>
               <input
                 type="password"
                 id="newPassword"
@@ -54,7 +58,9 @@ const ChangePasswordPage: React.FC = () => {
               />
             </div>
             <div className="flex flex-col">
-              <label htmlFor="confirmPassword" className="mb-1 font-medium">Confirm New Password</label>
+              <label htmlFor="confirmPassword" className="mb-1 font-medium">
+                Confirm New Password
+              </label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -67,9 +73,13 @@ const ChangePasswordPage: React.FC = () => {
             <button
               type="submit"
               className="flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition"
-              disabled={auth.loading}
+              disabled={loading}
             >
-              {auth.loading ? <LoadingSpinner size="sm" color="text-white" /> : 'Change Password'}
+              {loading ? (
+                <LoadingSpinner size="sm" color="text-white" />
+              ) : (
+                'Change Password'
+              )}
             </button>
           </form>
         </div>

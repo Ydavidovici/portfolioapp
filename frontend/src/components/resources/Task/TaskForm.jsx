@@ -1,73 +1,134 @@
-// src/components/resources/Task/TaskForm.tsx
+// src/components/resources/Task/TaskForm.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addTask, editTask, getTasks } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Task } from '../../../features/developerDashboard/types';
-import { useHistory, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './TaskForm.css'; // Optional: For styling
 
-interface RouteParams {
-  id?: string;
-}
+const TaskForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const TaskForm: React.FC = () => {
-  const { id } = useParams<RouteParams>();
-  const dispatch = useDispatch<AppDispatch>();
-  const history = useHistory();
-  const { tasks, error } = useSelector((state: RootState) => state.developerDashboard);
-  const existingTask = tasks.find((task) => task.id === id);
+  const [task, setTask] = useState(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [loading, setLoading] = useState(!!id); // Only loading if editing
+  const [error, setError] = useState(null);
 
-  const [title, setTitle] = useState(existingTask ? existingTask.title : '');
-  const [description, setDescription] = useState(existingTask ? existingTask.description : '');
+  const userRole = user?.role;
 
+  // Fetch existing task details if editing
   useEffect(() => {
-    if (!existingTask && id) {
-      dispatch(getTasks());
-    }
-  }, [dispatch, existingTask, id]);
+    if (id) {
+      const fetchTask = async () => {
+        try {
+          const response = await fetch(`/api/tasks/${id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch task details');
+          }
+          const data = await response.json();
+          setTask(data);
+          setTitle(data.title);
+          setDescription(data.description);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (id && existingTask) {
-      await dispatch(editTask({ ...existingTask, title, description }));
-    } else {
-      await dispatch(addTask({ title, description }));
+      fetchTask();
     }
-    history.push('/developer-dashboard/tasks');
+  }, [id]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let response;
+      const payload = {
+        title,
+        description,
+      };
+
+      if (id) {
+        // Editing existing task
+        response = await fetch(`/api/tasks/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        // Creating new task
+        response = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      }
+
+      if (!response.ok) {
+        throw new Error('Failed to save task');
+      }
+
+      // Redirect to tasks list after successful operation
+      navigate('/developer-dashboard/tasks');
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
+  if (loading || userLoading) return <p>Loading form...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (id && !task) return <p>Task not found.</p>;
+
   return (
-    <div>
+    <div className="task-form">
       <h2>{id ? 'Edit Task' : 'Create Task'}</h2>
       <form onSubmit={handleSubmit}>
-        <div>
-          <label>Title:</label>
+        <div className="form-group">
+          <label htmlFor="task-title">Title:</label>
           <input
+            id="task-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
         </div>
-        <div>
-          <label>Description:</label>
+        <div className="form-group">
+          <label htmlFor="task-description">Description:</label>
           <textarea
+            id="task-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
           />
         </div>
-        <div>
+        {/* Add more form fields as necessary */}
+        <div className="form-actions">
           <button type="submit">{id ? 'Update' : 'Create'}</button>
-          <button type="button" onClick={() => history.push('/developer-dashboard/tasks')}>
+          <button
+            type="button"
+            onClick={() => navigate('/developer-dashboard/tasks')}
+          >
             Cancel
           </button>
         </div>
-        {error && <p>{error}</p>}
+        {error && <p className="error">{error}</p>}
       </form>
     </div>
   );
+};
+
+TaskForm.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default TaskForm;

@@ -1,77 +1,55 @@
-// src/features/auth/components/EmailVerificationForm.tsx
+// src/features/auth/components/EmailVerificationForm.jsx
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { verifyEmail } from '../authSlice';
-import { RootState } from '../../store/store';
-import LoadingSpinner from '../../../commonComponents/LoadingSpinner';
-import { useLocation, useHistory } from 'react-router-dom';
+import React, { useState, FormEvent, useContext } from 'react';
+import { AuthContext } from '../../../context/AuthContext';
+import LoadingSpinner from '../../../Components/LoadingSpinner';
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
+const EmailVerificationForm = () => {
+  const { verifyEmail, loading, error, success } = useContext(AuthContext); // Assuming verifyEmail is provided
+  const [verificationCode, setVerificationCode] = useState('');
 
-const EmailVerificationForm: React.FC = () => {
-  const dispatch = useDispatch();
-  const history = useHistory();
-  const query = useQuery();
-  const token = query.get('token') || '';
-
-  const auth = useSelector((state: RootState) => state.auth);
-  const [verificationStatus, setVerificationStatus] = useState('');
-
-  useEffect(() => {
-    if (token) {
-      dispatch(verifyEmail(token))
-        .unwrap()
-        .then((res) => {
-          setVerificationStatus(res.message); // Assuming backend returns a message
-          // Optionally, redirect to login after a delay
-          setTimeout(() => {
-            history.push('/login');
-          }, 3000);
-        })
-        .catch((err) => {
-          setVerificationStatus(err);
-        });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await verifyEmail({ code: verificationCode });
+      // Optionally, handle post-verification logic
+    } catch (err) {
+      // Error is handled by context
     }
-  }, [dispatch, token, history]);
-
-  if (!token) {
-    return (
-      <div className="text-center text-red-500">
-        Invalid verification link.
-      </div>
-    );
-  }
+  };
 
   return (
-    <div className="flex flex-col items-center justify-center">
-      {auth.loading ? (
-        <LoadingSpinner size="lg" color="text-blue-500" />
-      ) : (
-        <div>
-          {verificationStatus.includes('success') ? (
-            <div className="text-green-500">{verificationStatus}</div>
-          ) : (
-            <div className="text-red-500">{verificationStatus}</div>
-          )}
-          <div className="mt-4 text-center">
-            {verificationStatus.includes('success') ? (
-              <p>You will be redirected to the login page shortly.</p>
-            ) : (
-              <p>
-                Please contact support or{' '}
-                <a href="/register" className="text-blue-500 hover:underline">
-                  register again
-                </a>
-                .
-              </p>
-            )}
-          </div>
-        </div>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {error && <div className="text-red-500">{error}</div>}
+      {success && (
+        <div className="text-green-500">Email verified successfully!</div>
       )}
-    </div>
+      <div className="flex flex-col">
+        <label htmlFor="verificationCode" className="mb-1 font-medium">
+          Verification Code
+        </label>
+        <input
+          type="text"
+          id="verificationCode"
+          value={verificationCode}
+          onChange={(e) => setVerificationCode(e.target.value)}
+          required
+          className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+          placeholder="Enter your verification code"
+        />
+      </div>
+      <button
+        type="submit"
+        className="flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition"
+        disabled={loading}
+      >
+        {loading ? (
+          <LoadingSpinner size="sm" color="text-white" />
+        ) : (
+          'Verify Email'
+        )}
+      </button>
+    </form>
   );
 };
 

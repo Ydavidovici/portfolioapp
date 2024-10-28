@@ -1,11 +1,11 @@
-// src/features/auth/pages/RegisterPage.tsx
+// src/features/auth/pages/RegisterPage.jsx
 
 import React from 'react';
 import RegisterForm from '../components/RegisterForm';
 import { Link } from 'react-router-dom';
-import ErrorBoundary from '../../../commonComponents/ErrorBoundary';
+import ErrorBoundary from '../../../Components/ErrorBoundary';
 
-const RegisterPage: React.FC = () => {
+const RegisterPage = () => {
   return (
     <ErrorBoundary>
       <div className="flex items-center justify-center min-h-screen bg-gray-200 p-4">

@@ -1,107 +1,106 @@
-// src/features/developerDashboard/services/developerService.ts
+// src/features/developerDashboard/services/developerService.js
 
 import axios from '../../../api/apiClient';
-import {
-    Board,
-    CalendarEntry,
-    Checklist,
-    ChecklistItem,
-    Document,
-    Feedback,
-    Invoice,
-    Message,
-    Note,
-    Payment,
-    QuickBooksToken,
-    Reminder,
-    Task,
-    TaskList,
-} from '../types';
 
 const developerService = {
-    // Boards
-    fetchBoards: () => axios.get<Board[]>('/boards'),
-    createBoard: (newBoard: Omit<Board, 'id'>) => axios.post<Board>('/boards', newBoard),
-    updateBoard: (updatedBoard: Board) => axios.put<Board>(`/boards/${updatedBoard.id}`, updatedBoard),
-    deleteBoard: (id: string) => axios.delete(`/boards/${id}`),
+  // Boards
+  fetchBoards: () => axios.get('/boards'),
+  createBoard: (newBoard) => axios.post('/boards', newBoard),
+  updateBoard: (updatedBoard) =>
+    axios.put(`/boards/${updatedBoard.id}`, updatedBoard),
+  deleteBoard: (id) => axios.delete(`/boards/${id}`),
 
-    // CalendarEntries
-    fetchCalendarEntries: () => axios.get<CalendarEntry[]>('/calendar-entries'),
-    createCalendarEntry: (newEntry: Omit<CalendarEntry, 'id'>) => axios.post<CalendarEntry>('/calendar-entries', newEntry),
-    updateCalendarEntry: (updatedEntry: CalendarEntry) => axios.put<CalendarEntry>(`/calendar-entries/${updatedEntry.id}`, updatedEntry),
-    deleteCalendarEntry: (id: string) => axios.delete(`/calendar-entries/${id}`),
+  // Calendar Entries
+  fetchCalendarEntries: () => axios.get('/calendar-entries'),
+  createCalendarEntry: (newEntry) => axios.post('/calendar-entries', newEntry),
+  updateCalendarEntry: (updatedEntry) =>
+    axios.put(`/calendar-entries/${updatedEntry.id}`, updatedEntry),
+  deleteCalendarEntry: (id) => axios.delete(`/calendar-entries/${id}`),
 
-    // Checklists
-    fetchChecklists: () => axios.get<Checklist[]>('/checklists'),
-    createChecklist: (newChecklist: Omit<Checklist, 'id'>) => axios.post<Checklist>('/checklists', newChecklist),
-    updateChecklist: (updatedChecklist: Checklist) => axios.put<Checklist>(`/checklists/${updatedChecklist.id}`, updatedChecklist),
-    deleteChecklist: (id: string) => axios.delete(`/checklists/${id}`),
+  // Checklists
+  fetchChecklists: () => axios.get('/checklists'),
+  createChecklist: (newChecklist) => axios.post('/checklists', newChecklist),
+  updateChecklist: (updatedChecklist) =>
+    axios.put(`/checklists/${updatedChecklist.id}`, updatedChecklist),
+  deleteChecklist: (id) => axios.delete(`/checklists/${id}`),
 
-    // ChecklistItems
-    fetchChecklistItems: () => axios.get<ChecklistItem[]>('/checklist-items'),
-    createChecklistItem: (newItem: Omit<ChecklistItem, 'id'>) => axios.post<ChecklistItem>('/checklist-items', newItem),
-    updateChecklistItem: (updatedItem: ChecklistItem) => axios.put<ChecklistItem>(`/checklist-items/${updatedItem.id}`, updatedItem),
-    deleteChecklistItem: (id: string) => axios.delete(`/checklist-items/${id}`),
+  // Checklist Items
+  fetchChecklistItems: () => axios.get('/checklist-items'),
+  createChecklistItem: (newItem) => axios.post('/checklist-items', newItem),
+  updateChecklistItem: (updatedItem) =>
+    axios.put(`/checklist-items/${updatedItem.id}`, updatedItem),
+  deleteChecklistItem: (id) => axios.delete(`/checklist-items/${id}`),
 
-    // Documents
-    fetchDocuments: () => axios.get<Document[]>('/documents'),
-    createDocument: (newDocument: Omit<Document, 'id'>) => axios.post<Document>('/documents', newDocument),
-    updateDocument: (updatedDocument: Document) => axios.put<Document>(`/documents/${updatedDocument.id}`, updatedDocument),
-    deleteDocument: (id: string) => axios.delete(`/documents/${id}`),
+  // Documents
+  fetchDocuments: () => axios.get('/documents'),
+  createDocument: (newDocument) => axios.post('/documents', newDocument),
+  updateDocument: (updatedDocument) =>
+    axios.put(`/documents/${updatedDocument.id}`, updatedDocument),
+  deleteDocument: (id) => axios.delete(`/documents/${id}`),
 
-    // Feedback
-    fetchFeedbacks: () => axios.get<Feedback[]>('/feedback'),
-    createFeedback: (newFeedback: Omit<Feedback, 'id'>) => axios.post<Feedback>('/feedback', newFeedback),
-    updateFeedback: (updatedFeedback: Feedback) => axios.put<Feedback>(`/feedback/${updatedFeedback.id}`, updatedFeedback),
-    deleteFeedback: (id: string) => axios.delete(`/feedback/${id}`),
+  // Feedback
+  fetchFeedbacks: () => axios.get('/feedback'),
+  createFeedback: (newFeedback) => axios.post('/feedback', newFeedback),
+  updateFeedback: (updatedFeedback) =>
+    axios.put(`/feedback/${updatedFeedback.id}`, updatedFeedback),
+  deleteFeedback: (id) => axios.delete(`/feedback/${id}`),
 
-    // Invoices
-    fetchInvoices: () => axios.get<Invoice[]>('/invoices'),
-    createInvoice: (newInvoice: Omit<Invoice, 'id'>) => axios.post<Invoice>('/invoices', newInvoice),
-    updateInvoice: (updatedInvoice: Invoice) => axios.put<Invoice>(`/invoices/${updatedInvoice.id}`, updatedInvoice),
-    deleteInvoice: (id: string) => axios.delete(`/invoices/${id}`),
+  // Invoices
+  fetchInvoices: () => axios.get('/invoices'),
+  createInvoice: (newInvoice) => axios.post('/invoices', newInvoice),
+  updateInvoice: (updatedInvoice) =>
+    axios.put(`/invoices/${updatedInvoice.id}`, updatedInvoice),
+  deleteInvoice: (id) => axios.delete(`/invoices/${id}`),
 
-    // Messages
-    fetchMessages: () => axios.get<Message[]>('/messages'),
-    createMessage: (newMessage: Omit<Message, 'id'>) => axios.post<Message>('/messages', newMessage),
-    updateMessage: (updatedMessage: Message) => axios.put<Message>(`/messages/${updatedMessage.id}`, updatedMessage),
-    deleteMessage: (id: string) => axios.delete(`/messages/${id}`),
+  // Messages
+  fetchMessages: () => axios.get('/messages'),
+  createMessage: (newMessage) => axios.post('/messages', newMessage),
+  updateMessage: (updatedMessage) =>
+    axios.put(`/messages/${updatedMessage.id}`, updatedMessage),
+  deleteMessage: (id) => axios.delete(`/messages/${id}`),
 
-    // Notes
-    fetchNotes: () => axios.get<Note[]>('/notes'),
-    createNote: (newNote: Omit<Note, 'id'>) => axios.post<Note>('/notes', newNote),
-    updateNote: (updatedNote: Note) => axios.put<Note>(`/notes/${updatedNote.id}`, updatedNote),
-    deleteNote: (id: string) => axios.delete(`/notes/${id}`),
+  // Notes
+  fetchNotes: () => axios.get('/notes'),
+  createNote: (newNote) => axios.post('/notes', newNote),
+  updateNote: (updatedNote) =>
+    axios.put(`/notes/${updatedNote.id}`, updatedNote),
+  deleteNote: (id) => axios.delete(`/notes/${id}`),
 
-    // Payments
-    fetchPayments: () => axios.get<Payment[]>('/payments'),
-    createPayment: (newPayment: Omit<Payment, 'id'>) => axios.post<Payment>('/payments', newPayment),
-    updatePayment: (updatedPayment: Payment) => axios.put<Payment>(`/payments/${updatedPayment.id}`, updatedPayment),
-    deletePayment: (id: string) => axios.delete(`/payments/${id}`),
+  // Payments
+  fetchPayments: () => axios.get('/payments'),
+  createPayment: (newPayment) => axios.post('/payments', newPayment),
+  updatePayment: (updatedPayment) =>
+    axios.put(`/payments/${updatedPayment.id}`, updatedPayment),
+  deletePayment: (id) => axios.delete(`/payments/${id}`),
 
-    // QuickBooksTokens
-    fetchQuickBooksTokens: () => axios.get<QuickBooksToken[]>('/quickbooks-tokens'),
-    createQuickBooksToken: (newToken: Omit<QuickBooksToken, 'id'>) => axios.post<QuickBooksToken>('/quickbooks-tokens', newToken),
-    updateQuickBooksToken: (updatedToken: QuickBooksToken) => axios.put<QuickBooksToken>(`/quickbooks-tokens/${updatedToken.id}`, updatedToken),
-    deleteQuickBooksToken: (id: string) => axios.delete(`/quickbooks-tokens/${id}`),
+  // QuickBooks Tokens
+  fetchQuickBooksTokens: () => axios.get('/quickbooks-tokens'),
+  createQuickBooksToken: (newToken) =>
+    axios.post('/quickbooks-tokens', newToken),
+  updateQuickBooksToken: (updatedToken) =>
+    axios.put(`/quickbooks-tokens/${updatedToken.id}`, updatedToken),
+  deleteQuickBooksToken: (id) => axios.delete(`/quickbooks-tokens/${id}`),
 
-    // Reminders
-    fetchReminders: () => axios.get<Reminder[]>('/reminders'),
-    createReminder: (newReminder: Omit<Reminder, 'id'>) => axios.post<Reminder>('/reminders', newReminder),
-    updateReminder: (updatedReminder: Reminder) => axios.put<Reminder>(`/reminders/${updatedReminder.id}`, updatedReminder),
-    deleteReminder: (id: string) => axios.delete(`/reminders/${id}`),
+  // Reminders
+  fetchReminders: () => axios.get('/reminders'),
+  createReminder: (newReminder) => axios.post('/reminders', newReminder),
+  updateReminder: (updatedReminder) =>
+    axios.put(`/reminders/${updatedReminder.id}`, updatedReminder),
+  deleteReminder: (id) => axios.delete(`/reminders/${id}`),
 
-    // Tasks
-    fetchTasks: () => axios.get<Task[]>('/tasks'),
-    createTask: (newTask: Omit<Task, 'id'>) => axios.post<Task>('/tasks', newTask),
-    updateTask: (updatedTask: Task) => axios.put<Task>(`/tasks/${updatedTask.id}`, updatedTask),
-    deleteTask: (id: string) => axios.delete(`/tasks/${id}`),
+  // Tasks
+  fetchTasks: () => axios.get('/tasks'),
+  createTask: (newTask) => axios.post('/tasks', newTask),
+  updateTask: (updatedTask) =>
+    axios.put(`/tasks/${updatedTask.id}`, updatedTask),
+  deleteTask: (id) => axios.delete(`/tasks/${id}`),
 
-    // TaskLists
-    fetchTaskLists: () => axios.get<TaskList[]>('/task-lists'),
-    createTaskList: (newTaskList: Omit<TaskList, 'id'>) => axios.post<TaskList>('/task-lists', newTaskList),
-    updateTaskList: (updatedTaskList: TaskList) => axios.put<TaskList>(`/task-lists/${updatedTaskList.id}`, updatedTaskList),
-    deleteTaskList: (id: string) => axios.delete(`/task-lists/${id}`),
+  // Task Lists
+  fetchTaskLists: () => axios.get('/task-lists'),
+  createTaskList: (newTaskList) => axios.post('/task-lists', newTaskList),
+  updateTaskList: (updatedTaskList) =>
+    axios.put(`/task-lists/${updatedTaskList.id}`, updatedTaskList),
+  deleteTaskList: (id) => axios.delete(`/task-lists/${id}`),
 };
 
 export default developerService;

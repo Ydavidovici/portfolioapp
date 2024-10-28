@@ -1,41 +1,40 @@
-// src/features/auth/services/authService.ts
+// src/features/auth/services/authService.js
 
 import apiClient from '../../../api/apiClient';
-import {
-  LoginCredentials,
-  RegisterCredentials,
-  ResetPasswordPayload,
-  VerifyEmailPayload,
-} from '../types';
 
 // Login User
-export const login = async (credentials: LoginCredentials) => {
+export const login = async (credentials) => {
   const response = await apiClient.post('/auth/login', credentials);
   return response.data;
 };
 
 // Register User
-export const register = async (credentials: RegisterCredentials) => {
+export const register = async (credentials) => {
   const response = await apiClient.post('/auth/register', credentials);
   return response.data;
 };
 
 // Request Password Reset
-export const requestPasswordReset = async (email: string) => {
+export const requestPasswordReset = async (email) => {
   const response = await apiClient.post('/auth/password-reset', { email });
   return response.data;
 };
 
 // Reset Password
-export const resetPassword = async (payload: ResetPasswordPayload) => {
+export const resetPassword = async (payload) => {
   const { token, newPassword } = payload;
-  const response = await apiClient.post('/auth/password-reset/confirm', { token, newPassword });
+  const response = await apiClient.post('/auth/password-reset/confirm', {
+    token,
+    newPassword,
+  });
   return response.data;
 };
 
 // Verify Email
-export const verifyEmail = async (payload: VerifyEmailPayload) => {
+export const verifyEmail = async (payload) => {
   const { token } = payload;
-  const response = await apiClient.get(`/auth/verify-email`, { params: { token } });
+  const response = await apiClient.get(`/auth/verify-email`, {
+    params: { token },
+  });
   return response.data;
 };

@@ -1,94 +1,151 @@
-// src/components/resources/CalendarEntry/CalendarEntryForm.tsx
+// src/components/resources/CalendarEntry/CalendarEntryForm.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addCalendarEntry, editCalendarEntry, getCalendarEntries } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { CalendarEntry } from '../../../features/developerDashboard/types';
-import { useHistory, useParams } from 'react-router-dom';
-import './CalendarEntryForm.css'; // Optional: For styling
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './CalendarEntryForm.css'; // Optional: For styling
 
-interface RouteParams {
-    id?: string;
-}
+const CalendarEntryForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const CalendarEntryForm: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const history = useHistory();
-    const { calendarEntries, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role); // Assuming auth slice exists
+  const [calendarEntry, setCalendarEntry] = useState(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [date, setDate] = useState('');
+  const [location, setLocation] = useState('');
+  const [loading, setLoading] = useState(!!id); // Only loading if editing
+  const [error, setError] = useState(null);
 
-    const existingEntry = calendarEntries.find((entry) => entry.id === id);
+  const userRole = user?.role;
 
-    const [title, setTitle] = useState(existingEntry ? existingEntry.title : '');
-    const [description, setDescription] = useState(existingEntry ? existingEntry.description || '' : '');
-    const [date, setDate] = useState(existingEntry ? existingEntry.date : '');
-
-    useEffect(() => {
-        if (!existingEntry && id) {
-            dispatch(getCalendarEntries());
+  // Fetch existing calendar entry details if editing
+  useEffect(() => {
+    if (id) {
+      const fetchCalendarEntry = async () => {
+        try {
+          const response = await fetch(`/api/calendar-entries/${id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch calendar entry details');
+          }
+          const data = await response.json();
+          setCalendarEntry(data);
+          setTitle(data.title);
+          setDescription(data.description || '');
+          setDate(data.date);
+          setLocation(data.location || '');
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
         }
-    }, [dispatch, existingEntry, id]);
+      };
 
-    useEffect(() => {
-        if (existingEntry) {
-            setTitle(existingEntry.title);
-            setDescription(existingEntry.description || '');
-            setDate(existingEntry.date);
-        }
-    }, [existingEntry]);
+      fetchCalendarEntry();
+    }
+  }, [id]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (id && existingEntry) {
-            await dispatch(
-                editCalendarEntry({
-                    ...existingEntry,
-                    title,
-                    description,
-                    date,
-                })
-            );
-        } else {
-            await dispatch(
-                addCalendarEntry({
-                    title,
-                    description,
-                    date,
-                })
-            );
-        }
-        history.push('/developer-dashboard/calendar-entries');
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let response;
+      if (id) {
+        // Editing existing calendar entry
+        response = await fetch(`/api/calendar-entries/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description, date, location }),
+        });
+      } else {
+        // Creating new calendar entry
+        response = await fetch('/api/calendar-entries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description, date, location }),
+        });
+      }
 
-    return (
-        <div className="calendarentry-form">
-            <h2>{id ? 'Edit Calendar Entry' : 'Create Calendar Entry'}</h2>
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>Title:</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                    <label>Description (optional):</label>
-                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-                </div>
-                <div className="form-group">
-                    <label>Date:</label>
-                    <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-                </div>
-                {/* Add more form fields as necessary */}
-                <div className="form-actions">
-                    <button type="submit">{id ? 'Update' : 'Create'}</button>
-                    <button type="button" onClick={() => history.push('/developer-dashboard/calendar-entries')}>
-                        Cancel
-                    </button>
-                </div>
-                {error && <p className="error">{error}</p>}
-            </form>
+      if (!response.ok) {
+        throw new Error('Failed to save calendar entry');
+      }
+
+      // Redirect to calendar entries list after successful operation
+      navigate('/developer-dashboard/calendar-entries');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (loading || userLoading) return <p>Loading form...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (id && !calendarEntry) return <p>Calendar entry not found.</p>;
+
+  return (
+    <div className="calendarentry-form">
+      <h2>{id ? 'Edit Calendar Entry' : 'Create Calendar Entry'}</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="entry-title">Title:</label>
+          <input
+            id="entry-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
         </div>
-    );
+        <div className="form-group">
+          <label htmlFor="entry-description">Description (optional):</label>
+          <textarea
+            id="entry-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="entry-date">Date:</label>
+          <input
+            id="entry-date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="entry-location">Location (optional):</label>
+          <input
+            id="entry-location"
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+          />
+        </div>
+        {/* Add more form fields as necessary */}
+        <div className="form-actions">
+          <button type="submit">{id ? 'Update' : 'Create'}</button>
+          <button
+            type="button"
+            onClick={() => navigate('/developer-dashboard/calendar-entries')}
+          >
+            Cancel
+          </button>
+        </div>
+        {error && <p className="error">{error}</p>}
+      </form>
+    </div>
+  );
+};
+
+CalendarEntryForm.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default CalendarEntryForm;

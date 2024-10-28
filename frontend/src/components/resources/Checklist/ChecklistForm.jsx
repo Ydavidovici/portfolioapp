@@ -1,98 +1,142 @@
-// src/components/resources/Checklist/ChecklistForm.tsx
+// src/components/resources/Checklist/ChecklistForm.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { addChecklist, editChecklist, getChecklists } from '../../../features/developerDashboard/developerDashboardSlice';
-import { RootState, AppDispatch } from '../../../store/store';
-import { Checklist } from '../../../features/developerDashboard/types';
-import { useHistory, useParams } from 'react-router-dom';
-import './ChecklistForm.css'; // Optional: For styling
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { UserContext } from '../../../context/UserContext';
+import PropTypes from 'prop-types';
+// import './ChecklistForm.css'; // Optional: For styling
 
-interface RouteParams {
-    id?: string;
-}
+const ChecklistForm = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const {
+    user,
+    loading: userLoading,
+    error: userError,
+  } = useContext(UserContext);
 
-const ChecklistForm: React.FC = () => {
-    const { id } = useParams<RouteParams>();
-    const dispatch = useDispatch<AppDispatch>();
-    const history = useHistory();
-    const { checklists, loading, error } = useSelector((state: RootState) => state.developerDashboard);
-    const userRole = useSelector((state: RootState) => state.auth.user?.role); // Assuming auth slice exists
+  const [checklist, setChecklist] = useState(null);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState('active');
+  const [loading, setLoading] = useState(!!id); // Only loading if editing
+  const [error, setError] = useState(null);
 
-    const existingChecklist = checklists.find((cl) => cl.id === id);
+  const userRole = user?.role;
 
-    const [title, setTitle] = useState(existingChecklist ? existingChecklist.title : '');
-    const [description, setDescription] = useState(existingChecklist ? existingChecklist.description || '' : '');
-    const [status, setStatus] = useState<Checklist['status']>(existingChecklist ? existingChecklist.status : 'active');
-
-    useEffect(() => {
-        if (!existingChecklist && id) {
-            dispatch(getChecklists());
+  // Fetch existing checklist details if editing
+  useEffect(() => {
+    if (id) {
+      const fetchChecklist = async () => {
+        try {
+          const response = await fetch(`/api/checklists/${id}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch checklist details');
+          }
+          const data = await response.json();
+          setChecklist(data);
+          setTitle(data.title);
+          setDescription(data.description || '');
+          setStatus(data.status);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
         }
-    }, [dispatch, existingChecklist, id]);
+      };
 
-    useEffect(() => {
-        if (existingChecklist) {
-            setTitle(existingChecklist.title);
-            setDescription(existingChecklist.description || '');
-            setStatus(existingChecklist.status);
-        }
-    }, [existingChecklist]);
+      fetchChecklist();
+    }
+  }, [id]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (id && existingChecklist) {
-            await dispatch(
-                editChecklist({
-                    ...existingChecklist,
-                    title,
-                    description,
-                    status,
-                })
-            );
-        } else {
-            await dispatch(
-                addChecklist({
-                    title,
-                    description,
-                    status,
-                })
-            );
-        }
-        history.push('/developer-dashboard/checklists');
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      let response;
+      if (id) {
+        // Editing existing checklist
+        response = await fetch(`/api/checklists/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description, status }),
+        });
+      } else {
+        // Creating new checklist
+        response = await fetch('/api/checklists', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description, status }),
+        });
+      }
 
-    return (
-        <div className="checklist-form">
-            <h2>{id ? 'Edit Checklist' : 'Create Checklist'}</h2>
-            <form onSubmit={handleSubmit}>
-                <div className="form-group">
-                    <label>Title:</label>
-                    <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                    <label>Description (optional):</label>
-                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} />
-                </div>
-                <div className="form-group">
-                    <label>Status:</label>
-                    <select value={status} onChange={(e) => setStatus(e.target.value as Checklist['status'])}>
-                        <option value="active">Active</option>
-                        <option value="completed">Completed</option>
-                        <option value="archived">Archived</option>
-                    </select>
-                </div>
-                {/* Add more form fields as necessary */}
-                <div className="form-actions">
-                    <button type="submit">{id ? 'Update' : 'Create'}</button>
-                    <button type="button" onClick={() => history.push('/developer-dashboard/checklists')}>
-                        Cancel
-                    </button>
-                </div>
-                {error && <p className="error">{error}</p>}
-            </form>
+      if (!response.ok) {
+        throw new Error('Failed to save checklist');
+      }
+
+      // Redirect to checklists list after successful operation
+      navigate('/developer-dashboard/checklists');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  if (loading || userLoading) return <p>Loading form...</p>;
+  if (error || userError)
+    return <p className="error">Error: {error || userError}</p>;
+  if (id && !checklist) return <p>Checklist not found.</p>;
+
+  return (
+    <div className="checklist-form">
+      <h2>{id ? 'Edit Checklist' : 'Create Checklist'}</h2>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label htmlFor="checklist-title">Title:</label>
+          <input
+            id="checklist-title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
         </div>
-    );
+        <div className="form-group">
+          <label htmlFor="checklist-description">Description (optional):</label>
+          <textarea
+            id="checklist-description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="checklist-status">Status:</label>
+          <select
+            id="checklist-status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+        {/* Add more form fields as necessary */}
+        <div className="form-actions">
+          <button type="submit">{id ? 'Update' : 'Create'}</button>
+          <button
+            type="button"
+            onClick={() => navigate('/developer-dashboard/checklists')}
+          >
+            Cancel
+          </button>
+        </div>
+        {error && <p className="error">{error}</p>}
+      </form>
+    </div>
+  );
+};
+
+ChecklistForm.propTypes = {
+  // Define prop types if props are expected in the future
 };
 
 export default ChecklistForm;
