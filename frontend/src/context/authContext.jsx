@@ -1,13 +1,13 @@
 // src/context/AuthContext.jsx
 
 import React, { createContext, useState, useEffect } from 'react';
-import { useHistory } from 'react-router-dom';
-import axios from 'axios'; // Ensure axios is installed and configured
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const history = useHistory();
+  const navigate = useNavigate();
   const [user, setUser] = useState(null); // User object
   const [loading, setLoading] = useState(false); // Loading state
   const [error, setError] = useState(null); // Error state
@@ -34,19 +34,20 @@ export const AuthProvider = ({ children }) => {
       // Redirect based on role
       switch (response.data.user.role) {
         case 'admin':
-          history.push('/admin-dashboard');
+          navigate('/admin-dashboard');
           break;
         case 'developer':
-          history.push('/developer-dashboard');
+          navigate('/developer-dashboard');
           break;
         case 'client':
-          history.push('/client-dashboard');
+          navigate('/client-dashboard');
           break;
         default:
-          history.push('/');
+          navigate('/');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');
+      // Do not re-throw the error
     } finally {
       setLoading(false);
     }
@@ -56,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    history.push('/login');
+    navigate('/login');
   };
 
   // Change Password function
@@ -86,7 +87,7 @@ export const AuthProvider = ({ children }) => {
       await axios.post('/api/reset-password', { token, newPassword });
       setSuccess('Password reset successfully! Redirecting to login...');
       setTimeout(() => {
-        history.push('/login');
+        navigate('/login');
       }, 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Password reset failed');
@@ -104,7 +105,7 @@ export const AuthProvider = ({ children }) => {
       await axios.post('/api/verify-email', { code });
       setSuccess('Email verified successfully! Redirecting to login...');
       setTimeout(() => {
-        history.push('/login');
+        navigate('/login');
       }, 3000);
     } catch (err) {
       setError(err.response?.data?.message || 'Email verification failed');
@@ -126,9 +127,10 @@ export const AuthProvider = ({ children }) => {
       });
       setUser(response.data.user);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      history.push('/login'); // Redirect to login after registration
+      navigate('/login'); // Redirect to login after registration
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'An error occurred during registration');
+      // Do not re-throw the error
     } finally {
       setLoading(false);
     }
@@ -150,23 +152,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        error,
-        success,
-        loginUser,
-        logout,
-        changePassword,
-        resetPassword,
-        verifyEmail,
-        registerUser,
-        requestPasswordReset,
-        setUser, // If needed elsewhere
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+      <AuthContext.Provider
+          value={{
+            user,
+            loading,
+            error,
+            success,
+            loginUser,
+            logout,
+            changePassword,
+            resetPassword,
+            verifyEmail,
+            registerUser,
+            requestPasswordReset,
+            setUser, // If needed elsewhere
+          }}
+      >
+        {children}
+      </AuthContext.Provider>
   );
 };

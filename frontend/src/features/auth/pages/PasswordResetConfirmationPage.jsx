@@ -1,7 +1,7 @@
 // src/features/auth/pages/PasswordResetConfirmationPage.jsx
 
-import React, { useState, FormEvent, useEffect, useContext } from 'react';
-import { useLocation, useHistory, Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../../../context/AuthContext';
 import LoadingSpinner from '../../../Components/LoadingSpinner';
 import ErrorBoundary from '../../../Components/ErrorBoundary';
@@ -12,7 +12,7 @@ const useQuery = () => {
 
 const PasswordResetConfirmationPage = () => {
   const { resetPassword, loading, error } = useContext(AuthContext);
-  const history = useHistory();
+  const navigate = useNavigate();
   const query = useQuery();
   const token = query.get('token') || '';
 
@@ -23,9 +23,9 @@ const PasswordResetConfirmationPage = () => {
   useEffect(() => {
     if (!token) {
       // If no token, redirect to password reset request page
-      history.push('/password-reset');
+      navigate('/password-reset');
     }
-  }, [token, history]);
+  }, [token, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,7 +37,7 @@ const PasswordResetConfirmationPage = () => {
       await resetPassword({ token, newPassword });
       setSuccessMessage('Password reset successful! Redirecting to login...');
       setTimeout(() => {
-        history.push('/login');
+        navigate('/login');
       }, 3000);
     } catch (err) {
       // Error is handled by context
@@ -45,64 +45,64 @@ const PasswordResetConfirmationPage = () => {
   };
 
   return (
-    <ErrorBoundary>
-      <div className="flex items-center justify-center min-h-screen bg-gray-200 p-4">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-6 text-center">
-            Set New Password
-          </h2>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            {error && <div className="text-red-500">{error}</div>}
-            {successMessage && (
-              <div className="text-green-500">{successMessage}</div>
-            )}
-            <div className="flex flex-col">
-              <label htmlFor="newPassword" className="mb-1 font-medium">
-                New Password
-              </label>
-              <input
-                type="password"
-                id="newPassword"
-                className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col">
-              <label htmlFor="confirmPassword" className="mb-1 font-medium">
-                Confirm New Password
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition"
-              disabled={loading}
-            >
-              {loading ? (
-                <LoadingSpinner size="sm" color="text-white" />
-              ) : (
-                'Reset Password'
+      <ErrorBoundary>
+        <div className="flex items-center justify-center min-h-screen bg-gray-200 p-4">
+          <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+            <h2 className="text-2xl font-semibold mb-6 text-center">
+              Set New Password
+            </h2>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {error && <div className="text-red-500">{error}</div>}
+              {successMessage && (
+                  <div className="text-green-500">{successMessage}</div>
               )}
-            </button>
-          </form>
-          <p className="mt-4 text-center">
-            Remembered your password?{' '}
-            <Link to="/login" className="text-blue-500 hover:underline">
-              Login here
-            </Link>
-          </p>
+              <div className="flex flex-col">
+                <label htmlFor="newPassword" className="mb-1 font-medium">
+                  New Password
+                </label>
+                <input
+                    type="password"
+                    id="newPassword"
+                    className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    required
+                />
+              </div>
+              <div className="flex flex-col">
+                <label htmlFor="confirmPassword" className="mb-1 font-medium">
+                  Confirm New Password
+                </label>
+                <input
+                    type="password"
+                    id="confirmPassword"
+                    className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                />
+              </div>
+              <button
+                  type="submit"
+                  className="flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 transition"
+                  disabled={loading}
+              >
+                {loading ? (
+                    <LoadingSpinner size="sm" color="text-white" />
+                ) : (
+                    'Reset Password'
+                )}
+              </button>
+            </form>
+            <p className="mt-4 text-center">
+              Remembered your password?{' '}
+              <Link to="/login" className="text-blue-500 hover:underline">
+                Login here
+              </Link>
+            </p>
+          </div>
         </div>
-      </div>
-    </ErrorBoundary>
+      </ErrorBoundary>
   );
 };
 
