@@ -1,6 +1,7 @@
 // jest.config.cjs
 
 module.exports = {
+  bail: true,
   transform: {
     '^.+\\.(js|jsx)$': 'babel-jest',
   },
@@ -9,6 +10,6 @@ module.exports = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(gif|ttf|eot|svg)$': '<rootDir>/__mocks__/fileMock.js',
   },
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js', 'jest-fetch-mock'],
   moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
 };
