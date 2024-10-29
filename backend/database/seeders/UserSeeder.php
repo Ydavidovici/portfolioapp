@@ -20,34 +20,40 @@ class UserSeeder extends Seeder
             Role::firstOrCreate(['name' => $roleName]);
         }
 
-        // Create Admin Users
-        User::factory()->count(2)->admin()->create()->each(function ($user) {
+        // Create one Admin with a known token
+        User::factory()->admin()->withRawToken('admin-valid-token')->create()->each(function ($user) {
             $adminRole = Role::where('name', 'admin')->first();
             $user->roles()->attach($adminRole);
         });
 
-        // Create Developer Users
-        User::factory()->count(3)->developer()->create()->each(function ($user) {
+        // Create additional Admins with unique random tokens
+        User::factory()->count(1)->admin()->create()->each(function ($user) {
+            $adminRole = Role::where('name', 'admin')->first();
+            $user->roles()->attach($adminRole);
+        });
+
+        // Create one Developer with a known token
+        User::factory()->developer()->withRawToken('dev-valid-token')->create()->each(function ($user) {
             $developerRole = Role::where('name', 'developer')->first();
             $user->roles()->attach($developerRole);
         });
 
-        // Create Client Users
-        User::factory()->count(5)->client()->create()->each(function ($user) {
+        // Create additional Developers with unique random tokens
+        User::factory()->count(2)->developer()->create()->each(function ($user) {
+            $developerRole = Role::where('name', 'developer')->first();
+            $user->roles()->attach($developerRole);
+        });
+
+        // Create one Client with a known token
+        User::factory()->client()->withRawToken('client-valid-token')->create()->each(function ($user) {
             $clientRole = Role::where('name', 'client')->first();
             $user->roles()->attach($clientRole);
         });
 
-        // Optionally, create specific users with known credentials for testing
-        /*
-        $superAdmin = User::factory()->create([
-            'username' => 'superadmin',
-            'email' => 'superadmin@example.com',
-            'password' => Hash::make('superpassword'),
-            'api_token' => hash('sha256', 'superadmin_token'),
-        ]);
-        $superAdminRole = Role::where('name', 'admin')->first();
-        $superAdmin->roles()->attach($superAdminRole);
-        */
+        // Create additional Clients with unique random tokens
+        User::factory()->count(4)->client()->create()->each(function ($user) {
+            $clientRole = Role::where('name', 'client')->first();
+            $user->roles()->attach($clientRole);
+        });
     }
 }

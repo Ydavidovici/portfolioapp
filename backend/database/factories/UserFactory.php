@@ -16,7 +16,7 @@ class UserFactory extends Factory
      */
     public function definition()
     {
-        // Generate a raw token
+        // Generate a random raw token
         $rawToken = Str::random(60);
 
         return [
@@ -30,13 +30,27 @@ class UserFactory extends Factory
     }
 
     /**
+     * State to set a specific raw API token.
+     *
+     * @param string $rawToken
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    public function withRawToken(string $rawToken)
+    {
+        return $this->state(function (array $attributes) use ($rawToken) {
+            return [
+                'api_token' => hash('sha256', $rawToken),
+            ];
+        });
+    }
+
+    /**
      * Indicate that the user is an admin.
      */
     public function admin()
     {
         return $this->state(function (array $attributes) {
             return [
-                // Additional attributes specific to admin can be added here
             ];
         });
     }
@@ -48,7 +62,6 @@ class UserFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                // Additional attributes specific to developer can be added here
             ];
         });
     }
@@ -60,7 +73,6 @@ class UserFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                // Additional attributes specific to client can be added here
             ];
         });
     }
