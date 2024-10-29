@@ -4,11 +4,11 @@ import React from 'react';
 import { renderWithRouter } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminDashboard from '../pages/AdminDashboard';
-import { mockFetch } from './utils/fetchMocks';
+import {mockFetch, resetFetchMocks} from './utils/fetchMocks';
 
 describe('Task Module', () => {
     beforeEach(() => {
-        fetch.resetMocks();
+        resetFetchMocks();
 
         mockFetch({
             tasks: {

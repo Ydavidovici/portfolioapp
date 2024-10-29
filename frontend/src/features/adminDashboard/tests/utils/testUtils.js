@@ -4,17 +4,11 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import { BrowserRouter as Router } from 'react-router-dom';
 
-// Custom render function that includes React Router
+/**
+ * Utility function to render components with Router.
+ * @param {React.ReactElement} ui - The component to render.
+ * @param {object} [options] - Additional options for render.
+ */
 export const renderWithRouter = (ui, options) => {
     return render(<Router>{ui}</Router>, options);
-};
-
-// Helper function to fill and submit forms
-export const fillAndSubmitForm = (fields, submitButtonText = /create|update/i) => {
-    fields.forEach(({ labelText, value }) => {
-        fireEvent.change(screen.getByLabelText(labelText), {
-            target: { value },
-        });
-    });
-    fireEvent.click(screen.getByText(submitButtonText));
 };
