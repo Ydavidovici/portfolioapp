@@ -27,7 +27,6 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <AdminNavbar />
       <div className="admin-container">
-        <AdminSidebar />
         <main className="admin-main">
           <h1>Admin Dashboard</h1>
 
