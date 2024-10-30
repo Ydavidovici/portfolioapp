@@ -1,33 +1,21 @@
-// src/features/developerDashboard/tests/ReminderModule.test.jsx
+// src/features/devDashboard/tests/ReminderModule.developer.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import DeveloperDashboard from '../pages/DeveloperDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
 
-describe('Reminder Module', () => {
+describe('Reminder Module - Developer', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            reminders: {
-                GET: [
-                    { id: '1', message: 'Submit report', date: '2024-11-10' },
-                    { id: '2', message: 'Team meeting', date: '2024-11-12' },
-                ],
-                POST: { id: '3' },
-            },
-        });
+        renderWithUser(<DeveloperDashboard />, 'developer');
     });
 
     afterEach(() => {
-        resetFetchMocks();
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
     test('renders ReminderList component with fetched data', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for reminders to be fetched and rendered
         expect(await screen.findByText(/submit report/i)).toBeInTheDocument();
         expect(screen.getByText(/team meeting/i)).toBeInTheDocument();
@@ -39,8 +27,6 @@ describe('Reminder Module', () => {
     });
 
     test('allows developer to create a new Reminder', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Click on 'Add New Reminder' button
         fireEvent.click(screen.getByText(/add new reminder/i));
 
@@ -61,13 +47,12 @@ describe('Reminder Module', () => {
     });
 
     test('allows developer to edit an existing Reminder', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for reminders to be rendered
         expect(await screen.findByText(/submit report/i)).toBeInTheDocument();
 
         // Find the first Edit button and click it
-        fireEvent.click(screen.getAllByText(/edit/i)[0]);
+        const editButtons = screen.getAllByText(/edit/i);
+        fireEvent.click(editButtons[0]);
 
         // Modify the form
         fireEvent.change(screen.getByLabelText(/message/i), {
@@ -86,20 +71,20 @@ describe('Reminder Module', () => {
     });
 
     test('allows developer to delete a Reminder', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for reminders to be rendered
-        expect(await screen.findByText(/submit report/i)).toBeInTheDocument();
+        expect(await screen.findByText(/team meeting/i)).toBeInTheDocument();
 
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
+        // Find the Delete button for 'team meeting' and click it
+        const deleteButtons = screen.getAllByText(/delete/i);
+        // Assuming the second delete button corresponds to 'team meeting'
+        fireEvent.click(deleteButtons[1]);
 
         // Wait for the reminder to be removed from the list
         await waitFor(() => {
-            expect(screen.queryByText(/submit report/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/team meeting/i)).not.toBeInTheDocument();
         });
 
         // Restore the original confirm

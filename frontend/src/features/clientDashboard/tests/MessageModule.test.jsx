@@ -1,71 +1,81 @@
-// src/features/clientDashboard/tests/MessageModule.test.jsx
+// src/features/clientDashboard/tests/MessagesModule.client.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
-import { screen, fireEvent } from '@testing-library/react';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import ClientDashboard from '../pages/ClientDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
 
-describe('Message Module', () => {
-    beforeEach(() => {
-        resetFetchMocks();
+describe('Messages Module - Client', () => {
+    let apiClient;
 
-        mockFetch({
-            messages: {
-                GET: [
-                    {
-                        id: '1',
-                        senderId: '1',
-                        receiverId: '2',
-                        content: 'Hello!',
-                        timestamp: '2024-10-21T10:00:00Z',
-                    },
-                    {
-                        id: '2',
-                        senderId: '2',
-                        receiverId: '1',
-                        content: 'Hi there!',
-                        timestamp: '2024-10-21T10:05:00Z',
-                    },
-                ],
-                POST: { id: '3' },
-            },
-        });
+    beforeAll(() => {
+        const { apiClient: client } = renderWithUser(<ClientDashboard />, 'client');
+        apiClient = client;
     });
 
-    afterEach(() => {
-        resetFetchMocks();
+    afterAll(() => {
+        cleanupAuth();
     });
 
-    test('renders MessageList component with fetched data', async () => {
-        renderWithRouter(<ClientDashboard />);
+    test('renders MessageList with own messages', async () => {
+        expect(await screen.findByText(/Client-specific message\./i)).toBeInTheDocument();
 
-        // Wait for messages to be fetched and rendered
-        expect(await screen.findByText(/hello!/i)).toBeInTheDocument();
-        expect(screen.getByText(/hi there!/i)).toBeInTheDocument();
+        // Messages from others should not be visible
+        expect(screen.queryByText(/Project kickoff meeting scheduled\./i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Please review the latest documentation\./i)).not.toBeInTheDocument();
 
-        // Check for Send Message button
-        expect(screen.getByText(/send message/i)).toBeInTheDocument();
+        // Check for CRUD buttons
+        expect(screen.getByText(/Send New Message/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Edit/i)).toHaveLength(1);
+        expect(screen.getAllByText(/Delete/i)).toHaveLength(1);
     });
 
     test('allows client to send a new Message', async () => {
-        renderWithRouter(<ClientDashboard />);
+        fireEvent.click(screen.getByText(/Send New Message/i));
 
-        // Click on 'Send Message' button
-        fireEvent.click(screen.getByText(/send message/i));
-
-        // Fill out the form
-        fireEvent.change(screen.getByLabelText(/recipient/i), {
-            target: { value: 'Bob Developer' },
-        });
-        fireEvent.change(screen.getByLabelText(/content/i), {
-            target: { value: 'Hello Bob!' },
+        fireEvent.change(screen.getByLabelText(/Content/i), {
+            target: { value: `Client Message ${Date.now()}` },
         });
 
-        // Submit the form
-        fireEvent.click(screen.getByText(/send/i));
+        fireEvent.click(screen.getByText(/Send/i));
 
-        // Wait for the new message to appear in the list
-        expect(await screen.findByText(/hello bob!/i)).toBeInTheDocument();
+        const newMessageContent = await screen.findByText(/Client Message/i);
+        expect(newMessageContent).toBeInTheDocument();
+
+        // Cleanup
+        const deleteButton = newMessageContent.parentElement.querySelector('button.delete');
+        fireEvent.click(deleteButton);
+
+        window.confirm = jest.fn(() => true);
+        await waitFor(() => {
+            expect(screen.queryByText(/Client Message/i)).not.toBeInTheDocument();
+        });
+        window.confirm.mockRestore();
+    });
+
+    test('allows client to edit their own Message', async () => {
+        const editButtons = screen.getAllByText(/Edit/i);
+        fireEvent.click(editButtons[0]);
+
+        fireEvent.change(screen.getByLabelText(/Content/i), {
+            target: { value: 'Updated Message Content by Client' },
+        });
+
+        fireEvent.click(screen.getByText(/Update/i));
+
+        expect(await screen.findByText(/Updated Message Content by Client/i)).toBeInTheDocument();
+    });
+
+    test('allows client to delete their own Message', async () => {
+        const deleteButtons = screen.getAllByText(/Delete/i);
+        fireEvent.click(deleteButtons[0]);
+
+        jest.spyOn(window, 'confirm').mockImplementation(() => true);
+
+        await waitFor(() => {
+            expect(screen.queryByText(/Updated Message Content by Client/i)).not.toBeInTheDocument();
+        });
+
+        window.confirm.mockRestore();
     });
 });

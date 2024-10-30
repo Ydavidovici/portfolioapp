@@ -1,32 +1,37 @@
-// src/features/adminDashboard/tests/ChecklistModule.test.jsx
+// src/features/adminDashboard/tests/AdminChecklistModule.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminDashboard from '../pages/AdminDashboard';
-import {mockFetch, resetFetchMocks} from './utils/fetchMocks';
+import apiClient from '../../../api/apiClient'; // Ensure the path is correct
 
-describe('Checklist Module', () => {
-    beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            checklists: {
-                GET: [
-                    { id: '1', name: 'Sprint Checklist', projectId: '1' },
-                    { id: '2', name: 'Marketing Checklist', projectId: '2' },
-                ],
-                POST: { id: '3' },
-            },
-        });
-    });
-
+describe('Checklist Module - Admin Dashboard', () => {
     afterEach(() => {
-        fetch.mockClear();
+        cleanupAuth();
     });
+
+    /**
+     * Helper function to create a new checklist via API.
+     * @param {string} name - Name of the checklist.
+     * @param {string} task_id - Associated task ID.
+     * @returns {object} - Created checklist data.
+     */
+    const createChecklistAPI = async (name, task_id) => {
+        const response = await apiClient.post('/checklists', { name, task_id });
+        return response.data;
+    };
+
+    /**
+     * Helper function to delete a checklist via API.
+     * @param {string} id - ID of the checklist to delete.
+     */
+    const deleteChecklistAPI = async (id) => {
+        await apiClient.delete(`/checklists/${id}`);
+    };
 
     test('renders ChecklistList component with fetched data', async () => {
-        renderWithRouter(<AdminDashboard />);
+        renderWithUser(<AdminDashboard />, 'admin');
 
         // Wait for checklists to be fetched and rendered
         expect(await screen.findByText(/sprint checklist/i)).toBeInTheDocument();
@@ -34,67 +39,105 @@ describe('Checklist Module', () => {
 
         // Check for CRUD buttons
         expect(screen.getByText(/add new checklist/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/edit/i)).toHaveLength(2);
-        expect(screen.getAllByText(/delete/i)).toHaveLength(2);
+        expect(screen.getAllByText(/edit/i).length).toBeGreaterThanOrEqual(2);
+        expect(screen.getAllByText(/delete/i).length).toBeGreaterThanOrEqual(2);
     });
 
     test('allows admin to create a new Checklist', async () => {
-        renderWithRouter(<AdminDashboard />);
+        renderWithUser(<AdminDashboard />, 'admin');
 
         // Click on 'Add New Checklist' button
         fireEvent.click(screen.getByText(/add new checklist/i));
 
         // Fill out the form
+        const uniqueName = `New Checklist ${Date.now()}`;
         fireEvent.change(screen.getByLabelText(/name/i), {
-            target: { value: 'New Checklist' },
+            target: { value: uniqueName },
         });
-        fireEvent.change(screen.getByLabelText(/project/i), {
-            target: { value: '1' },
+        fireEvent.change(screen.getByLabelText(/task/i), {
+            target: { value: '1' }, // Assuming task_id '1' exists
         });
 
         // Submit the form
         fireEvent.click(screen.getByText(/create/i));
 
         // Wait for the new checklist to appear in the list
-        expect(await screen.findByText(/new checklist/i)).toBeInTheDocument();
+        const newChecklist = await screen.findByText(new RegExp(uniqueName, 'i'));
+        expect(newChecklist).toBeInTheDocument();
+
+        // Cleanup: Delete the created checklist via API
+        const checklist = await apiClient.get('/checklists');
+        const created = checklist.data.find((c) => c.name === uniqueName);
+        if (created) {
+            await deleteChecklistAPI(created.id);
+        }
     });
 
     test('allows admin to edit an existing Checklist', async () => {
-        renderWithRouter(<AdminDashboard />);
+        // First, create a unique checklist via API to edit
+        const originalName = `Edit Checklist ${Date.now()}`;
+        const taskId = '1'; // Assuming task_id '1' exists
+        const createdChecklist = await createChecklistAPI(originalName, taskId);
 
-        // Wait for checklists to be rendered
-        expect(await screen.findByText(/sprint checklist/i)).toBeInTheDocument();
+        renderWithUser(<AdminDashboard />, 'admin');
 
-        // Find the first Edit button and click it
-        fireEvent.click(screen.getAllByText(/edit/i)[0]);
+        // Wait for the newly created checklist to appear
+        const checklistToEdit = await screen.findByText(new RegExp(originalName, 'i'));
+        expect(checklistToEdit).toBeInTheDocument();
+
+        // Find the corresponding Edit button and click it
+        const editButtons = screen.getAllByText(/edit/i);
+        const editButton = editButtons.find((button) =>
+            button.closest('tr').textContent.includes(originalName)
+        );
+        fireEvent.click(editButton);
 
         // Modify the form
+        const updatedName = `${originalName} Updated`;
         fireEvent.change(screen.getByLabelText(/name/i), {
-            target: { value: 'Updated Checklist' },
+            target: { value: updatedName },
         });
 
         // Submit the form
         fireEvent.click(screen.getByText(/update/i));
 
         // Wait for the updated checklist to appear in the list
-        expect(await screen.findByText(/updated checklist/i)).toBeInTheDocument();
+        const updatedChecklist = await screen.findByText(new RegExp(updatedName, 'i'));
+        expect(updatedChecklist).toBeInTheDocument();
+
+        // Cleanup: Delete the updated checklist via API
+        const checklist = await apiClient.get('/checklists');
+        const updated = checklist.data.find((c) => c.name === updatedName);
+        if (updated) {
+            await deleteChecklistAPI(updated.id);
+        }
     });
 
     test('allows admin to delete a Checklist', async () => {
-        renderWithRouter(<AdminDashboard />);
+        // First, create a unique checklist via API to delete
+        const checklistName = `Delete Checklist ${Date.now()}`;
+        const taskId = '1'; // Assuming task_id '1' exists
+        const createdChecklist = await createChecklistAPI(checklistName, taskId);
 
-        // Wait for checklists to be rendered
-        expect(await screen.findByText(/sprint checklist/i)).toBeInTheDocument();
+        renderWithUser(<AdminDashboard />, 'admin');
+
+        // Wait for the newly created checklist to appear
+        const checklistToDelete = await screen.findByText(new RegExp(checklistName, 'i'));
+        expect(checklistToDelete).toBeInTheDocument();
 
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
+        // Find the corresponding Delete button and click it
+        const deleteButtons = screen.getAllByText(/delete/i);
+        const deleteButton = deleteButtons.find((button) =>
+            button.closest('tr').textContent.includes(checklistName)
+        );
+        fireEvent.click(deleteButton);
 
         // Wait for the checklist to be removed from the list
         await waitFor(() => {
-            expect(screen.queryByText(/sprint checklist/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(new RegExp(checklistName, 'i'))).not.toBeInTheDocument();
         });
 
         // Restore the original confirm

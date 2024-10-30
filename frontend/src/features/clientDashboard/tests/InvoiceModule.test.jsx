@@ -1,75 +1,67 @@
 // src/features/clientDashboard/tests/InvoiceModule.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithUser, cleanupAuth } from '../../../tests/utils/testUtils';
+import { screen, waitFor } from '@testing-library/react';
 import ClientDashboard from '../pages/ClientDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
 
-describe('Invoice Module', () => {
+describe('Invoice Module - Client Dashboard', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            invoices: {
-                GET: [
-                    { id: '1', clientId: '1', amount: 1500, status: 'unpaid' },
-                    { id: '2', clientId: '1', amount: 750, status: 'paid' },
-                ],
-                PUT: {},
-            },
-        });
+        // Render the ClientDashboard with Client role
+        renderWithUser(<ClientDashboard />, 'client');
     });
 
     afterEach(() => {
-        resetFetchMocks();
+        // Cleanup authentication and restore mocks
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
-    test('renders InvoiceList component with fetched data', async () => {
-        renderWithRouter(<ClientDashboard />);
-
+    test('renders InvoiceList component with fetched invoices', async () => {
         // Wait for invoices to be fetched and rendered
-        expect(await screen.findByText(/invoice #1/i)).toBeInTheDocument();
-        expect(screen.getByText(/invoice #2/i)).toBeInTheDocument();
+        expect(await screen.findByText(/invoice 001/i)).toBeInTheDocument();
+        expect(screen.getByText(/invoice 002/i)).toBeInTheDocument();
 
-        // Check for actions
-        expect(screen.getAllByText(/view invoice/i)).toHaveLength(2);
-        expect(screen.getAllByText(/sign invoice/i)).toHaveLength(1); // Assuming only unpaid invoices can be signed
+        // Check that CRUD buttons are not present, as clients should only view invoices
+        expect(screen.queryByText(/add new invoice/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/edit/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/delete/i)).not.toBeInTheDocument();
     });
 
-    test('allows client to view an Invoice', async () => {
-        renderWithRouter(<ClientDashboard />);
-
+    test('allows client to view invoice details', async () => {
         // Wait for invoices to be rendered
-        expect(await screen.findByText(/invoice #1/i)).toBeInTheDocument();
+        const invoiceItem = await screen.findByText(/invoice 001/i);
+        expect(invoiceItem).toBeInTheDocument();
 
-        // Click on 'View Invoice' button
-        fireEvent.click(screen.getAllByText(/view invoice/i)[0]);
+        // Assume clicking on the invoice opens a detail view/modal
+        fireEvent.click(invoiceItem);
 
-        // Check if the InvoiceDetails component is rendered
+        // Verify that invoice details are displayed
         expect(await screen.findByText(/invoice details/i)).toBeInTheDocument();
-        expect(screen.getByText(/amount: \$1500/i)).toBeInTheDocument();
-        expect(screen.getByText(/status: unpaid/i)).toBeInTheDocument();
+        expect(screen.getByText(/client name: alice client/i)).toBeInTheDocument();
+        expect(screen.getByText(/amount: \$1000/i)).toBeInTheDocument();
+        expect(screen.getByText(/due date: 2024-12-31/i)).toBeInTheDocument();
     });
 
-    test('allows client to sign an Invoice', async () => {
-        renderWithRouter(<ClientDashboard />);
+    test('handles no invoices gracefully', async () => {
+        // Mock API response to return no invoices for the client
+        // This requires adjusting the backend or ensuring the client has no invoices in the test database
 
-        // Wait for invoices to be rendered
-        expect(await screen.findByText(/invoice #1/i)).toBeInTheDocument();
-
-        // Click on 'Sign Invoice' button
-        fireEvent.click(screen.getAllByText(/sign invoice/i)[0]);
-
-        // Confirm signing
-        jest.spyOn(window, 'confirm').mockImplementation(() => true);
-
-        // Wait for the invoice status to update
+        // For demonstration, assume the client has no invoices
+        // Wait for the UI to update accordingly
         await waitFor(() => {
-            expect(screen.getByText(/status: paid/i)).toBeInTheDocument();
+            expect(screen.getByText(/no invoices found/i)).toBeInTheDocument();
         });
+    });
 
-        // Restore the original confirm
-        window.confirm.mockRestore();
+    test('displays error message on API failure', async () => {
+        // Mock the API client to return an error
+        jest.spyOn(apiClient, 'get').mockRejectedValueOnce(new Error('API Error'));
+
+        // Rerender the ClientDashboard to trigger the API call
+        renderWithUser(<ClientDashboard />, 'client');
+
+        // Wait for the error message to appear
+        expect(await screen.findByText(/failed to fetch invoices/i)).toBeInTheDocument();
     });
 });

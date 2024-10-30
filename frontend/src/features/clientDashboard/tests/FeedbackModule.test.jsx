@@ -1,15 +1,15 @@
-// src/features/adminDashboard/tests/FeedbackModule.admin.test.jsx
+// src/features/clientDashboard/tests/FeedbackModule.client.test.jsx
 
 import React from 'react';
 import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import AdminDashboard from '../pages/AdminDashboard';
+import ClientDashboard from '../pages/ClientDashboard';
 
-describe('Feedback Module - Admin', () => {
+describe('Feedback Module - Client', () => {
     let apiClient;
 
     beforeAll(() => {
-        const { apiClient: client } = renderWithUser(<AdminDashboard />, 'admin');
+        const { apiClient: client } = renderWithUser(<ClientDashboard />, 'client');
         apiClient = client;
     });
 
@@ -17,29 +17,32 @@ describe('Feedback Module - Admin', () => {
         cleanupAuth();
     });
 
-    test('renders FeedbackList with fetched data', async () => {
-        expect(await screen.findByText(/Great work on the project!/i)).toBeInTheDocument();
-        expect(screen.getByText(/Needs improvement in documentation./i)).toBeInTheDocument();
+    test('renders FeedbackList with own feedback', async () => {
+        expect(await screen.findByText(/Excellent team collaboration./i)).toBeInTheDocument();
+
+        // Feedback from others should not be visible
+        expect(screen.queryByText(/Great work on the project!/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Needs improvement in documentation./i)).not.toBeInTheDocument();
 
         // Check for CRUD buttons
         expect(screen.getByText(/Add New Feedback/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/Edit/i)).toHaveLength(2);
-        expect(screen.getAllByText(/Delete/i)).toHaveLength(2);
+        expect(screen.getAllByText(/Edit/i)).toHaveLength(1);
+        expect(screen.getAllByText(/Delete/i)).toHaveLength(1);
     });
 
-    test('allows admin to create a new Feedback', async () => {
+    test('allows client to create a new Feedback', async () => {
         fireEvent.click(screen.getByText(/Add New Feedback/i));
 
         fireEvent.change(screen.getByLabelText(/Content/i), {
-            target: { value: `New Feedback ${Date.now()}` },
+            target: { value: `Client Feedback ${Date.now()}` },
         });
         fireEvent.change(screen.getByLabelText(/Rating/i), {
-            target: { value: '5' }, // Assuming rating is required
+            target: { value: '5' },
         });
 
         fireEvent.click(screen.getByText(/Create/i));
 
-        const newFeedbackContent = await screen.findByText(/New Feedback/i);
+        const newFeedbackContent = await screen.findByText(/Client Feedback/i);
         expect(newFeedbackContent).toBeInTheDocument();
 
         // Cleanup
@@ -48,17 +51,17 @@ describe('Feedback Module - Admin', () => {
 
         window.confirm = jest.fn(() => true);
         await waitFor(() => {
-            expect(screen.queryByText(/New Feedback/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Client Feedback/i)).not.toBeInTheDocument();
         });
         window.confirm.mockRestore();
     });
 
-    test('allows admin to edit an existing Feedback', async () => {
+    test('allows client to edit their own Feedback', async () => {
         const editButtons = screen.getAllByText(/Edit/i);
         fireEvent.click(editButtons[0]);
 
         fireEvent.change(screen.getByLabelText(/Content/i), {
-            target: { value: 'Updated Feedback Content by Admin' },
+            target: { value: 'Updated Feedback Content by Client' },
         });
         fireEvent.change(screen.getByLabelText(/Rating/i), {
             target: { value: '4' },
@@ -66,17 +69,17 @@ describe('Feedback Module - Admin', () => {
 
         fireEvent.click(screen.getByText(/Update/i));
 
-        expect(await screen.findByText(/Updated Feedback Content by Admin/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Updated Feedback Content by Client/i)).toBeInTheDocument();
     });
 
-    test('allows admin to delete a Feedback', async () => {
+    test('allows client to delete their own Feedback', async () => {
         const deleteButtons = screen.getAllByText(/Delete/i);
         fireEvent.click(deleteButtons[0]);
 
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
         await waitFor(() => {
-            expect(screen.queryByText(/Updated Feedback Content by Admin/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Updated Feedback Content by Client/i)).not.toBeInTheDocument();
         });
 
         window.confirm.mockRestore();

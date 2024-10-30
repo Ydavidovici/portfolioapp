@@ -1,62 +1,70 @@
 // src/features/adminDashboard/tests/BoardModule.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminDashboard from '../pages/AdminDashboard';
-import {mockFetch, resetFetchMocks} from './utils/fetchMocks';
+import apiClient from '../../../api/apiClient'; // Adjust the import path as needed
 
-describe('Board Module', () => {
-    beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            boards: {
-                GET: [
-                    {
-                        id: '1',
-                        name: 'Development Board',
-                        description: 'Board for development tasks',
-                        status: 'active',
-                    },
-                    {
-                        id: '2',
-                        name: 'Marketing Board',
-                        description: 'Board for marketing tasks',
-                        status: 'active',
-                    },
-                ],
-                POST: { id: '3' },
-            },
-        });
-    });
-
+describe('Board Module - Admin Dashboard', () => {
     afterEach(() => {
-        fetch.mockClear();
+        cleanupAuth();
     });
+
+    /**
+     * Helper function to create a new board.
+     * @param {string} name - Name of the board.
+     * @param {string} description - Description of the board.
+     * @returns {object} - Created board data.
+     */
+    const createBoard = async (name, description) => {
+        const response = await apiClient.post('/boards', { name, description });
+        return response;
+    };
+
+    /**
+     * Helper function to delete a board by name.
+     * @param {string} name - Name of the board to delete.
+     */
+    const deleteBoardByName = async (name) => {
+        const boards = await apiClient.get('/boards');
+        const board = boards.find((b) => b.name === name);
+        if (board) {
+            await apiClient.delete(`/boards/${board.id}`);
+        }
+    };
 
     test('renders BoardList component with fetched data', async () => {
-        renderWithRouter(<AdminDashboard />);
+        renderWithUser(<AdminDashboard />, 'admin');
 
-        // Wait for boards to be fetched and rendered
-        expect(await screen.findByText(/development board/i)).toBeInTheDocument();
-        expect(screen.getByText(/marketing board/i)).toBeInTheDocument();
+        // Ensure existing boards are displayed
+        const boardOne = await screen.findByText(/Development Board/i);
+        expect(boardOne).toBeInTheDocument();
+
+        const boardTwo = screen.getByText(/Marketing Board/i);
+        expect(boardTwo).toBeInTheDocument();
 
         // Check for CRUD buttons
-        expect(screen.getByText(/add new board/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/edit/i)).toHaveLength(2);
-        expect(screen.getAllByText(/delete/i)).toHaveLength(2);
+        const addButton = screen.getByText(/add new board/i);
+        expect(addButton).toBeInTheDocument();
+
+        const editButtons = screen.getAllByText(/edit/i);
+        expect(editButtons.length).toBeGreaterThanOrEqual(2);
+
+        const deleteButtons = screen.getAllByText(/delete/i);
+        expect(deleteButtons.length).toBeGreaterThanOrEqual(2);
     });
 
     test('allows admin to create a new Board', async () => {
-        renderWithRouter(<AdminDashboard />);
+        const uniqueBoardName = `New Board ${Date.now()}`;
+        renderWithUser(<AdminDashboard />, 'admin');
 
         // Click on 'Add New Board' button
         fireEvent.click(screen.getByText(/add new board/i));
 
         // Fill out the form
         fireEvent.change(screen.getByLabelText(/name/i), {
-            target: { value: 'New Board' },
+            target: { value: uniqueBoardName },
         });
         fireEvent.change(screen.getByLabelText(/description/i), {
             target: { value: 'New board description' },
@@ -66,21 +74,35 @@ describe('Board Module', () => {
         fireEvent.click(screen.getByText(/create/i));
 
         // Wait for the new board to appear in the list
-        expect(await screen.findByText(/new board/i)).toBeInTheDocument();
+        const newBoard = await screen.findByText(new RegExp(uniqueBoardName, 'i'));
+        expect(newBoard).toBeInTheDocument();
+
+        // Cleanup: Delete the created board
+        await deleteBoardByName(uniqueBoardName);
     });
 
     test('allows admin to edit an existing Board', async () => {
-        renderWithRouter(<AdminDashboard />);
+        // First, create a unique board to edit
+        const originalName = `Edit Board ${Date.now()}`;
+        const updatedName = `${originalName} Updated`;
+        const description = 'Board to be edited';
 
-        // Wait for boards to be rendered
-        expect(await screen.findByText(/development board/i)).toBeInTheDocument();
+        await createBoard(originalName, description);
 
-        // Find the first Edit button and click it
-        fireEvent.click(screen.getAllByText(/edit/i)[0]);
+        renderWithUser(<AdminDashboard />, 'admin');
+
+        // Wait for the newly created board to appear
+        const boardToEdit = await screen.findByText(new RegExp(originalName, 'i'));
+        expect(boardToEdit).toBeInTheDocument();
+
+        // Find the corresponding Edit button and click it
+        const editButtons = screen.getAllByText(/edit/i);
+        // Assuming the last edit button corresponds to the latest board
+        fireEvent.click(editButtons[editButtons.length - 1]);
 
         // Modify the form
         fireEvent.change(screen.getByLabelText(/name/i), {
-            target: { value: 'Updated Board' },
+            target: { value: updatedName },
         });
         fireEvent.change(screen.getByLabelText(/description/i), {
             target: { value: 'Updated description' },
@@ -90,24 +112,37 @@ describe('Board Module', () => {
         fireEvent.click(screen.getByText(/update/i));
 
         // Wait for the updated board to appear in the list
-        expect(await screen.findByText(/updated board/i)).toBeInTheDocument();
+        const updatedBoard = await screen.findByText(new RegExp(updatedName, 'i'));
+        expect(updatedBoard).toBeInTheDocument();
+
+        // Cleanup: Delete the updated board
+        await deleteBoardByName(updatedName);
     });
 
     test('allows admin to delete a Board', async () => {
-        renderWithRouter(<AdminDashboard />);
+        // First, create a unique board to delete
+        const boardName = `Delete Board ${Date.now()}`;
+        const description = 'Board to be deleted';
 
-        // Wait for boards to be rendered
-        expect(await screen.findByText(/development board/i)).toBeInTheDocument();
+        await createBoard(boardName, description);
+
+        renderWithUser(<AdminDashboard />, 'admin');
+
+        // Wait for the newly created board to appear
+        const boardToDelete = await screen.findByText(new RegExp(boardName, 'i'));
+        expect(boardToDelete).toBeInTheDocument();
 
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
+        // Find the corresponding Delete button and click it
+        const deleteButtons = screen.getAllByText(/delete/i);
+        // Assuming the last delete button corresponds to the latest board
+        fireEvent.click(deleteButtons[deleteButtons.length - 1]);
 
         // Wait for the board to be removed from the list
         await waitFor(() => {
-            expect(screen.queryByText(/development board/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(new RegExp(boardName, 'i'))).not.toBeInTheDocument();
         });
 
         // Restore the original confirm

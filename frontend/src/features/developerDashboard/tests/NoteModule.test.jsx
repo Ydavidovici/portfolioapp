@@ -1,36 +1,26 @@
 // src/features/developerDashboard/tests/NoteModule.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from '../../../tests/utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import DeveloperDashboard from '../pages/DeveloperDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
+import DeveloperDashboard from '../pages/Developerashboard';
 
-describe('Note Module', () => {
+describe('Note Module - Developer Dashboard', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            notes: {
-                GET: [
-                    { id: '1', content: 'Project kickoff meeting notes.' },
-                    { id: '2', content: 'Marketing campaign ideas.' },
-                ],
-                POST: { id: '3' },
-            },
-        });
+        // Render the DevDashboard with Developer role
+        renderWithUser(<DeveloperDashboard />, 'developer');
     });
 
     afterEach(() => {
-        resetFetchMocks();
+        // Cleanup authentication and restore mocks
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
     test('renders NoteList component with fetched data', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for notes to be fetched and rendered
-        expect(await screen.findByText(/project kickoff meeting notes\./i)).toBeInTheDocument();
-        expect(screen.getByText(/marketing campaign ideas\./i)).toBeInTheDocument();
+        expect(await screen.findByText(/note 1/i)).toBeInTheDocument();
+        expect(screen.getByText(/note 2/i)).toBeInTheDocument();
 
         // Check for CRUD buttons
         expect(screen.getByText(/add new note/i)).toBeInTheDocument();
@@ -39,59 +29,62 @@ describe('Note Module', () => {
     });
 
     test('allows developer to create a new Note', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Click on 'Add New Note' button
         fireEvent.click(screen.getByText(/add new note/i));
 
-        // Fill out the form
+        // Fill out the form fields
+        fireEvent.change(screen.getByLabelText(/title/i), {
+            target: { value: 'New Note' },
+        });
         fireEvent.change(screen.getByLabelText(/content/i), {
-            target: { value: 'New project milestones set.' },
+            target: { value: 'This is a new note content.' },
         });
 
         // Submit the form
         fireEvent.click(screen.getByText(/create/i));
 
         // Wait for the new note to appear in the list
-        expect(await screen.findByText(/new project milestones set\./i)).toBeInTheDocument();
+        expect(await screen.findByText(/new note/i)).toBeInTheDocument();
+        expect(screen.getByText(/this is a new note content\./i)).toBeInTheDocument();
     });
 
     test('allows developer to edit an existing Note', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for notes to be rendered
-        expect(await screen.findByText(/project kickoff meeting notes\./i)).toBeInTheDocument();
+        expect(await screen.findByText(/note 1/i)).toBeInTheDocument();
 
         // Find the first Edit button and click it
         fireEvent.click(screen.getAllByText(/edit/i)[0]);
 
-        // Modify the form
+        // Modify the form fields
+        fireEvent.change(screen.getByLabelText(/title/i), {
+            target: { value: 'Note 1 Updated' },
+        });
         fireEvent.change(screen.getByLabelText(/content/i), {
-            target: { value: 'Updated project kickoff meeting notes.' },
+            target: { value: 'Updated content for note 1.' },
         });
 
         // Submit the form
         fireEvent.click(screen.getByText(/update/i));
 
         // Wait for the updated note to appear in the list
-        expect(await screen.findByText(/updated project kickoff meeting notes\./i)).toBeInTheDocument();
+        expect(await screen.findByText(/note 1 updated/i)).toBeInTheDocument();
+        expect(screen.getByText(/updated content for note 1\./i)).toBeInTheDocument();
     });
 
     test('allows developer to delete a Note', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for notes to be rendered
-        expect(await screen.findByText(/project kickoff meeting notes\./i)).toBeInTheDocument();
+        expect(await screen.findByText(/note 2/i)).toBeInTheDocument();
 
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
+        // Find the Delete button for Note 2 and click it
+        const deleteButtons = screen.getAllByText(/delete/i);
+        fireEvent.click(deleteButtons[1]); // Assuming the second delete button corresponds to Note 2
 
         // Wait for the note to be removed from the list
         await waitFor(() => {
-            expect(screen.queryByText(/project kickoff meeting notes\./i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/note 2/i)).not.toBeInTheDocument();
         });
 
         // Restore the original confirm

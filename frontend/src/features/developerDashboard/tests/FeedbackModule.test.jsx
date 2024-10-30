@@ -1,100 +1,84 @@
-// src/features/developerDashboard/tests/FeedbackModule.test.jsx
+// src/features/devDashboard/tests/FeedbackModule.developer.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import DeveloperDashboard from '../pages/DeveloperDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
+import DevDashboard from '../pages/DevDashboard';
 
-describe('Feedback Module', () => {
-    beforeEach(() => {
-        resetFetchMocks();
+describe('Feedback Module - Developer', () => {
+    let apiClient;
 
-        mockFetch({
-            feedback: {
-                GET: [
-                    { id: '1', content: 'Great work on the project!' },
-                    { id: '2', content: 'Needs improvement in documentation.' },
-                ],
-                POST: { id: '3' },
-            },
-        });
+    beforeAll(() => {
+        const { apiClient: client } = renderWithUser(<DevDashboard />, 'developer');
+        apiClient = client;
     });
 
-    afterEach(() => {
-        resetFetchMocks();
+    afterAll(() => {
+        cleanupAuth();
     });
 
-    test('renders FeedbackList component with fetched data', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
-        // Wait for feedback to be fetched and rendered
-        expect(await screen.findByText(/great work on the project!/i)).toBeInTheDocument();
-        expect(screen.getByText(/needs improvement in documentation\./i)).toBeInTheDocument();
+    test('renders FeedbackList with fetched data', async () => {
+        expect(await screen.findByText(/Great work on the project!/i)).toBeInTheDocument();
+        expect(screen.getByText(/Needs improvement in documentation./i)).toBeInTheDocument();
 
         // Check for CRUD buttons
-        expect(screen.getByText(/add new feedback/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/edit/i)).toHaveLength(2);
-        expect(screen.getAllByText(/delete/i)).toHaveLength(2);
+        expect(screen.getByText(/Add New Feedback/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Edit/i)).toHaveLength(2);
+        expect(screen.getAllByText(/Delete/i)).toHaveLength(2);
     });
 
     test('allows developer to create a new Feedback', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        fireEvent.click(screen.getByText(/Add New Feedback/i));
 
-        // Click on 'Add New Feedback' button
-        fireEvent.click(screen.getByText(/add new feedback/i));
-
-        // Fill out the form
-        fireEvent.change(screen.getByLabelText(/content/i), {
-            target: { value: 'Excellent team collaboration.' },
+        fireEvent.change(screen.getByLabelText(/Content/i), {
+            target: { value: `Dev Feedback ${Date.now()}` },
+        });
+        fireEvent.change(screen.getByLabelText(/Rating/i), {
+            target: { value: '5' },
         });
 
-        // Submit the form
-        fireEvent.click(screen.getByText(/create/i));
+        fireEvent.click(screen.getByText(/Create/i));
 
-        // Wait for the new feedback to appear in the list
-        expect(await screen.findByText(/excellent team collaboration\./i)).toBeInTheDocument();
+        const newFeedbackContent = await screen.findByText(/Dev Feedback/i);
+        expect(newFeedbackContent).toBeInTheDocument();
+
+        // Cleanup
+        const deleteButton = newFeedbackContent.parentElement.querySelector('button.delete');
+        fireEvent.click(deleteButton);
+
+        window.confirm = jest.fn(() => true);
+        await waitFor(() => {
+            expect(screen.queryByText(/Dev Feedback/i)).not.toBeInTheDocument();
+        });
+        window.confirm.mockRestore();
     });
 
     test('allows developer to edit an existing Feedback', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        const editButtons = screen.getAllByText(/Edit/i);
+        fireEvent.click(editButtons[0]);
 
-        // Wait for feedback to be rendered
-        expect(await screen.findByText(/great work on the project!/i)).toBeInTheDocument();
-
-        // Find the first Edit button and click it
-        fireEvent.click(screen.getAllByText(/edit/i)[0]);
-
-        // Modify the form
-        fireEvent.change(screen.getByLabelText(/content/i), {
-            target: { value: 'Outstanding project execution!' },
+        fireEvent.change(screen.getByLabelText(/Content/i), {
+            target: { value: 'Updated Feedback Content by Developer' },
+        });
+        fireEvent.change(screen.getByLabelText(/Rating/i), {
+            target: { value: '4' },
         });
 
-        // Submit the form
-        fireEvent.click(screen.getByText(/update/i));
+        fireEvent.click(screen.getByText(/Update/i));
 
-        // Wait for the updated feedback to appear in the list
-        expect(await screen.findByText(/outstanding project execution!/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Updated Feedback Content by Developer/i)).toBeInTheDocument();
     });
 
     test('allows developer to delete a Feedback', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        const deleteButtons = screen.getAllByText(/Delete/i);
+        fireEvent.click(deleteButtons[0]);
 
-        // Wait for feedback to be rendered
-        expect(await screen.findByText(/great work on the project!/i)).toBeInTheDocument();
-
-        // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
-
-        // Wait for the feedback to be removed from the list
         await waitFor(() => {
-            expect(screen.queryByText(/great work on the project!/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Updated Feedback Content by Developer/i)).not.toBeInTheDocument();
         });
 
-        // Restore the original confirm
         window.confirm.mockRestore();
     });
 });

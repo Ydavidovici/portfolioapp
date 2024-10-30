@@ -1,82 +1,92 @@
-// src/features/clientDashboard/tests/PaymentModule.test.jsx
+// src/features/clientDashboard/tests/PaymentModule.client.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import ClientDashboard from '../pages/ClientDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
 
-describe('Payment Module', () => {
+describe('Payment Module - Client', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            payments: {
-                GET: [
-                    { id: '1', userId: '2', amount: 500, method: 'Credit Card' },
-                    { id: '2', userId: '2', amount: 300, method: 'PayPal' },
-                ],
-                POST: { id: '3' },
-            },
-        });
+        renderWithUser(<ClientDashboard />, 'client');
     });
 
     afterEach(() => {
-        resetFetchMocks();
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
     test('renders PaymentList component with fetched data', async () => {
-        renderWithRouter(<ClientDashboard />);
-
         // Wait for payments to be fetched and rendered
-        expect(await screen.findByText(/\$500/i)).toBeInTheDocument();
-        expect(screen.getByText(/\$300/i)).toBeInTheDocument();
+        expect(await screen.findByText(/500/i)).toBeInTheDocument();
 
-        // Check for CRUD buttons
-        expect(screen.getByText(/make payment/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/delete/i)).toHaveLength(2);
+        // Payment belonging to another user should not be visible
+        expect(screen.queryByText(/300/i)).not.toBeInTheDocument();
+
+        // Check for 'Make a Payment' button
+        expect(screen.getByText(/make a payment/i)).toBeInTheDocument();
+
+        // Edit and Delete buttons should not be present
+        expect(screen.queryByText(/edit/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/delete/i)).not.toBeInTheDocument();
     });
 
     test('allows client to make a new Payment', async () => {
-        renderWithRouter(<ClientDashboard />);
-
-        // Click on 'Make Payment' button
-        fireEvent.click(screen.getByText(/make payment/i));
+        // Click on 'Make a Payment' button
+        fireEvent.click(screen.getByText(/make a payment/i));
 
         // Fill out the form
+        fireEvent.change(screen.getByLabelText(/invoice/i), {
+            target: { value: '1' }, // Assuming invoiceId '1' belongs to the client
+        });
         fireEvent.change(screen.getByLabelText(/amount/i), {
             target: { value: '600' },
         });
         fireEvent.change(screen.getByLabelText(/method/i), {
-            target: { value: 'PayPal' },
+            target: { value: 'Credit Card' },
         });
 
         // Submit the form
-        fireEvent.click(screen.getByText(/submit/i));
+        fireEvent.click(screen.getByText(/submit payment/i));
 
         // Wait for the new payment to appear in the list
-        expect(await screen.findByText(/\$600/i)).toBeInTheDocument();
-        expect(screen.getByText(/paypal/i)).toBeInTheDocument();
+        expect(await screen.findByText(/600/i)).toBeInTheDocument();
+        expect(screen.getByText(/credit card/i)).toBeInTheDocument();
     });
 
-    test('allows client to delete a Payment', async () => {
-        renderWithRouter(<ClientDashboard />);
+    test('does not allow client to edit payments via UI', async () => {
+        // Attempt to find 'Edit' buttons
+        expect(screen.queryByText(/edit/i)).not.toBeInTheDocument();
+    });
 
-        // Wait for payments to be rendered
-        expect(await screen.findByText(/\$500/i)).toBeInTheDocument();
+    test('does not allow client to delete payments via UI', async () => {
+        // Attempt to find 'Delete' buttons
+        expect(screen.queryByText(/delete/i)).not.toBeInTheDocument();
+    });
 
-        // Mock window.confirm to always return true
-        jest.spyOn(window, 'confirm').mockImplementation(() => true);
+    test('does not allow client to edit payments via API', async () => {
+        // Attempt to send a PUT request directly via apiClient (bypassing UI)
+        const { apiClient } = renderWithUser(<ClientDashboard />, 'client');
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
+        try {
+            await apiClient.put('/payments/1', {
+                amount: 700,
+                method: 'Debit Card',
+            });
+        } catch (error) {
+            expect(error.response.status).toBe(403);
+            expect(error.response.data.message).toBe('This action is unauthorized.');
+        }
+    });
 
-        // Wait for the payment to be removed from the list
-        await waitFor(() => {
-            expect(screen.queryByText(/\$500/i)).not.toBeInTheDocument();
-        });
+    test('does not allow client to delete payments via API', async () => {
+        // Attempt to send a DELETE request directly via apiClient (bypassing UI)
+        const { apiClient } = renderWithUser(<ClientDashboard />, 'client');
 
-        // Restore the original confirm
-        window.confirm.mockRestore();
+        try {
+            await apiClient.delete('/payments/1');
+        } catch (error) {
+            expect(error.response.status).toBe(403);
+            expect(error.response.data.message).toBe('This action is unauthorized.');
+        }
     });
 });

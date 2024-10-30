@@ -1,33 +1,21 @@
-// src/features/developerDashboard/tests/TaskListModule.test.jsx
+// src/features/devDashboard/tests/TaskListModule.developer.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import DeveloperDashboard from '../pages/DeveloperDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
+import DevDashboard from '../pages/DevDashboard';
 
-describe('TaskList Module', () => {
+describe('TaskList Module - Developer', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            taskLists: {
-                GET: [
-                    { id: '1', name: 'Sprint 1' },
-                    { id: '2', name: 'Sprint 2' },
-                ],
-                POST: { id: '3' },
-            },
-        });
+        renderWithUser(<DevDashboard />, 'developer');
     });
 
     afterEach(() => {
-        resetFetchMocks();
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
-    test('renders TaskListList component with fetched data', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
+    test('renders TaskList component with fetched data', async () => {
         // Wait for task lists to be fetched and rendered
         expect(await screen.findByText(/sprint 1/i)).toBeInTheDocument();
         expect(screen.getByText(/sprint 2/i)).toBeInTheDocument();
@@ -39,8 +27,6 @@ describe('TaskList Module', () => {
     });
 
     test('allows developer to create a new Task List', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Click on 'Add New Task List' button
         fireEvent.click(screen.getByText(/add new task list/i));
 
@@ -57,8 +43,6 @@ describe('TaskList Module', () => {
     });
 
     test('allows developer to edit an existing Task List', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for task lists to be rendered
         expect(await screen.findByText(/sprint 1/i)).toBeInTheDocument();
 
@@ -78,16 +62,15 @@ describe('TaskList Module', () => {
     });
 
     test('allows developer to delete a Task List', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for task lists to be rendered
         expect(await screen.findByText(/sprint 2/i)).toBeInTheDocument();
 
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the second Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[1]);
+        // Find the Delete button for Sprint 2 and click it
+        const deleteButtons = screen.getAllByText(/delete/i);
+        fireEvent.click(deleteButtons[1]); // Assuming the second delete button corresponds to Sprint 2
 
         // Wait for the task list to be removed from the list
         await waitFor(() => {

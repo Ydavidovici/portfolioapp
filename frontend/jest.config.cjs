@@ -10,6 +10,6 @@ module.exports = {
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
     '\\.(gif|ttf|eot|svg)$': '<rootDir>/__mocks__/fileMock.js',
   },
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js', '<rootDir>/jest.setup.js' ],
+  setupFilesAfterEnv: ['<rootDir>/src/setupTests.js'],
   moduleFileExtensions: ['js', 'jsx', 'json', 'node'],
 };

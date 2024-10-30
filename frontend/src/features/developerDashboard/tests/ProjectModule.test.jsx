@@ -1,41 +1,21 @@
-// src/features/developerDashboard/tests/ProjectModule.test.jsx
+// src/features/devDashboard/tests/ProjectModule.developer.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import DeveloperDashboard from '../pages/DeveloperDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
+import DevDashboard from '../pages/DevDashboard';
 
-describe('Project Module', () => {
+describe('Project Module - Developer', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            projects: {
-                GET: [
-                    {
-                        id: '1',
-                        name: 'Project Alpha',
-                        description: 'Alpha Description',
-                    },
-                    {
-                        id: '2',
-                        name: 'Project Beta',
-                        description: 'Beta Description',
-                    },
-                ],
-                POST: { id: '3' },
-            },
-        });
+        renderWithUser(<DevDashboard />, 'developer');
     });
 
     afterEach(() => {
-        resetFetchMocks();
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
     test('renders ProjectList component with fetched data', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Wait for projects to be fetched and rendered
         expect(await screen.findByText(/project alpha/i)).toBeInTheDocument();
         expect(screen.getByText(/project beta/i)).toBeInTheDocument();
@@ -47,8 +27,6 @@ describe('Project Module', () => {
     });
 
     test('allows developer to create a new Project', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
         // Click on 'Add New Project' button
         fireEvent.click(screen.getByText(/add new project/i));
 
@@ -68,7 +46,7 @@ describe('Project Module', () => {
     });
 
     test('allows developer to edit an existing Project', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        renderWithUser(<DevDashboard />, 'developer');
 
         // Wait for projects to be rendered
         expect(await screen.findByText(/project alpha/i)).toBeInTheDocument();
@@ -93,7 +71,7 @@ describe('Project Module', () => {
     });
 
     test('allows developer to delete a Project', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        renderWithUser(<DevDashboard />, 'developer');
 
         // Wait for projects to be rendered
         expect(await screen.findByText(/project beta/i)).toBeInTheDocument();
@@ -101,8 +79,10 @@ describe('Project Module', () => {
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the second Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[1]);
+        // Find the Delete button for Project Beta and click it
+        const deleteButtons = screen.getAllByText(/delete/i);
+        // Assuming the second delete button corresponds to Project Beta
+        fireEvent.click(deleteButtons[1]);
 
         // Wait for the project to be removed from the list
         await waitFor(() => {

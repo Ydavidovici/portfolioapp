@@ -1,41 +1,23 @@
 // src/features/adminDashboard/tests/RoleModule.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import AdminDashboard from '../pages/AdminDashboard';
-import {mockFetch, resetFetchMocks} from './utils/fetchMocks';
 
 describe('Role Module', () => {
     beforeEach(() => {
-        resetFetchMocks();
-
-        mockFetch({
-            roles: {
-                GET: [
-                    {
-                        id: '1',
-                        name: 'Admin',
-                        permissions: ['manage_users', 'manage_roles', 'manage_projects'],
-                    },
-                    {
-                        id: '2',
-                        name: 'Developer',
-                        permissions: ['manage_projects'],
-                    },
-                ],
-                POST: { id: '3' },
-            },
-        });
+        // Render the AdminDashboard with Admin role
+        renderWithUser(<AdminDashboard />, 'admin');
     });
 
     afterEach(() => {
-        fetch.mockClear();
+        // Cleanup authentication and restore mocks
+        cleanupAuth();
+        jest.restoreAllMocks();
     });
 
     test('renders RoleList component with fetched data', async () => {
-        renderWithRouter(<AdminDashboard />);
-
         // Wait for roles to be fetched and rendered
         expect(await screen.findByText(/admin/i)).toBeInTheDocument();
         expect(screen.getByText(/developer/i)).toBeInTheDocument();
@@ -47,12 +29,10 @@ describe('Role Module', () => {
     });
 
     test('allows admin to create a new Role', async () => {
-        renderWithRouter(<AdminDashboard />);
-
         // Click on 'Add New Role' button
         fireEvent.click(screen.getByText(/add new role/i));
 
-        // Fill out the form
+        // Fill out the form fields
         fireEvent.change(screen.getByLabelText(/name/i), {
             target: { value: 'Tester' },
         });
@@ -69,15 +49,13 @@ describe('Role Module', () => {
     });
 
     test('allows admin to edit an existing Role', async () => {
-        renderWithRouter(<AdminDashboard />);
-
         // Wait for roles to be rendered
         expect(await screen.findByText(/admin/i)).toBeInTheDocument();
 
         // Find the first Edit button and click it
         fireEvent.click(screen.getAllByText(/edit/i)[0]);
 
-        // Modify the form
+        // Modify the form fields
         fireEvent.change(screen.getByLabelText(/name/i), {
             target: { value: 'Super Admin' },
         });
@@ -94,18 +72,15 @@ describe('Role Module', () => {
     });
 
     test('allows admin to delete a Role', async () => {
-        renderWithRouter(<AdminDashboard />);
-
         // Wait for roles to be rendered
         expect(await screen.findByText(/developer/i)).toBeInTheDocument();
 
         // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the Delete button for the 'Developer' role and click it
+        // Find the Delete button for 'Developer' role and click it
         const deleteButtons = screen.getAllByText(/delete/i);
-        // Assuming the second delete button corresponds to 'Developer'
-        fireEvent.click(deleteButtons[1]);
+        fireEvent.click(deleteButtons[1]); // Assuming the second delete button corresponds to 'Developer'
 
         // Wait for the role to be removed from the list
         await waitFor(() => {

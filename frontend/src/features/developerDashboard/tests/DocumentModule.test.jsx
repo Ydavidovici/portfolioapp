@@ -1,116 +1,86 @@
-// src/features/developerDashboard/tests/DocumentModule.test.jsx
+// src/features/devDashboard/tests/DocumentModule.developer.test.jsx
 
 import React from 'react';
-import { renderWithRouter } from './utils/testUtils';
+import { renderWithUser, cleanupAuth } from './utils/testUtils';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
-import DeveloperDashboard from '../pages/DeveloperDashboard';
-import { mockFetch, resetFetchMocks } from './utils/fetchMocks';
+import DevDashboard from '../pages/DevDashboard';
 
-describe('Document Module', () => {
-    beforeEach(() => {
-        resetFetchMocks();
+describe('Document Module - Developer', () => {
+    let apiClient;
 
-        mockFetch({
-            documents: {
-                GET: [
-                    {
-                        id: '1',
-                        title: 'Project Plan',
-                        url: 'http://example.com/project-plan.pdf',
-                    },
-                    {
-                        id: '2',
-                        title: 'Marketing Strategy',
-                        url: 'http://example.com/marketing-strategy.pdf',
-                    },
-                ],
-                POST: { id: '3' },
-            },
-        });
+    beforeAll(() => {
+        const { apiClient: client } = renderWithUser(<DevDashboard />, 'developer');
+        apiClient = client;
     });
 
-    afterEach(() => {
-        resetFetchMocks();
+    afterAll(() => {
+        cleanupAuth();
     });
 
-    test('renders DocumentList component with fetched data', async () => {
-        renderWithRouter(<DeveloperDashboard />);
-
-        // Wait for documents to be fetched and rendered
-        expect(await screen.findByText(/project plan/i)).toBeInTheDocument();
-        expect(screen.getByText(/marketing strategy/i)).toBeInTheDocument();
+    test('renders DocumentList with fetched data', async () => {
+        expect(await screen.findByText(/Project Plan/i)).toBeInTheDocument();
+        expect(screen.getByText(/Marketing Strategy/i)).toBeInTheDocument();
 
         // Check for CRUD buttons
-        expect(screen.getByText(/add new document/i)).toBeInTheDocument();
-        expect(screen.getAllByText(/edit/i)).toHaveLength(2);
-        expect(screen.getAllByText(/delete/i)).toHaveLength(2);
+        expect(screen.getByText(/Add New Document/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Edit/i)).toHaveLength(2);
+        expect(screen.getAllByText(/Delete/i)).toHaveLength(2);
     });
 
     test('allows developer to create a new Document', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        fireEvent.click(screen.getByText(/Add New Document/i));
 
-        // Click on 'Add New Document' button
-        fireEvent.click(screen.getByText(/add new document/i));
-
-        // Fill out the form
-        fireEvent.change(screen.getByLabelText(/title/i), {
-            target: { value: 'New Document' },
+        fireEvent.change(screen.getByLabelText(/Title/i), {
+            target: { value: `Dev Document ${Date.now()}` },
         });
-        fireEvent.change(screen.getByLabelText(/url/i), {
-            target: { value: 'http://example.com/new-document.pdf' },
+        fireEvent.change(screen.getByLabelText(/URL/i), {
+            target: { value: 'http://example.com/dev-document.pdf' },
         });
 
-        // Submit the form
-        fireEvent.click(screen.getByText(/create/i));
+        fireEvent.click(screen.getByText(/Create/i));
 
-        // Wait for the new document to appear in the list
-        expect(await screen.findByText(/new document/i)).toBeInTheDocument();
-        expect(screen.getByText(/http:\/\/example\.com\/new-document\.pdf/i)).toBeInTheDocument();
+        const newDocumentTitle = await screen.findByText(/Dev Document/i);
+        expect(newDocumentTitle).toBeInTheDocument();
+        expect(screen.getByText(/http:\/\/example\.com\/dev-document\.pdf/i)).toBeInTheDocument();
+
+        // Cleanup
+        const deleteButton = newDocumentTitle.parentElement.querySelector('button.delete');
+        fireEvent.click(deleteButton);
+
+        window.confirm = jest.fn(() => true);
+        await waitFor(() => {
+            expect(screen.queryByText(/Dev Document/i)).not.toBeInTheDocument();
+        });
+        window.confirm.mockRestore();
     });
 
     test('allows developer to edit an existing Document', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        const editButtons = screen.getAllByText(/Edit/i);
+        fireEvent.click(editButtons[0]);
 
-        // Wait for documents to be rendered
-        expect(await screen.findByText(/project plan/i)).toBeInTheDocument();
-
-        // Find the first Edit button and click it
-        fireEvent.click(screen.getAllByText(/edit/i)[0]);
-
-        // Modify the form
-        fireEvent.change(screen.getByLabelText(/title/i), {
-            target: { value: 'Updated Project Plan' },
+        fireEvent.change(screen.getByLabelText(/Title/i), {
+            target: { value: 'Updated Project Plan by Dev' },
         });
-        fireEvent.change(screen.getByLabelText(/url/i), {
-            target: { value: 'http://example.com/updated-project-plan.pdf' },
+        fireEvent.change(screen.getByLabelText(/URL/i), {
+            target: { value: 'http://example.com/updated-project-plan-dev.pdf' },
         });
 
-        // Submit the form
-        fireEvent.click(screen.getByText(/update/i));
+        fireEvent.click(screen.getByText(/Update/i));
 
-        // Wait for the updated document to appear in the list
-        expect(await screen.findByText(/updated project plan/i)).toBeInTheDocument();
-        expect(screen.getByText(/http:\/\/example\.com\/updated-project-plan\.pdf/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Updated Project Plan by Dev/i)).toBeInTheDocument();
+        expect(screen.getByText(/http:\/\/example\.com\/updated-project-plan-dev\.pdf/i)).toBeInTheDocument();
     });
 
     test('allows developer to delete a Document', async () => {
-        renderWithRouter(<DeveloperDashboard />);
+        const deleteButtons = screen.getAllByText(/Delete/i);
+        fireEvent.click(deleteButtons[0]);
 
-        // Wait for documents to be rendered
-        expect(await screen.findByText(/project plan/i)).toBeInTheDocument();
-
-        // Mock window.confirm to always return true
         jest.spyOn(window, 'confirm').mockImplementation(() => true);
 
-        // Find the first Delete button and click it
-        fireEvent.click(screen.getAllByText(/delete/i)[0]);
-
-        // Wait for the document to be removed from the list
         await waitFor(() => {
-            expect(screen.queryByText(/project plan/i)).not.toBeInTheDocument();
+            expect(screen.queryByText(/Updated Project Plan by Dev/i)).not.toBeInTheDocument();
         });
 
-        // Restore the original confirm
         window.confirm.mockRestore();
     });
 });
