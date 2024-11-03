@@ -20,7 +20,7 @@ class Kernel extends HttpKernel
 
     protected $routeMiddleware = [
         // 'authapi' => \App\Http\Middleware\AuthenticateApiToken::class,
-        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        //'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,

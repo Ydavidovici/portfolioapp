@@ -18,7 +18,6 @@ class ReminderController extends Controller
      */
     public function __construct()
     {
-        $this->middleware('auth:api'); // Changed from 'auth' to 'auth:api'
     }
 
     public function index()
